@@ -1,4 +1,4 @@
-from backend.app.ai import AICoreService, AIRequest, ContextManager
+from backend.app.ai import AICoreService, AIRequest
 from backend.app.models import LearningEvent
 from backend.app.planets.study.repository import StudyRepository
 from backend.app.users.service import UserProfile
@@ -12,11 +12,9 @@ class TutorService:
         *,
         repository: StudyRepository,
         ai_core: AICoreService,
-        context_manager: ContextManager,
     ) -> None:
         self._repository = repository
         self._ai_core = ai_core
-        self._context_manager = context_manager
 
     def ask(self, *, user: UserProfile, question: str) -> dict[str, object]:
         if not question.strip():
@@ -28,20 +26,19 @@ class TutorService:
         sessions = self._repository.list_finished_sessions(user.id)
         learning_events = self._repository.list_learning_events(user.id)
 
-        context = self._context_manager.build_study_context(
-            user=user.to_dict(),
-            goal=goal.to_dict() if goal else None,
-            current_plan=self._serialize_plan(plan) if plan else None,
-            daily_tasks=[task.to_dict() for task in daily_tasks],
-            study_sessions=[session.to_dict() for session in sessions],
-            learning_events=[event.to_dict() for event in learning_events],
-        )
         ai_response = self._ai_core.run(
             AIRequest(
                 agent_id="study",
                 capability="tutor",
                 user_question=question,
-                context=context,
+                context_payload={
+                    "user": user.to_dict(),
+                    "goal": goal.to_dict() if goal else None,
+                    "currentPlan": self._serialize_plan(plan) if plan else None,
+                    "dailyTasks": [task.to_dict() for task in daily_tasks],
+                    "studySessions": [session.to_dict() for session in sessions],
+                    "learningEvents": [event.to_dict() for event in learning_events],
+                },
             )
         )
         event = self._repository.save_learning_event(
@@ -71,4 +68,3 @@ class TutorService:
             "weekPlans": [item.to_dict() for item in plan["weekPlans"]],
             "dailyTasks": [item.to_dict() for item in plan["dailyTasks"]],
         }
-

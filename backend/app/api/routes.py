@@ -1,4 +1,4 @@
-from backend.app.ai import AICoreService, ContextManager
+from backend.app.ai import AICoreService, AgentDefinition
 from backend.app.core.settings import settings
 from backend.app.memory import MemoryService
 from backend.app.planet_engine import create_default_registry
@@ -8,6 +8,7 @@ from backend.app.planets.study.plans import PlanService
 from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
+from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
 
@@ -22,14 +23,32 @@ class ApiFacade:
         self.memory = MemoryService()
         self.study_repository = StudyRepository()
         self.ai_core = AICoreService()
-        self.ai_context = ContextManager()
+        self.ai_core.agent_manager.register(
+            AgentDefinition(
+                agent_id="study",
+                capabilities=("tutor",),
+                prompt_key="study.tutor.answer",
+                context_builder="study.tutor",
+                allowed_tools=(),
+            )
+        )
+        self.ai_core.prompt_manager.register(
+            "study.tutor.answer",
+            (
+                "You are the Study Agent Tutor capability. Use only Study workflow context. "
+                "Do not cite uploaded material, documents, RAG, embeddings, or Knowledge Graph data."
+            ),
+        )
+        self.ai_core.context_manager.register_provider(
+            "study.tutor",
+            StudyTutorContextProvider(),
+        )
         self.study_goals = GoalService(self.study_repository, self.memory)
         self.study_plans = PlanService(self.study_repository)
         self.study_sessions = SessionService(self.study_repository)
         self.study_tutor = TutorService(
             repository=self.study_repository,
             ai_core=self.ai_core,
-            context_manager=self.ai_context,
         )
         self.study_home = StudyHomeService(self.study_repository)
 

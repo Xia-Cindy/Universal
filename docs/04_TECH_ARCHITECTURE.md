@@ -1133,6 +1133,30 @@ Not implemented in Milestone 3:
 - File processing.
 - Source citation system.
 
+## Milestone 3.5
+
+Status: completed.
+
+Implemented:
+
+- AgentDefinition registration model.
+- AgentManager registry-based resolution.
+- ContextManager provider orchestration.
+- Study Tutor context provider adapter.
+- PromptManager prompt-key lookup.
+- Provider-only LLM Gateway boundary.
+- ToolRouter, Tool and Retriever interface boundaries only.
+
+Not implemented in Milestone 3.5:
+
+- RAG pipeline.
+- Retriever implementation.
+- Tool execution.
+- Embeddings.
+- Vector database.
+- Knowledge Graph.
+- Document processing.
+
 ---
 
 # End

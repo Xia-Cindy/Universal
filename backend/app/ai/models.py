@@ -1,27 +1,25 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
 @dataclass(frozen=True)
+class AIMessage:
+    role: str
+    content: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "role": self.role,
+            "content": self.content,
+        }
+
+
+@dataclass(frozen=True)
 class AIContext:
-    user: dict[str, Any]
-    goal: dict[str, Any] | None
-    current_plan: dict[str, Any] | None
-    daily_tasks: list[dict[str, Any]]
-    study_sessions: list[dict[str, Any]]
-    learning_events: list[dict[str, Any]]
-    knowledge_sources_available: bool = False
+    payload: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "user": self.user,
-            "goal": self.goal,
-            "currentPlan": self.current_plan,
-            "dailyTasks": self.daily_tasks,
-            "studySessions": self.study_sessions,
-            "learningEvents": self.learning_events,
-            "knowledgeSourcesAvailable": self.knowledge_sources_available,
-        }
+        return self.payload
 
 
 @dataclass(frozen=True)
@@ -29,7 +27,7 @@ class AIRequest:
     agent_id: str
     capability: str
     user_question: str
-    context: AIContext
+    context_payload: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -37,15 +35,14 @@ class AIResponse:
     answer: str
     reasoning: str
     suggested_next_action: str
-    knowledge_sources_available: bool = False
-    source_notice: str = "Knowledge sources are unavailable until the Knowledge/RAG milestone."
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "answer": self.answer,
             "reasoning": self.reasoning,
             "suggestedNextAction": self.suggested_next_action,
-            "knowledgeSourcesAvailable": self.knowledge_sources_available,
-            "sourceNotice": self.source_notice,
         }
+        payload.update(self.metadata)
+        return payload
 

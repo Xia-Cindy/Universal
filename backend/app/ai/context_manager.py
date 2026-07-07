@@ -1,32 +1,26 @@
-from typing import Any
+from typing import Protocol
 
 from backend.app.ai.models import AIContext
 
 
+class ContextProvider(Protocol):
+    def build(self, payload: dict) -> AIContext:
+        ...
+
+
 class ContextManager:
-    """Shared AI Core context normalizer.
+    """Shared context orchestration for AI Core."""
 
-    Milestone 3 intentionally accepts only workflow context and marks
-    knowledge sources unavailable.
-    """
+    def __init__(self) -> None:
+        self._providers: dict[str, ContextProvider] = {}
 
-    def build_study_context(
-        self,
-        *,
-        user: dict[str, Any],
-        goal: dict[str, Any] | None,
-        current_plan: dict[str, Any] | None,
-        daily_tasks: list[dict[str, Any]],
-        study_sessions: list[dict[str, Any]],
-        learning_events: list[dict[str, Any]],
-    ) -> AIContext:
-        return AIContext(
-            user=user,
-            goal=goal,
-            current_plan=current_plan,
-            daily_tasks=daily_tasks,
-            study_sessions=study_sessions,
-            learning_events=learning_events,
-            knowledge_sources_available=False,
-        )
+    def register_provider(self, key: str, provider: ContextProvider) -> None:
+        self._providers[key] = provider
+
+    def build_context(self, provider_key: str, payload: dict) -> AIContext:
+        try:
+            provider = self._providers[provider_key]
+        except KeyError as exc:
+            raise ValueError(f"Unknown context provider: {provider_key}") from exc
+        return provider.build(payload)
 

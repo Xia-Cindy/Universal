@@ -28,6 +28,16 @@
 - [x] Record Tutor interactions as Learning Events.
 - [x] Keep RAG, embeddings, Knowledge Graph, document retrieval, and source citations out of scope.
 
+## Milestone 3.5 AI Core Generalization
+
+- [x] Add AgentDefinition registration model.
+- [x] Refactor AgentManager to resolve registered definitions.
+- [x] Refactor ContextManager to use context providers.
+- [x] Move Study Tutor context assembly into a Study provider.
+- [x] Refactor PromptManager to resolve prompt keys.
+- [x] Keep LLM Gateway provider-only.
+- [x] Add ToolRouter, Tool, and Retriever interfaces only.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.

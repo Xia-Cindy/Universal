@@ -29,6 +29,14 @@ Milestone 3 adds the AI Core and Tutor foundation:
 
 Milestone 3 does not implement RAG, embeddings, Knowledge Graph, document retrieval, or source citations.
 
+Milestone 3.5 generalizes AI Core boundaries:
+
+- AgentDefinition registry
+- context provider architecture
+- prompt-key registry
+- provider-only LLM Gateway input/output
+- ToolRouter / Tool / Retriever interfaces only
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test
