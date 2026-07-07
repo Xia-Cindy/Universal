@@ -1,11 +1,32 @@
 from backend.app.models.memory import MemoryEntry, MemoryScope
 from backend.app.models.planet import Planet, PlanetModule, PlanetStatus
+from backend.app.models.study import (
+    DailyTask,
+    GoalStatus,
+    MonthPlan,
+    PlanStatus,
+    SessionStatus,
+    StudyGoal,
+    StudySession,
+    TaskStatus,
+    WeekPlan,
+    YearPlan,
+)
 
 __all__ = [
+    "DailyTask",
+    "GoalStatus",
     "MemoryEntry",
     "MemoryScope",
+    "MonthPlan",
+    "PlanStatus",
     "Planet",
     "PlanetModule",
     "PlanetStatus",
+    "SessionStatus",
+    "StudyGoal",
+    "StudySession",
+    "TaskStatus",
+    "WeekPlan",
+    "YearPlan",
 ]
-

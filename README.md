@@ -12,6 +12,13 @@ Milestone 1 implements the project foundation only:
 - Study Workspace shell
 - basic API contracts
 
+Milestone 2 adds the Study Planet learning workflow foundation:
+
+- Goal management
+- Learning Plan and Daily Tasks
+- Study Session recording
+- Study Home progress aggregation
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test
@@ -23,4 +30,3 @@ python3 -m unittest discover -s tests
 ```
 
 Frontend files are scaffolded for Vue 3 / Vite, but dependencies are not installed in this milestone.
-

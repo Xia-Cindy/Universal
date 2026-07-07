@@ -9,6 +9,25 @@ export interface PlanetSummary {
   enterable: boolean
 }
 
+export interface StudyGoalPayload {
+  goalName: string
+  examName: string
+  deadline: string
+  subjects: string[]
+  currentLevel: string
+  dailyAvailableMinutes: number
+  priority: string
+}
+
+export interface DailyTask {
+  id: string
+  subject: string
+  topic: string
+  taskDate: string
+  estimatedMinutes: number
+  status: string
+}
+
 const API_BASE = '/api'
 
 export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
@@ -27,3 +46,80 @@ export async function fetchStudyHome() {
   return response.json()
 }
 
+export async function createGoal(payload: StudyGoalPayload) {
+  const response = await fetch(`${API_BASE}/study/goals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create goal')
+  }
+  return response.json()
+}
+
+export async function createPlan(payload: Record<string, unknown> = {}) {
+  const response = await fetch(`${API_BASE}/study/plans`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create plan')
+  }
+  return response.json()
+}
+
+export async function fetchCurrentPlan() {
+  const response = await fetch(`${API_BASE}/study/plans/current`)
+  if (!response.ok) {
+    throw new Error('Unable to load current plan')
+  }
+  return response.json()
+}
+
+export async function updateTask(taskId: string, payload: Partial<DailyTask>) {
+  const response = await fetch(`${API_BASE}/study/tasks/${taskId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to update task')
+  }
+  return response.json()
+}
+
+export async function completeTask(taskId: string) {
+  const response = await fetch(`${API_BASE}/study/tasks/${taskId}/complete`, {
+    method: 'PATCH',
+  })
+  if (!response.ok) {
+    throw new Error('Unable to complete task')
+  }
+  return response.json()
+}
+
+export async function startSession(payload: Record<string, unknown>) {
+  const response = await fetch(`${API_BASE}/study/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to start session')
+  }
+  return response.json()
+}
+
+export async function finishSession(sessionId: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${API_BASE}/study/sessions/${sessionId}/finish`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to finish session')
+  }
+  return response.json()
+}

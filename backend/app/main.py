@@ -37,8 +37,47 @@ def create_app():
     def get_study_home():
         return api.get_study_home()
 
+    @app.post("/api/study/goals")
+    def create_goal(payload: dict):
+        return api.create_goal(payload)
+
+    @app.patch("/api/study/goals/{goal_id}")
+    def update_goal(goal_id: str, payload: dict):
+        return api.update_goal(goal_id, payload)
+
+    @app.get("/api/study/goals/active")
+    def get_active_goal():
+        return api.get_active_goal()
+
+    @app.post("/api/study/plans")
+    def create_plan(payload: dict | None = None):
+        return api.create_plan(payload)
+
+    @app.get("/api/study/plans/current")
+    def get_current_plan():
+        return api.get_current_plan()
+
+    @app.patch("/api/study/tasks/{task_id}")
+    def update_task(task_id: str, payload: dict):
+        return api.update_task(task_id, payload)
+
+    @app.patch("/api/study/tasks/{task_id}/complete")
+    def complete_task(task_id: str):
+        return api.complete_task(task_id)
+
+    @app.post("/api/study/sessions")
+    def start_session(payload: dict):
+        return api.start_session(payload)
+
+    @app.patch("/api/study/sessions/{session_id}/finish")
+    def finish_session(session_id: str, payload: dict | None = None):
+        return api.finish_session(session_id, payload)
+
+    @app.get("/api/study/records")
+    def list_study_records():
+        return api.list_study_records()
+
     return app
 
 
 app = create_app()
-

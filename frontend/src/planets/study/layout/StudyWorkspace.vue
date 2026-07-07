@@ -12,22 +12,22 @@
     </header>
 
     <nav class="study-nav" aria-label="Study workspace">
-      <a v-for="item in navigation" :key="item.route" :href="item.route">{{ item.label }}</a>
+      <RouterLink v-for="item in navigation" :key="item.route" :to="item.route">
+        {{ item.label }}
+      </RouterLink>
     </nav>
 
     <section class="workspace-grid">
-      <StudyHome />
+      <RouterView />
       <aside class="ai-panel">
         <p class="eyebrow">AI Recommendation</p>
-        <p>Create your first Goal to unlock personalized study guidance.</p>
+        <p>AI Core starts in Milestone 3. Milestone 2 uses your learning workflow data.</p>
       </aside>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import StudyHome from '../home/StudyHome.vue'
-
 const navigation = [
   { label: 'Home', route: '/study' },
   { label: 'Plan', route: '/study/plan' },
@@ -37,4 +37,3 @@ const navigation = [
   { label: 'Analytics', route: '/study/analytics' },
 ]
 </script>
-

@@ -120,7 +120,8 @@ button:disabled {
   grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
 }
 
-.study-home h2 {
+.study-home h2,
+.study-plan h2 {
   font-size: 1.7rem;
   margin: 0 0 0.75rem;
 }
@@ -128,6 +129,65 @@ button:disabled {
 .progress-snapshot {
   flex-wrap: wrap;
   margin-top: 20px;
+}
+
+.study-plan {
+  border: 1px solid rgba(238, 247, 248, 0.16);
+  border-radius: 8px;
+  background: rgba(9, 31, 37, 0.78);
+  padding: 20px;
+}
+
+.study-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin: 18px 0;
+}
+
+.study-form label {
+  color: rgba(238, 247, 248, 0.76);
+  display: grid;
+  font-size: 0.9rem;
+  gap: 6px;
+}
+
+input {
+  border: 1px solid rgba(238, 247, 248, 0.16);
+  border-radius: 8px;
+  background: rgba(238, 247, 248, 0.08);
+  color: #eef7f8;
+  font: inherit;
+  min-width: 0;
+  padding: 0.72rem 0.8rem;
+}
+
+.plan-actions,
+.task-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.task-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.task-row {
+  border: 1px solid rgba(238, 247, 248, 0.12);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.task-edit {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
 
 @media (max-width: 760px) {
@@ -140,4 +200,3 @@ button:disabled {
     margin-top: 18px;
   }
 }
-

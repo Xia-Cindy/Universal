@@ -1069,4 +1069,44 @@ AI / RAG 相关模块必须验证：
 
 ---
 
+# 25. Implementation Status
+
+## Milestone 1
+
+Status: completed.
+
+Implemented:
+
+- Repository structure.
+- Planet registry.
+- Universe Portal shell.
+- Study Workspace shell.
+- Foundation database migration.
+- Basic API contracts.
+
+## Milestone 2
+
+Status: completed.
+
+Implemented:
+
+- Study Goal service and API contracts.
+- Learning Plan, Year Plan, Month Plan, Week Plan and Daily Task service contracts.
+- Study Session start/finish recording.
+- Study Home progress aggregation.
+- Database migration `002_study_learning_workflow.sql`.
+- Frontend Home and Plan workflow foundation.
+
+Not implemented in Milestone 2:
+
+- AI Core logic.
+- Agent logic.
+- RAG pipeline.
+- Embeddings.
+- Knowledge Graph.
+- Tutor functionality.
+- Review Agent.
+
+---
+
 # End

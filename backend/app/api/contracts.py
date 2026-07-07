@@ -24,7 +24,25 @@ MILESTONE_1_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/study/home", "study_home", "milestone_1"),
 )
 
+MILESTONE_2_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("POST", "/api/study/goals", "create_goal", "milestone_2"),
+    ApiContract("PATCH", "/api/study/goals/{goal_id}", "update_goal", "milestone_2"),
+    ApiContract("GET", "/api/study/goals/active", "get_active_goal", "milestone_2"),
+    ApiContract("POST", "/api/study/plans", "create_plan", "milestone_2"),
+    ApiContract("GET", "/api/study/plans/current", "get_current_plan", "milestone_2"),
+    ApiContract("PATCH", "/api/study/tasks/{task_id}", "update_task", "milestone_2"),
+    ApiContract("PATCH", "/api/study/tasks/{task_id}/complete", "complete_task", "milestone_2"),
+    ApiContract("POST", "/api/study/sessions", "start_session", "milestone_2"),
+    ApiContract("PATCH", "/api/study/sessions/{session_id}/finish", "finish_session", "milestone_2"),
+    ApiContract("GET", "/api/study/records", "list_study_records", "milestone_2"),
+)
+
 
 def list_contracts() -> list[dict[str, str]]:
-    return [contract.to_dict() for contract in MILESTONE_1_CONTRACTS]
-
+    return [
+        contract.to_dict()
+        for contract in (
+            *MILESTONE_1_CONTRACTS,
+            *MILESTONE_2_CONTRACTS,
+        )
+    ]
