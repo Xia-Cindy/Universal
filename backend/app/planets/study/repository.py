@@ -2,6 +2,7 @@ from datetime import date
 
 from backend.app.models import (
     DailyTask,
+    LearningEvent,
     MonthPlan,
     PlanStatus,
     SessionStatus,
@@ -27,6 +28,7 @@ class StudyRepository:
         self.week_plans: dict[str, WeekPlan] = {}
         self.daily_tasks: dict[str, DailyTask] = {}
         self.sessions: dict[str, StudySession] = {}
+        self.learning_events: dict[str, LearningEvent] = {}
 
     def save_goal(self, goal: StudyGoal) -> StudyGoal:
         if goal.status.value == "active":
@@ -123,4 +125,15 @@ class StudyRepository:
             for session in self.sessions.values()
             if session.user_id == user_id and session.status == SessionStatus.FINISHED
         ]
+
+    def save_learning_event(self, event: LearningEvent) -> LearningEvent:
+        self.learning_events[event.id] = event
+        return event
+
+    def list_learning_events(self, user_id: str) -> list[LearningEvent]:
+        return sorted(
+            [event for event in self.learning_events.values() if event.user_id == user_id],
+            key=lambda event: event.created_at,
+            reverse=True,
+        )
 

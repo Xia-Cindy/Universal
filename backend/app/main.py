@@ -77,6 +77,14 @@ def create_app():
     def list_study_records():
         return api.list_study_records()
 
+    @app.post("/api/study/tutor/ask")
+    def ask_study_tutor(payload: dict):
+        return api.ask_study_tutor(payload)
+
+    @app.get("/api/study/tutor/history")
+    def get_tutor_history():
+        return api.get_tutor_history()
+
     return app
 
 

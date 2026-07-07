@@ -19,6 +19,16 @@ Milestone 2 adds the Study Planet learning workflow foundation:
 - Study Session recording
 - Study Home progress aggregation
 
+Milestone 3 adds the AI Core and Tutor foundation:
+
+- shared AI Core service entry point
+- deterministic LLM Gateway for local tests
+- Prompt Manager, Context Manager, and Agent Manager
+- Study Tutor as an AI Core consumer
+- Learning Events for Tutor interactions
+
+Milestone 3 does not implement RAG, embeddings, Knowledge Graph, document retrieval, or source citations.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test

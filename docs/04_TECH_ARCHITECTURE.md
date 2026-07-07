@@ -1107,6 +1107,32 @@ Not implemented in Milestone 2:
 - Tutor functionality.
 - Review Agent.
 
+## Milestone 3
+
+Status: completed.
+
+Implemented:
+
+- Shared AI Core service entry point.
+- LLM Gateway interface with deterministic local provider.
+- Prompt Manager.
+- Context Manager.
+- Agent Manager.
+- Study Tutor service as an AI Core consumer.
+- Tutor API contracts.
+- Tutor frontend page.
+- Learning Events for Tutor interactions.
+
+Not implemented in Milestone 3:
+
+- RAG pipeline.
+- Embeddings.
+- Vector database.
+- Knowledge Graph.
+- Document retrieval.
+- File processing.
+- Source citation system.
+
 ---
 
 # End

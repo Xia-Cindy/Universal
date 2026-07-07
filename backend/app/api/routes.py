@@ -1,3 +1,4 @@
+from backend.app.ai import AICoreService, ContextManager
 from backend.app.core.settings import settings
 from backend.app.memory import MemoryService
 from backend.app.planet_engine import create_default_registry
@@ -6,6 +7,7 @@ from backend.app.planets.study.goals import GoalService
 from backend.app.planets.study.plans import PlanService
 from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.sessions import SessionService
+from backend.app.planets.study.tutor import TutorService
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
 
@@ -19,9 +21,16 @@ class ApiFacade:
         self.users = UserService(settings.default_user_id)
         self.memory = MemoryService()
         self.study_repository = StudyRepository()
+        self.ai_core = AICoreService()
+        self.ai_context = ContextManager()
         self.study_goals = GoalService(self.study_repository, self.memory)
         self.study_plans = PlanService(self.study_repository)
         self.study_sessions = SessionService(self.study_repository)
+        self.study_tutor = TutorService(
+            repository=self.study_repository,
+            ai_core=self.ai_core,
+            context_manager=self.ai_context,
+        )
         self.study_home = StudyHomeService(self.study_repository)
 
     def health(self) -> dict[str, str]:
@@ -78,6 +87,14 @@ class ApiFacade:
     def list_study_records(self) -> list[dict[str, object]]:
         user = self.users.current_user()
         return [session.to_dict() for session in self.study_sessions.list_records(user.id)]
+
+    def ask_study_tutor(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_tutor.ask(user=user, question=payload["question"])
+
+    def get_tutor_history(self) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.study_tutor.history(user=user)
 
 
 api = ApiFacade()

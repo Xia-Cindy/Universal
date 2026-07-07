@@ -18,8 +18,20 @@
 - [x] Add Study Plan frontend workflow.
 - [x] Keep Knowledge, Tutor, Review, and Analytics as placeholders.
 
+## Milestone 3 AI Core + Tutor
+
+- [x] Add shared AI Core service entry point.
+- [x] Add LLM Gateway interface and deterministic provider.
+- [x] Add Prompt Manager, Context Manager, and Agent Manager.
+- [x] Add Study Tutor as an AI Core consumer.
+- [x] Add Tutor API and frontend page.
+- [x] Record Tutor interactions as Learning Events.
+- [x] Keep RAG, embeddings, Knowledge Graph, document retrieval, and source citations out of scope.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
 - [ ] Implement File Upload and Knowledge processing.
-- [ ] Implement AI Summary, Tutor, RAG Q&A, Wrong Questions, Review, and Analytics.
+- [ ] Implement Knowledge + RAG with citations.
+- [ ] Implement Memory Intelligence.
+- [ ] Implement Wrong Questions, Review, and Analytics.

@@ -212,3 +212,22 @@ class StudySession:
             "updatedAt": self.updated_at.isoformat(),
         }
 
+
+@dataclass
+class LearningEvent:
+    user_id: str
+    event_type: str
+    summary: str
+    metadata: dict[str, Any]
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "eventType": self.event_type,
+            "summary": self.summary,
+            "metadata": self.metadata,
+            "createdAt": self.created_at.isoformat(),
+        }

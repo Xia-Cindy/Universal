@@ -123,3 +123,23 @@ export async function finishSession(sessionId: string, payload: Record<string, u
   }
   return response.json()
 }
+
+export async function askStudyTutor(question: string) {
+  const response = await fetch(`${API_BASE}/study/tutor/ask`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to ask Tutor')
+  }
+  return response.json()
+}
+
+export async function fetchTutorHistory() {
+  const response = await fetch(`${API_BASE}/study/tutor/history`)
+  if (!response.ok) {
+    throw new Error('Unable to load Tutor history')
+  }
+  return response.json()
+}
