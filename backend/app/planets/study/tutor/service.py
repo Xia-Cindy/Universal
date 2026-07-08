@@ -16,7 +16,13 @@ class TutorService:
         self._repository = repository
         self._ai_core = ai_core
 
-    def ask(self, *, user: UserProfile, question: str) -> dict[str, object]:
+    def ask(
+        self,
+        *,
+        user: UserProfile,
+        question: str,
+        memory_context: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         if not question.strip():
             raise ValueError("question is required")
 
@@ -38,6 +44,7 @@ class TutorService:
                     "dailyTasks": [task.to_dict() for task in daily_tasks],
                     "studySessions": [session.to_dict() for session in sessions],
                     "learningEvents": [event.to_dict() for event in learning_events],
+                    "memoryContext": memory_context or {},
                 },
                 tool_payloads={
                     "retrieval.search": {
@@ -61,6 +68,10 @@ class TutorService:
                     "ragInvoked": False,
                     "knowledgeSourcesAvailable": ai_response.metadata.get(
                         "knowledgeSourcesAvailable",
+                        False,
+                    ),
+                    "memoryContextAvailable": ai_response.metadata.get(
+                        "memoryContextAvailable",
                         False,
                     ),
                     "groundingChunkIds": [

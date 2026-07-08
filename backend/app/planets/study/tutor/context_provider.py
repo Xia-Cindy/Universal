@@ -9,6 +9,9 @@ class StudyTutorContextProvider:
         tasks = payload.get("dailyTasks", [])
         sessions = payload.get("studySessions", [])
         learning_events = payload.get("learningEvents", [])
+        memory_context = payload.get("memoryContext", {})
+        memory_count = sum(len(memory_context.get(scope, [])) for scope in ("global", "planet", "session"))
+        memory_context_available = memory_count > 0
         retrieval_result = payload.get("toolResults", {}).get("retrieval.search", {})
         grounding_chunks = retrieval_result.get("results", [])
         retrieval_invoked = bool(retrieval_result.get("available"))
@@ -28,7 +31,8 @@ class StudyTutorContextProvider:
             )
             reasoning = (
                 f"Built from Study workflow context plus {len(grounding_chunks)} retrieved "
-                f"Knowledge chunk(s). Top match score: {top_chunk['score']}."
+                f"Knowledge chunk(s) and {memory_count} memory item(s). "
+                f"Top match score: {top_chunk['score']}."
             )
             source_notice = "Knowledge grounding used retrieved chunks; no citation system is active yet."
         else:
@@ -39,7 +43,8 @@ class StudyTutorContextProvider:
             )
             reasoning = (
                 f"Built from Study workflow context: {len(tasks)} task(s), "
-                f"{len(sessions)} finished session(s), and {len(learning_events)} learning event(s). "
+                f"{len(sessions)} finished session(s), {len(learning_events)} learning event(s), "
+                f"and {memory_count} memory item(s). "
                 "No Knowledge chunks were used."
             )
             source_notice = "Knowledge grounding is unavailable because no matching prepared chunks were found."
@@ -56,6 +61,7 @@ class StudyTutorContextProvider:
                 "dailyTasks": tasks,
                 "studySessions": sessions,
                 "learningEvents": learning_events,
+                "memoryContext": memory_context,
                 "knowledgeSourcesAvailable": knowledge_sources_available,
                 "knowledgeContext": {
                     "retrievalInvoked": retrieval_invoked,
@@ -68,6 +74,8 @@ class StudyTutorContextProvider:
                     "metadata": {
                         "retrievalInvoked": retrieval_invoked,
                         "knowledgeSourcesAvailable": knowledge_sources_available,
+                        "memoryContextAvailable": memory_context_available,
+                        "memoryContext": memory_context,
                         "sourceNotice": source_notice,
                         "groundingChunks": grounding_chunks,
                     },

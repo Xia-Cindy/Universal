@@ -67,6 +67,17 @@ Milestone 4.3 connects Retrieval to Study Tutor through AI Core:
 
 Milestone 4.3 does not implement Knowledge Graph, automatic summarization, Memory Intelligence, or new Agents.
 
+Milestone 5 adds the Memory Intelligence foundation:
+
+- shared Memory Manager repository/service boundary
+- global, planet, and session scoped memory retrieval
+- active, archived, and expired lifecycle states
+- AI context preparation for active memory
+- Memory API contracts
+- Study Tutor memory context payload
+
+Milestone 5 does not implement autonomous memory extraction, personality inference, Knowledge Graph, vector memory, new Agents, or new Planets.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test

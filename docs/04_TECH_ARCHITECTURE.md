@@ -1234,6 +1234,35 @@ Not implemented in Milestone 4.3:
 - Full source citation system.
 - Separate RAG answer endpoint.
 
+## Milestone 5
+
+Status: completed.
+
+Implemented:
+
+- Shared Memory Manager boundary.
+- MemoryRepository for storage abstraction.
+- User-owned MemoryEntry lifecycle fields.
+- Canonical memory scopes: global, planet and session.
+- Memory lifecycle states: active, archived and expired.
+- Scoped memory retrieval.
+- Access timestamp updates during retrieval and context preparation.
+- AI context preparation for active memory.
+- Memory API contracts for create, list, update, archive and context preparation.
+- Study Tutor memory context payload through AI Core context.
+- Tests for scope isolation, lifecycle filtering, access time update, context preparation, Tutor memory context and no autonomous extraction or personality inference.
+
+Not implemented in Milestone 5:
+
+- Autonomous memory extraction.
+- Personality inference.
+- Psychological profiles.
+- Knowledge Graph.
+- Vector memory.
+- Embeddings for memory.
+- New Agents.
+- New Planets.
+
 ---
 
 # End

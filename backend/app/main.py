@@ -121,6 +121,38 @@ def create_app():
     def search_knowledge_chunks(payload: dict):
         return api.search_knowledge_chunks(payload)
 
+    @app.post("/api/memory")
+    def create_memory(payload: dict):
+        return api.create_memory(payload)
+
+    @app.get("/api/memory")
+    def list_memory(
+        scope: str | None = None,
+        planetType: str | None = None,
+        sessionId: str | None = None,
+        key: str | None = None,
+        includeInactive: bool = True,
+    ):
+        return api.list_memory(
+            scope=scope,
+            planet_type=planetType,
+            session_id=sessionId,
+            key=key,
+            include_inactive=includeInactive,
+        )
+
+    @app.patch("/api/memory/{memory_id}")
+    def update_memory(memory_id: str, payload: dict):
+        return api.update_memory(memory_id, payload)
+
+    @app.post("/api/memory/{memory_id}/archive")
+    def archive_memory(memory_id: str):
+        return api.archive_memory(memory_id)
+
+    @app.get("/api/memory/context")
+    def memory_context(planetType: str | None = None, sessionId: str | None = None):
+        return api.memory_context(planet_type=planetType, session_id=sessionId)
+
     return app
 
 

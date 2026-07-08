@@ -2,6 +2,7 @@ from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
 from backend.app.core.settings import settings
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.memory import MemoryService
+from backend.app.models import MemoryScope
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.dashboard import StudyHomeService
 from backend.app.planets.study.goals import GoalService
@@ -116,7 +117,16 @@ class ApiFacade:
 
     def ask_study_tutor(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
-        return self.study_tutor.ask(user=user, question=payload["question"])
+        memory_context = self.memory.prepare_context(
+            user.id,
+            planet_type="study",
+            session_id=payload.get("sessionId"),
+        )
+        return self.study_tutor.ask(
+            user=user,
+            question=payload["question"],
+            memory_context=memory_context,
+        )
 
     def get_tutor_history(self) -> list[dict[str, object]]:
         user = self.users.current_user()
@@ -168,6 +178,52 @@ class ApiFacade:
                 limit=payload.get("limit", 5),
                 document_id=payload.get("documentId"),
             )
+        )
+
+    def create_memory(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.memory.create_from_payload(user.id, payload).to_dict()
+
+    def list_memory(
+        self,
+        *,
+        scope: str | None = None,
+        planet_type: str | None = None,
+        session_id: str | None = None,
+        key: str | None = None,
+        include_inactive: bool = True,
+    ) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        entries = self.memory.list_for_user(
+            user.id,
+            scope=MemoryScope(scope) if scope else None,
+            planet_type=planet_type,
+            session_id=session_id,
+            key=key,
+            include_inactive=include_inactive,
+            mark_accessed=True,
+        )
+        return [entry.to_dict() for entry in entries]
+
+    def update_memory(self, memory_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.memory.update(user.id, memory_id, payload).to_dict()
+
+    def archive_memory(self, memory_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.memory.archive(user.id, memory_id).to_dict()
+
+    def memory_context(
+        self,
+        *,
+        planet_type: str | None = None,
+        session_id: str | None = None,
+    ) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.memory.prepare_context(
+            user.id,
+            planet_type=planet_type,
+            session_id=session_id,
         )
 
 

@@ -66,11 +66,22 @@
 - [x] Show grounding chunks in Tutor UI when available.
 - [x] Keep Knowledge Graph, automatic summarization, Memory Intelligence, and new Agents out of scope.
 
+## Milestone 5 Memory Intelligence Foundation
+
+- [x] Add shared Memory Manager repository/service boundary.
+- [x] Preserve global, planet, and session memory scopes.
+- [x] Add memory lifecycle states: active, archived, expired.
+- [x] Add scoped memory retrieval and access timestamp updates.
+- [x] Add AI context preparation for active memories.
+- [x] Add Memory API contracts for create, list, update, archive, and context.
+- [x] Pass prepared memory context into Study Tutor through AI Core payload.
+- [x] Keep autonomous extraction, personality inference, Knowledge Graph, vector memory, new Agents, and new Planets out of scope.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
 - [ ] Connect Knowledge services to PostgreSQL adapters and object/file storage.
 - [ ] Add production vector storage adapter.
 - [ ] Implement Knowledge + RAG with citations.
-- [ ] Implement Memory Intelligence.
+- [ ] Implement autonomous Memory extraction after explicit design approval.
 - [ ] Implement Wrong Questions, Review, and Analytics.
