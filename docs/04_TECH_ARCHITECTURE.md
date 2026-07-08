@@ -1182,6 +1182,33 @@ Not implemented in Milestone 4.1:
 - Tutor integration.
 - Source citations.
 
+## Milestone 4.2
+
+Status: completed.
+
+Implemented:
+
+- EmbeddingProvider abstraction.
+- Deterministic embedding provider for local tests.
+- VectorStore abstraction.
+- In-memory vector store for tests only.
+- Chunk embedding metadata records.
+- Database migration `005_retrieval_foundation.sql`.
+- RetrievalService for chunk embedding preparation and chunk-only retrieval.
+- API contracts for embedding preparation, embedding status listing and chunk retrieval search.
+- Tests for embedding determinism, vector store abstraction, chunk embedding pipeline, retrieval output and no Tutor/AI Core invocation.
+
+Not implemented in Milestone 4.2:
+
+- Real vector database deployment.
+- PostgreSQL vector storage.
+- pgvector.
+- Production vector indexes.
+- Tutor integration.
+- RAG answer generation.
+- Knowledge Graph.
+- Source citations.
+
 ---
 
 # End

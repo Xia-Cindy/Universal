@@ -1,6 +1,6 @@
 from backend.app.ai import AICoreService, AgentDefinition
 from backend.app.core.settings import settings
-from backend.app.knowledge import KnowledgeService
+from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.memory import MemoryService
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.dashboard import StudyHomeService
@@ -10,6 +10,7 @@ from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
+from backend.app.retrieval import RetrievalQuery, RetrievalService
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
 
@@ -23,7 +24,9 @@ class ApiFacade:
         self.users = UserService(settings.default_user_id)
         self.memory = MemoryService()
         self.study_repository = StudyRepository()
-        self.knowledge = KnowledgeService()
+        self.knowledge_repository = KnowledgeRepository()
+        self.knowledge = KnowledgeService(repository=self.knowledge_repository)
+        self.retrieval = RetrievalService(knowledge_repository=self.knowledge_repository)
         self.ai_core = AICoreService()
         self.ai_core.agent_manager.register(
             AgentDefinition(
@@ -145,6 +148,25 @@ class ApiFacade:
     def update_knowledge_document(self, document_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         return self.knowledge.update_document(user.id, document_id, payload).to_dict()
+
+    def prepare_document_embeddings(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.retrieval.prepare_document_embeddings(user.id, document_id)
+
+    def list_document_embeddings(self, document_id: str) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.retrieval.list_document_embeddings(user.id, document_id)
+
+    def search_knowledge_chunks(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.retrieval.search(
+            RetrievalQuery(
+                user_id=user.id,
+                query=payload["query"],
+                limit=payload.get("limit", 5),
+                document_id=payload.get("documentId"),
+            )
+        )
 
 
 api = ApiFacade()

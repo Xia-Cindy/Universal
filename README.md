@@ -47,6 +47,16 @@ Milestone 4.1 adds the Knowledge foundation:
 
 Milestone 4.1 does not implement embeddings, vector storage, retrieval, RAG, AI summary, or Tutor integration.
 
+Milestone 4.2 adds the Retrieval foundation:
+
+- EmbeddingProvider abstraction and deterministic local provider
+- VectorStore abstraction and in-memory test store
+- chunk embedding metadata/status records
+- chunk embedding preparation pipeline
+- chunk-only retrieval service and API
+
+Milestone 4.2 does not implement real vector database deployment, Tutor integration, RAG answer generation, or Knowledge Graph.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test

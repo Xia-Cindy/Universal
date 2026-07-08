@@ -47,10 +47,20 @@
 - [x] Replace Study Knowledge placeholder with Knowledge document and chunk UI.
 - [x] Keep embeddings, vector storage, retrieval, Tutor integration, and AI summary out of scope.
 
+## Milestone 4.2 Retrieval Foundation
+
+- [x] Add EmbeddingProvider abstraction and deterministic test provider.
+- [x] Add VectorStore abstraction and in-memory test implementation.
+- [x] Add chunk embedding metadata records and migration `005_retrieval_foundation.sql`.
+- [x] Add RetrievalService for chunk embedding preparation and chunk-only retrieval.
+- [x] Add Retrieval API contracts for embedding preparation, status listing, and chunk search.
+- [x] Keep Tutor integration, RAG answer generation, real vector database deployment, and Knowledge Graph out of scope.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
 - [ ] Connect Knowledge services to PostgreSQL adapters and object/file storage.
+- [ ] Add production vector storage adapter.
 - [ ] Implement Knowledge + RAG with citations.
 - [ ] Implement Memory Intelligence.
 - [ ] Implement Wrong Questions, Review, and Analytics.

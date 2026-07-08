@@ -109,6 +109,18 @@ def create_app():
     def update_knowledge_document(document_id: str, payload: dict):
         return api.update_knowledge_document(document_id, payload)
 
+    @app.post("/api/study/knowledge/documents/{document_id}/embeddings/prepare")
+    def prepare_document_embeddings(document_id: str):
+        return api.prepare_document_embeddings(document_id)
+
+    @app.get("/api/study/knowledge/documents/{document_id}/embeddings")
+    def list_document_embeddings(document_id: str):
+        return api.list_document_embeddings(document_id)
+
+    @app.post("/api/study/knowledge/retrieval/search")
+    def search_knowledge_chunks(payload: dict):
+        return api.search_knowledge_chunks(payload)
+
     return app
 
 
