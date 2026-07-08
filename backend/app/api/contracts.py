@@ -100,6 +100,18 @@ MILESTONE_6_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("POST", "/api/study/analytics/report", "study_analytics_report", "milestone_6"),
 )
 
+MILESTONE_7_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("GET", "/api/study/onboarding", "study_onboarding_status", "milestone_7"),
+    ApiContract("POST", "/api/study/onboarding/goal", "study_onboarding_goal", "milestone_7"),
+    ApiContract("POST", "/api/study/execution/sessions", "start_execution_session", "milestone_7"),
+    ApiContract(
+        "PATCH",
+        "/api/study/execution/sessions/{session_id}/finish",
+        "finish_execution_session",
+        "milestone_7",
+    ),
+)
+
 
 def list_contracts() -> list[dict[str, str]]:
     return [
@@ -112,5 +124,6 @@ def list_contracts() -> list[dict[str, str]]:
             *MILESTONE_4_2_CONTRACTS,
             *MILESTONE_5_CONTRACTS,
             *MILESTONE_6_CONTRACTS,
+            *MILESTONE_7_CONTRACTS,
         )
     ]

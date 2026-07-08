@@ -6,7 +6,9 @@ from backend.app.models import MemoryScope
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.analytics import StudyAnalystContextProvider, StudyAnalyticsService
 from backend.app.planets.study.dashboard import StudyHomeService
+from backend.app.planets.study.execution import StudyExecutionService
 from backend.app.planets.study.goals import GoalService
+from backend.app.planets.study.onboarding import StudyOnboardingService
 from backend.app.planets.study.plans import PlanService
 from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.sessions import SessionService
@@ -73,8 +75,17 @@ class ApiFacade:
             StudyAnalystContextProvider(),
         )
         self.study_goals = GoalService(self.study_repository, self.memory)
+        self.study_onboarding = StudyOnboardingService(
+            goals=self.study_goals,
+            memory=self.memory,
+        )
         self.study_plans = PlanService(self.study_repository)
         self.study_sessions = SessionService(self.study_repository)
+        self.study_execution = StudyExecutionService(
+            repository=self.study_repository,
+            sessions=self.study_sessions,
+            memory=self.memory,
+        )
         self.study_tutor = TutorService(
             repository=self.study_repository,
             ai_core=self.ai_core,
@@ -97,7 +108,26 @@ class ApiFacade:
     def get_study_home(self) -> dict[str, object]:
         user = self.users.current_user()
         planet = self.registry.get_enterable_planet("study")
-        return self.study_home.home(user=user, planet=planet)
+        memory_context = self.memory.prepare_context(user.id, planet_type="study")
+        analytics = self.study_analytics.analytics(user=user, memory_context=memory_context)
+        return self.study_home.home(
+            user=user,
+            planet=planet,
+            ai_insight={
+                "learningInsights": analytics["learningInsights"],
+                "recommendedActions": analytics["recommendedActions"],
+                "dataQuality": analytics["dataQuality"],
+            },
+            knowledge_status=self.knowledge.overview(user.id),
+        )
+
+    def get_study_onboarding(self) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_onboarding.status(user.id)
+
+    def create_onboarding_goal(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_onboarding.create_goal(user.id, payload)
 
     def create_goal(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
@@ -135,6 +165,18 @@ class ApiFacade:
     def finish_session(self, session_id: str, payload: dict | None = None) -> dict[str, object]:
         user = self.users.current_user()
         return self.study_sessions.finish_session(user.id, session_id, payload).to_dict()
+
+    def start_execution_session(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_execution.start(user.id, payload)
+
+    def finish_execution_session(
+        self,
+        session_id: str,
+        payload: dict | None = None,
+    ) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_execution.finish(user.id, session_id, payload)
 
     def list_study_records(self) -> list[dict[str, object]]:
         user = self.users.current_user()

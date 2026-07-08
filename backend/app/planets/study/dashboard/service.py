@@ -13,7 +13,14 @@ class StudyHomeService:
     def __init__(self, repository: StudyRepository | None = None) -> None:
         self._repository = repository or StudyRepository()
 
-    def home(self, *, user: UserProfile, planet: Planet) -> dict[str, object]:
+    def home(
+        self,
+        *,
+        user: UserProfile,
+        planet: Planet,
+        ai_insight: dict[str, object] | None = None,
+        knowledge_status: dict[str, object] | None = None,
+    ) -> dict[str, object]:
         today = local_today()
         goal = self._repository.get_active_goal(user.id)
         if not goal:
@@ -55,21 +62,17 @@ class StudyHomeService:
                 "displayName": planet.display_name,
             },
             "state": "ready",
-            "currentGoal": goal.to_dict(),
+            "currentGoal": {
+                **goal.to_dict(),
+                "remainingDays": max((goal.deadline - today).days, 0),
+            },
             "todayTasks": [task.to_dict() for task in today_tasks],
             "primaryNextAction": primary_action,
-            "aiRecommendation": {
-                "status": "placeholder",
-                "message": "AI Core starts in Milestone 3. Follow today's plan for now.",
-                "basis": "Milestone 2 uses non-AI learning workflow data.",
-            },
+            "aiInsight": ai_insight or self._empty_ai_insight(),
+            "aiRecommendation": ai_insight or self._empty_ai_insight(),
             "reviewDue": [],
             "recentStudyRecords": [session.to_dict() for session in finished_sessions[:5]],
-            "knowledgeStatus": {
-                "documents": 0,
-                "processed": 0,
-                "action": "Knowledge starts in a later milestone.",
-            },
+            "knowledgeStatus": knowledge_status or {},
             "progressSummary": {
                 "totalTasks": len(all_tasks),
                 "completedTasks": len(completed_tasks),
@@ -96,20 +99,18 @@ class StudyHomeService:
             "primaryNextAction": {
                 "type": "create_goal",
                 "label": "Create Goal",
-                "route": "/study/plan/goal",
+                "route": "/study/onboarding",
             },
             "todayTasks": [],
-            "aiRecommendation": {
-                "status": "placeholder",
-                "message": "Create your first Goal to unlock personalized study guidance.",
-                "basis": "No active Goal exists yet.",
-            },
+            "aiInsight": self._empty_ai_insight(),
+            "aiRecommendation": self._empty_ai_insight(),
             "reviewDue": [],
             "recentStudyRecords": [],
-            "knowledgeStatus": {
-                "documents": 0,
-                "processed": 0,
-                "action": "Upload learning material after creating a Goal.",
+            "knowledgeStatus": {},
+            "progressSummary": {
+                "totalTasks": 0,
+                "completedTasks": 0,
+                "taskCompletionRate": 0,
             },
             "progressSnapshot": {
                 "todayStudyMinutes": 0,
@@ -128,3 +129,13 @@ class StudyHomeService:
             streak += 1
             cursor = cursor - timedelta(days=1)
         return streak
+
+    def _empty_ai_insight(self) -> dict[str, object]:
+        return {
+            "learningInsights": [],
+            "recommendedActions": [],
+            "dataQuality": {
+                "state": "insufficient",
+                "limitations": ["No Study workflow data is available."],
+            },
+        }

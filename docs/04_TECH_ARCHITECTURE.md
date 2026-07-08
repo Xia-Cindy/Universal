@@ -1287,6 +1287,34 @@ Not implemented in Milestone 6:
 - Analytics persistence tables.
 - Wrong Questions and Review.
 
+## Milestone 7
+
+Status: completed.
+
+Implemented:
+
+- Study onboarding service and API contracts for first active Goal creation.
+- Study onboarding frontend page.
+- Manual Plan productization using existing Goal, Year Plan, Month Plan, Week Plan and Daily Task data.
+- Study Home daily control center backed by Goal, Daily Task, Study Session, Knowledge overview and existing Study Analytics output.
+- Study execution service and API contracts for active Study Session start/finish.
+- Learning Event creation on finished Study Sessions.
+- Practical Memory write points through Memory Service for onboarding preferences and session learning history.
+- Study Session frontend page.
+- Product loop tests covering onboarding, Goal, Plan, Daily Task, Study Session, Home progress, Analytics insight, Memory write points and architecture guards.
+
+Not implemented in Milestone 7:
+
+- AI Core redesign.
+- New AI system.
+- New Agent.
+- New Planet.
+- Autonomous planning.
+- Personality inference.
+- Knowledge Graph.
+- New Retrieval architecture.
+- New database tables.
+
 ---
 
 # End

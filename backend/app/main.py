@@ -37,6 +37,14 @@ def create_app():
     def get_study_home():
         return api.get_study_home()
 
+    @app.get("/api/study/onboarding")
+    def get_study_onboarding():
+        return api.get_study_onboarding()
+
+    @app.post("/api/study/onboarding/goal")
+    def create_onboarding_goal(payload: dict):
+        return api.create_onboarding_goal(payload)
+
     @app.post("/api/study/goals")
     def create_goal(payload: dict):
         return api.create_goal(payload)
@@ -72,6 +80,14 @@ def create_app():
     @app.patch("/api/study/sessions/{session_id}/finish")
     def finish_session(session_id: str, payload: dict | None = None):
         return api.finish_session(session_id, payload)
+
+    @app.post("/api/study/execution/sessions")
+    def start_execution_session(payload: dict):
+        return api.start_execution_session(payload)
+
+    @app.patch("/api/study/execution/sessions/{session_id}/finish")
+    def finish_execution_session(session_id: str, payload: dict | None = None):
+        return api.finish_execution_session(session_id, payload)
 
     @app.get("/api/study/records")
     def list_study_records():

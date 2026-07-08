@@ -131,6 +131,33 @@ button:disabled {
   margin-top: 20px;
 }
 
+.home-band,
+.home-section,
+.session-active {
+  border: 1px solid rgba(238, 247, 248, 0.12);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.home-band {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.home-band h3,
+.home-section h3 {
+  margin: 0 0 0.35rem;
+}
+
+.home-band p,
+.task-row small {
+  color: rgba(238, 247, 248, 0.68);
+  margin: 0;
+}
+
 .study-plan {
   border: 1px solid rgba(238, 247, 248, 0.16);
   border-radius: 8px;
@@ -227,10 +254,35 @@ textarea {
   padding: 14px;
 }
 
+.task-row-split {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.task-row strong,
+.task-row span,
+.task-row small {
+  display: block;
+}
+
 .task-edit {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.session-active label {
+  display: grid;
+  gap: 6px;
+}
+
+.session-active strong {
+  color: #8fd5cf;
+  font-size: 2rem;
 }
 
 .surface-copy {
@@ -374,7 +426,9 @@ textarea {
 @media (max-width: 760px) {
   .study-header,
   .workspace-grid,
-  .knowledge-grid {
+  .knowledge-grid,
+  .home-band,
+  .task-row-split {
     display: block;
   }
 

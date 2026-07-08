@@ -88,6 +88,17 @@ Milestone 6 adds the Study Intelligence foundation:
 
 Milestone 6 does not implement autonomous decisions, personality inference, new Agents, or new Planets.
 
+Milestone 7 completes the Study Planet product learning loop:
+
+- Study onboarding for first active Goal creation
+- manual Learning Plan creation, editing, and completion flow
+- Study Home daily control center from live Study data
+- Study Session execution wrapper with duration recording
+- factual Memory write points through Memory Service
+- existing Study Analyst insights shown in Study Home
+
+Milestone 7 does not redesign AI Core, add new Agents, add new Planets, or implement autonomous planning.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test
@@ -98,4 +109,10 @@ Run the dependency-light foundation tests:
 python3 -m unittest discover -s tests
 ```
 
-Frontend files are scaffolded for Vue 3 / Vite, but dependencies are not installed in this milestone.
+Frontend validation:
+
+```bash
+cd frontend
+npm install
+npm run build
+```

@@ -12,6 +12,7 @@ export interface PlanetSummary {
 export interface StudyGoalPayload {
   goalName: string
   examName: string
+  targetDirection?: string
   deadline: string
   subjects: string[]
   currentLevel: string
@@ -78,6 +79,11 @@ export interface StudyAnalyticsPayload {
   dataQuality: Record<string, any>
 }
 
+export interface StudyOnboardingState {
+  state: 'needs_onboarding' | 'ready'
+  activeGoal: Record<string, any> | null
+}
+
 const API_BASE = '/api'
 
 export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
@@ -104,6 +110,26 @@ export async function createGoal(payload: StudyGoalPayload) {
   })
   if (!response.ok) {
     throw new Error('Unable to create goal')
+  }
+  return response.json()
+}
+
+export async function fetchStudyOnboarding(): Promise<StudyOnboardingState> {
+  const response = await fetch(`${API_BASE}/study/onboarding`)
+  if (!response.ok) {
+    throw new Error('Unable to load Study onboarding')
+  }
+  return response.json()
+}
+
+export async function createOnboardingGoal(payload: StudyGoalPayload): Promise<StudyOnboardingState> {
+  const response = await fetch(`${API_BASE}/study/onboarding/goal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Study onboarding goal')
   }
   return response.json()
 }
@@ -170,6 +196,30 @@ export async function finishSession(sessionId: string, payload: Record<string, u
   })
   if (!response.ok) {
     throw new Error('Unable to finish session')
+  }
+  return response.json()
+}
+
+export async function startExecutionSession(payload: Record<string, unknown>) {
+  const response = await fetch(`${API_BASE}/study/execution/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to start Study session')
+  }
+  return response.json()
+}
+
+export async function finishExecutionSession(sessionId: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${API_BASE}/study/execution/sessions/${sessionId}/finish`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to finish Study session')
   }
   return response.json()
 }

@@ -87,6 +87,17 @@
 - [x] Reuse Study workflow data, Memory context, Knowledge and Retrieval.
 - [x] Keep autonomous decisions, personality inference, new Agents, and new Planets out of scope.
 
+## Milestone 7 Study Product Loop
+
+- [x] Add Study onboarding status and Goal creation flow.
+- [x] Persist onboarding learning preferences through Memory Service.
+- [x] Productize manual Plan workflow without AI-generated planning.
+- [x] Redesign Study Home as a daily control center backed by services.
+- [x] Add Study Session execution wrapper with learning event and Memory write points.
+- [x] Integrate existing Study Analytics / Analyst output into Study Home AI Insight.
+- [x] Add frontend Onboarding and Session screens.
+- [x] Keep AI Core architecture, Agents, Planets, RAG, Knowledge Graph and autonomous planning unchanged.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
