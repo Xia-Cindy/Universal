@@ -4,6 +4,7 @@ from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.memory import MemoryService
 from backend.app.models import MemoryScope
 from backend.app.planet_engine import create_default_registry
+from backend.app.planets.study.analytics import StudyAnalystContextProvider, StudyAnalyticsService
 from backend.app.planets.study.dashboard import StudyHomeService
 from backend.app.planets.study.goals import GoalService
 from backend.app.planets.study.plans import PlanService
@@ -40,6 +41,15 @@ class ApiFacade:
                 allowed_tools=("retrieval.search",),
             )
         )
+        self.ai_core.agent_manager.register(
+            AgentDefinition(
+                agent_id="study",
+                capabilities=("analyst",),
+                prompt_key="study.analyst.report",
+                context_builder="study.analyst",
+                allowed_tools=("retrieval.search",),
+            )
+        )
         self.ai_core.prompt_manager.register(
             "study.tutor.answer",
             (
@@ -47,9 +57,20 @@ class ApiFacade:
                 "retrieved Knowledge chunks when provided. Do not generate citations or invent sources."
             ),
         )
+        self.ai_core.prompt_manager.register(
+            "study.analyst.report",
+            (
+                "You are the Study Agent Analyst capability. Explain Study progress, patterns, "
+                "and next actions from provided data. Do not make autonomous decisions or infer personality."
+            ),
+        )
         self.ai_core.context_manager.register_provider(
             "study.tutor",
             StudyTutorContextProvider(),
+        )
+        self.ai_core.context_manager.register_provider(
+            "study.analyst",
+            StudyAnalystContextProvider(),
         )
         self.study_goals = GoalService(self.study_repository, self.memory)
         self.study_plans = PlanService(self.study_repository)
@@ -59,6 +80,10 @@ class ApiFacade:
             ai_core=self.ai_core,
         )
         self.study_home = StudyHomeService(self.study_repository)
+        self.study_analytics = StudyAnalyticsService(
+            repository=self.study_repository,
+            ai_core=self.ai_core,
+        )
 
     def health(self) -> dict[str, str]:
         return {"status": "ok", "product": settings.app_name}
@@ -224,6 +249,22 @@ class ApiFacade:
             user.id,
             planet_type=planet_type,
             session_id=session_id,
+        )
+
+    def get_study_analytics(self) -> dict[str, object]:
+        user = self.users.current_user()
+        memory_context = self.memory.prepare_context(user.id, planet_type="study")
+        return self.study_analytics.analytics(
+            user=user,
+            memory_context=memory_context,
+        )
+
+    def create_study_analytics_report(self) -> dict[str, object]:
+        user = self.users.current_user()
+        memory_context = self.memory.prepare_context(user.id, planet_type="study")
+        return self.study_analytics.report(
+            user=user,
+            memory_context=memory_context,
         )
 
 

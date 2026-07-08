@@ -1263,6 +1263,30 @@ Not implemented in Milestone 5:
 - New Agents.
 - New Planets.
 
+## Milestone 6
+
+Status: completed.
+
+Implemented:
+
+- Study Analyst as a Study Agent capability.
+- Study Analytics service for progress metrics and learning insights.
+- Study Analyst context provider.
+- AI Core report generation through existing AgentDefinition, Prompt Manager, Context Provider, ToolRouter and LLM Gateway.
+- Analytics API contracts for metrics and report generation.
+- Study Analytics frontend page.
+- Tests for Analyst capability registration, metric calculation, insufficient data handling, memory context injection, ToolRouter retrieval path, structured report output and no autonomous behavior.
+
+Not implemented in Milestone 6:
+
+- New AI system.
+- New Planet.
+- Autonomous decision making.
+- Personality inference.
+- Psychological profiles.
+- Analytics persistence tables.
+- Wrong Questions and Review.
+
 ---
 
 # End

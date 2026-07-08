@@ -69,6 +69,15 @@ export interface KnowledgeDocumentDetail {
   chunks: KnowledgeChunk[]
 }
 
+export interface StudyAnalyticsPayload {
+  progressSummary: Record<string, any>
+  learningInsights: string[]
+  weakAreas: Array<Record<string, any>>
+  recommendedActions: string[]
+  report: Record<string, any>
+  dataQuality: Record<string, any>
+}
+
 const API_BASE = '/api'
 
 export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
@@ -250,6 +259,24 @@ export async function updateKnowledgeDocument(
   })
   if (!response.ok) {
     throw new Error('Unable to update Knowledge document')
+  }
+  return response.json()
+}
+
+export async function fetchStudyAnalytics(): Promise<StudyAnalyticsPayload> {
+  const response = await fetch(`${API_BASE}/study/analytics`)
+  if (!response.ok) {
+    throw new Error('Unable to load Study Analytics')
+  }
+  return response.json()
+}
+
+export async function createStudyAnalyticsReport(): Promise<StudyAnalyticsPayload> {
+  const response = await fetch(`${API_BASE}/study/analytics/report`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Study Analytics report')
   }
   return response.json()
 }

@@ -12,3 +12,4 @@
 - Milestone 4.2 Retrieval foundation: embedding provider abstraction, deterministic embedding provider, vector store interface, in-memory test store, chunk embedding pipeline, retrieval API, and tests without Tutor or RAG integration.
 - Milestone 4.3 grounded Tutor foundation: AI Core ToolRouter invocation, RetrieverTool adapter, Knowledge context injection, grounded Tutor metadata, frontend grounding display, and tests without Knowledge Graph or new Agents.
 - Milestone 5 Memory Intelligence foundation: shared Memory Manager, lifecycle/status fields, scoped retrieval, AI context preparation, Memory API, Tutor memory context payload, and tests without autonomous extraction or personality inference.
+- Milestone 6 Study Intelligence foundation: Study Agent Analyst capability, Analytics service, progress metrics, structured reports, Analytics frontend, and tests without autonomous decisions, new Agents, or new Planets.

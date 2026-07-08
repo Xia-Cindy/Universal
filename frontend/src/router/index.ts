@@ -6,6 +6,7 @@ import StudyPlan from '../planets/study/plan/StudyPlan.vue'
 import StudyPlaceholder from '../planets/study/placeholder/StudyPlaceholder.vue'
 import StudyTutor from '../planets/study/tutor/StudyTutor.vue'
 import StudyKnowledge from '../planets/study/knowledge/StudyKnowledge.vue'
+import StudyAnalytics from '../planets/study/analytics/StudyAnalytics.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -19,8 +20,9 @@ export const router = createRouter({
         { path: 'plan', name: 'StudyPlan', component: StudyPlan },
         { path: 'knowledge', name: 'StudyKnowledge', component: StudyKnowledge },
         { path: 'tutor', name: 'StudyTutor', component: StudyTutor },
+        { path: 'analytics', name: 'StudyAnalytics', component: StudyAnalytics },
         {
-          path: ':section(review|analytics)',
+          path: ':section(review)',
           name: 'StudyPlaceholder',
           component: StudyPlaceholder,
         },

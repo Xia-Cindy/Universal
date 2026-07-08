@@ -153,6 +153,14 @@ def create_app():
     def memory_context(planetType: str | None = None, sessionId: str | None = None):
         return api.memory_context(planet_type=planetType, session_id=sessionId)
 
+    @app.get("/api/study/analytics")
+    def get_study_analytics():
+        return api.get_study_analytics()
+
+    @app.post("/api/study/analytics/report")
+    def create_study_analytics_report():
+        return api.create_study_analytics_report()
+
     return app
 
 

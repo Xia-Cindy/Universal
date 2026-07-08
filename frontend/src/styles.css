@@ -336,6 +336,41 @@ textarea {
   margin: 0 0 0.35rem;
 }
 
+.analytics-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin: 18px 0;
+}
+
+.analytics-summary span,
+.analytics-section {
+  border: 1px solid rgba(238, 247, 248, 0.12);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.analytics-summary strong {
+  color: #8fd5cf;
+  display: block;
+  font-size: 1.5rem;
+}
+
+.analytics-section {
+  margin-top: 12px;
+}
+
+.analytics-section h3 {
+  font-size: 1rem;
+  margin: 0 0 0.7rem;
+}
+
+.analytics-section ul {
+  color: rgba(238, 247, 248, 0.76);
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
 @media (max-width: 760px) {
   .study-header,
   .workspace-grid,

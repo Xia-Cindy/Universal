@@ -78,6 +78,16 @@ Milestone 5 adds the Memory Intelligence foundation:
 
 Milestone 5 does not implement autonomous memory extraction, personality inference, Knowledge Graph, vector memory, new Agents, or new Planets.
 
+Milestone 6 adds the Study Intelligence foundation:
+
+- Study Analyst as a Study Agent capability
+- Analytics service for progress metrics and learning insights
+- structured Study reports through AI Core
+- Memory context and optional Knowledge retrieval context
+- Study Analytics frontend page
+
+Milestone 6 does not implement autonomous decisions, personality inference, new Agents, or new Planets.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test

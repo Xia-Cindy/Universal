@@ -77,6 +77,16 @@
 - [x] Pass prepared memory context into Study Tutor through AI Core payload.
 - [x] Keep autonomous extraction, personality inference, Knowledge Graph, vector memory, new Agents, and new Planets out of scope.
 
+## Milestone 6 Study Intelligence Foundation
+
+- [x] Add Study Analyst as a Study Agent capability.
+- [x] Add Analytics service for progress metrics and learning insights.
+- [x] Add Study Analyst context provider.
+- [x] Add Study Analytics API contracts for metrics and report generation.
+- [x] Replace Analytics placeholder with Study Intelligence page.
+- [x] Reuse Study workflow data, Memory context, Knowledge and Retrieval.
+- [x] Keep autonomous decisions, personality inference, new Agents, and new Planets out of scope.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
@@ -84,4 +94,4 @@
 - [ ] Add production vector storage adapter.
 - [ ] Implement Knowledge + RAG with citations.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
-- [ ] Implement Wrong Questions, Review, and Analytics.
+- [ ] Implement Wrong Questions and Review.
