@@ -38,10 +38,19 @@
 - [x] Keep LLM Gateway provider-only.
 - [x] Add ToolRouter, Tool, and Retriever interfaces only.
 
+## Milestone 4.1 Knowledge Foundation
+
+- [x] Add shared Knowledge domain models for Documents, Document Chunks, and Concepts.
+- [x] Add File service foundation for txt and markdown processing.
+- [x] Add database migration `004_knowledge_foundation.sql`.
+- [x] Add Knowledge API contracts for document registration, processing, listing, and detail.
+- [x] Replace Study Knowledge placeholder with Knowledge document and chunk UI.
+- [x] Keep embeddings, vector storage, retrieval, Tutor integration, and AI summary out of scope.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
-- [ ] Implement File Upload and Knowledge processing.
+- [ ] Connect Knowledge services to PostgreSQL adapters and object/file storage.
 - [ ] Implement Knowledge + RAG with citations.
 - [ ] Implement Memory Intelligence.
 - [ ] Implement Wrong Questions, Review, and Analytics.

@@ -1,5 +1,6 @@
 from backend.app.ai import AICoreService, AgentDefinition
 from backend.app.core.settings import settings
+from backend.app.knowledge import KnowledgeService
 from backend.app.memory import MemoryService
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.dashboard import StudyHomeService
@@ -22,6 +23,7 @@ class ApiFacade:
         self.users = UserService(settings.default_user_id)
         self.memory = MemoryService()
         self.study_repository = StudyRepository()
+        self.knowledge = KnowledgeService()
         self.ai_core = AICoreService()
         self.ai_core.agent_manager.register(
             AgentDefinition(
@@ -114,6 +116,35 @@ class ApiFacade:
     def get_tutor_history(self) -> list[dict[str, object]]:
         user = self.users.current_user()
         return self.study_tutor.history(user=user)
+
+    def create_knowledge_document(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.create_document(user.id, payload).to_dict()
+
+    def knowledge_overview(self) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.overview(user.id)
+
+    def list_knowledge_documents(
+        self,
+        *,
+        subject: str | None = None,
+        topic: str | None = None,
+    ) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.knowledge.list_documents(user.id, subject=subject, topic=topic)
+
+    def get_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.document_detail(user.id, document_id)
+
+    def process_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.process_document(user.id, document_id)
+
+    def update_knowledge_document(self, document_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.update_document(user.id, document_id, payload).to_dict()
 
 
 api = ApiFacade()

@@ -8,3 +8,4 @@
 - Milestone 2 Study learning workflow foundation: Goal, Plan, Daily Tasks, Study Sessions, Study Home progress aggregation, database migration, frontend Plan/Home workflow, and tests.
 - Milestone 3 AI Core and Study Tutor foundation: shared AI Core entry point, deterministic LLM Gateway, Prompt/Context/Agent managers, Study Tutor consumer, Learning Events, Tutor API/frontend, and tests without RAG or embeddings.
 - Milestone 3.5 AI Core generalization: AgentDefinition registry, context providers, prompt keys, provider-only LLM Gateway boundary, and tool interface preparation without RAG implementation.
+- Milestone 4.1 Knowledge foundation: shared Knowledge service, File service foundation, document/chunk/concept models, database migration, Knowledge API/frontend, and tests without embeddings, vector storage, or Tutor integration.

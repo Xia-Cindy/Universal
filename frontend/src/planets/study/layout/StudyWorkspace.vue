@@ -21,7 +21,10 @@
       <RouterView />
       <aside class="ai-panel">
         <p class="eyebrow">AI Recommendation</p>
-        <p>AI Core starts in Milestone 3. Milestone 2 uses your learning workflow data.</p>
+        <p>
+          AI Core can guide learning from your workflow data. Knowledge keeps source material close
+          to the Study path.
+        </p>
       </aside>
     </section>
   </main>

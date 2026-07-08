@@ -1157,6 +1157,31 @@ Not implemented in Milestone 3.5:
 - Knowledge Graph.
 - Document processing.
 
+## Milestone 4.1
+
+Status: completed.
+
+Implemented:
+
+- Shared Knowledge service boundary.
+- File service foundation for txt and markdown validation, extraction and chunking.
+- Document, Document Chunk and Concept domain models.
+- Database migration `004_knowledge_foundation.sql`.
+- Knowledge API contracts for document registration, processing, listing, detail and metadata update.
+- Study Knowledge frontend page for document registration, processing status, document list and chunk detail.
+- Tests for document creation, file validation, text processing, chunk creation, status transitions, listing and detail.
+
+Not implemented in Milestone 4.1:
+
+- Embeddings.
+- Vector database or vector indexes.
+- Retriever implementation.
+- RAG pipeline.
+- Knowledge Graph.
+- AI summary.
+- Tutor integration.
+- Source citations.
+
 ---
 
 # End

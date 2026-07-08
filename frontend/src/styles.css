@@ -162,6 +162,16 @@ input {
   padding: 0.72rem 0.8rem;
 }
 
+select {
+  border: 1px solid rgba(238, 247, 248, 0.16);
+  border-radius: 8px;
+  background: rgba(238, 247, 248, 0.08);
+  color: #eef7f8;
+  font: inherit;
+  min-width: 0;
+  padding: 0.72rem 0.8rem;
+}
+
 textarea {
   border: 1px solid rgba(238, 247, 248, 0.16);
   border-radius: 8px;
@@ -223,9 +233,108 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
 
+.surface-copy {
+  color: rgba(238, 247, 248, 0.72);
+  margin: 0.2rem 0 1rem;
+}
+
+.knowledge-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin: 18px 0;
+}
+
+.knowledge-form label {
+  color: rgba(238, 247, 248, 0.76);
+  display: grid;
+  font-size: 0.9rem;
+  gap: 6px;
+}
+
+.knowledge-content {
+  grid-column: 1 / -1;
+}
+
+.knowledge-actions,
+.document-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.knowledge-actions {
+  grid-column: 1 / -1;
+}
+
+.knowledge-state {
+  border: 1px solid rgba(238, 247, 248, 0.12);
+  border-radius: 8px;
+  color: rgba(238, 247, 248, 0.72);
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+}
+
+.knowledge-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+}
+
+.knowledge-list,
+.chunk-list {
+  display: grid;
+  gap: 10px;
+}
+
+.knowledge-document,
+.chunk-item {
+  border: 1px solid rgba(238, 247, 248, 0.12);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.knowledge-document.selected {
+  border-color: rgba(125, 211, 199, 0.7);
+}
+
+.document-main {
+  background: transparent;
+  color: #eef7f8;
+  display: grid;
+  font-weight: 700;
+  gap: 4px;
+  padding: 0;
+  text-align: left;
+}
+
+.document-main small,
+.chunk-item p {
+  color: rgba(238, 247, 248, 0.68);
+}
+
+.status-pill {
+  border: 1px solid rgba(238, 247, 248, 0.14);
+  border-radius: 8px;
+  color: #8fd5cf;
+  padding: 0.45rem 0.6rem;
+}
+
+.error-text {
+  color: #ffb4a8;
+  margin-bottom: 0;
+}
+
+.chunk-panel h3 {
+  margin: 0 0 0.35rem;
+}
+
 @media (max-width: 760px) {
   .study-header,
-  .workspace-grid {
+  .workspace-grid,
+  .knowledge-grid {
     display: block;
   }
 

@@ -37,6 +37,16 @@ Milestone 3.5 generalizes AI Core boundaries:
 - provider-only LLM Gateway input/output
 - ToolRouter / Tool / Retriever interfaces only
 
+Milestone 4.1 adds the Knowledge foundation:
+
+- shared Knowledge service and File service foundation
+- document, chunk, and concept models
+- txt and markdown text processing
+- database migration for documents, chunks, and concepts
+- Knowledge API and Study Knowledge frontend page
+
+Milestone 4.1 does not implement embeddings, vector storage, retrieval, RAG, AI summary, or Tutor integration.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test

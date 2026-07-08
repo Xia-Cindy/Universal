@@ -85,6 +85,30 @@ def create_app():
     def get_tutor_history():
         return api.get_tutor_history()
 
+    @app.post("/api/study/knowledge/documents")
+    def create_knowledge_document(payload: dict):
+        return api.create_knowledge_document(payload)
+
+    @app.get("/api/study/knowledge")
+    def knowledge_overview():
+        return api.knowledge_overview()
+
+    @app.get("/api/study/knowledge/documents")
+    def list_knowledge_documents(subject: str | None = None, topic: str | None = None):
+        return api.list_knowledge_documents(subject=subject, topic=topic)
+
+    @app.get("/api/study/knowledge/documents/{document_id}")
+    def get_knowledge_document(document_id: str):
+        return api.get_knowledge_document(document_id)
+
+    @app.post("/api/study/knowledge/documents/{document_id}/process")
+    def process_knowledge_document(document_id: str):
+        return api.process_knowledge_document(document_id)
+
+    @app.patch("/api/study/knowledge/documents/{document_id}")
+    def update_knowledge_document(document_id: str, payload: dict):
+        return api.update_knowledge_document(document_id, payload)
+
     return app
 
 
