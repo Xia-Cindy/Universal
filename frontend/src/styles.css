@@ -284,7 +284,8 @@ textarea {
 }
 
 .knowledge-list,
-.chunk-list {
+.chunk-list,
+.grounding-list {
   display: grid;
   gap: 10px;
 }
@@ -313,6 +314,10 @@ textarea {
 .document-main small,
 .chunk-item p {
   color: rgba(238, 247, 248, 0.68);
+}
+
+.chunk-item small {
+  color: #8fd5cf;
 }
 
 .status-pill {

@@ -56,6 +56,16 @@
 - [x] Add Retrieval API contracts for embedding preparation, status listing, and chunk search.
 - [x] Keep Tutor integration, RAG answer generation, real vector database deployment, and Knowledge Graph out of scope.
 
+## Milestone 4.3 Tutor Retrieval Integration
+
+- [x] Add AI Core ToolRouter execution flow for allowed tools.
+- [x] Add RetrieverTool adapter over RetrievalService.
+- [x] Connect Study Tutor retrieval through AI Core ToolRouter only.
+- [x] Inject retrieved Knowledge chunks into Study Tutor context.
+- [x] Record retrieval metadata in Learning Events.
+- [x] Show grounding chunks in Tutor UI when available.
+- [x] Keep Knowledge Graph, automatic summarization, Memory Intelligence, and new Agents out of scope.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.

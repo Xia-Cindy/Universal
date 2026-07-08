@@ -1209,6 +1209,31 @@ Not implemented in Milestone 4.2:
 - Knowledge Graph.
 - Source citations.
 
+## Milestone 4.3
+
+Status: completed.
+
+Implemented:
+
+- AI Core optional ToolRouter invocation flow.
+- DefaultToolRouter for tool registration, lookup and invocation.
+- RetrieverTool adapter over RetrievalService.
+- Study Tutor retrieval access through AI Core ToolRouter only.
+- Knowledge chunk context injection into Study Tutor context provider.
+- Grounded Tutor response metadata.
+- Learning Event retrieval metadata.
+- Tutor frontend grounding chunk display.
+- Tests for ToolRouter path, no direct Tutor retrieval call, empty retrieval fallback, grounded metadata and generic AI Core tool support.
+
+Not implemented in Milestone 4.3:
+
+- Knowledge Graph.
+- Automatic summarization.
+- Memory Intelligence.
+- New Agents.
+- Full source citation system.
+- Separate RAG answer endpoint.
+
 ---
 
 # End

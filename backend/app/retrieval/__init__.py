@@ -8,6 +8,7 @@ from backend.app.retrieval.models import (
 )
 from backend.app.retrieval.repository import RetrievalRepository
 from backend.app.retrieval.service import RetrievalService
+from backend.app.retrieval.tool import RetrieverTool
 from backend.app.retrieval.vector_store import InMemoryVectorStore, VectorMatch, VectorStore
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "RetrievalRepository",
     "RetrievalResult",
     "RetrievalService",
+    "RetrieverTool",
     "VectorMatch",
     "VectorStore",
 ]

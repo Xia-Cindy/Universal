@@ -39,8 +39,16 @@ class TutorService:
                     "studySessions": [session.to_dict() for session in sessions],
                     "learningEvents": [event.to_dict() for event in learning_events],
                 },
+                tool_payloads={
+                    "retrieval.search": {
+                        "userId": user.id,
+                        "query": question,
+                        "limit": 3,
+                    }
+                },
             )
         )
+        grounding_chunks = ai_response.metadata.get("groundingChunks", [])
         event = self._repository.save_learning_event(
             LearningEvent(
                 user_id=user.id,
@@ -49,8 +57,17 @@ class TutorService:
                 metadata={
                     "question": question,
                     "answer": ai_response.answer,
+                    "retrievalInvoked": ai_response.metadata.get("retrievalInvoked", False),
                     "ragInvoked": False,
-                    "knowledgeSourcesAvailable": False,
+                    "knowledgeSourcesAvailable": ai_response.metadata.get(
+                        "knowledgeSourcesAvailable",
+                        False,
+                    ),
+                    "groundingChunkIds": [
+                        chunk["identifiers"]["chunkId"]
+                        for chunk in grounding_chunks
+                        if "identifiers" in chunk and "chunkId" in chunk["identifiers"]
+                    ],
                 },
             )
         )

@@ -1,4 +1,4 @@
-from backend.app.ai import AICoreService, AgentDefinition
+from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
 from backend.app.core.settings import settings
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.memory import MemoryService
@@ -10,7 +10,7 @@ from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
-from backend.app.retrieval import RetrievalQuery, RetrievalService
+from backend.app.retrieval import RetrievalQuery, RetrievalService, RetrieverTool
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
 
@@ -27,21 +27,23 @@ class ApiFacade:
         self.knowledge_repository = KnowledgeRepository()
         self.knowledge = KnowledgeService(repository=self.knowledge_repository)
         self.retrieval = RetrievalService(knowledge_repository=self.knowledge_repository)
-        self.ai_core = AICoreService()
+        self.tool_router = DefaultToolRouter()
+        self.tool_router.register(RetrieverTool(self.retrieval))
+        self.ai_core = AICoreService(tool_router=self.tool_router)
         self.ai_core.agent_manager.register(
             AgentDefinition(
                 agent_id="study",
                 capabilities=("tutor",),
                 prompt_key="study.tutor.answer",
                 context_builder="study.tutor",
-                allowed_tools=(),
+                allowed_tools=("retrieval.search",),
             )
         )
         self.ai_core.prompt_manager.register(
             "study.tutor.answer",
             (
-                "You are the Study Agent Tutor capability. Use only Study workflow context. "
-                "Do not cite uploaded material, documents, RAG, embeddings, or Knowledge Graph data."
+                "You are the Study Agent Tutor capability. Use Study workflow context and optional "
+                "retrieved Knowledge chunks when provided. Do not generate citations or invent sources."
             ),
         )
         self.ai_core.context_manager.register_provider(

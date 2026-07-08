@@ -3,8 +3,8 @@
     <p class="eyebrow">Tutor</p>
     <h2 id="tutor-title">Study Tutor</h2>
     <p>
-      Tutor uses your Goal, Plan, Daily Tasks, Study Sessions, and Learning Events.
-      Knowledge sources and citations start in a later milestone.
+      Tutor uses your Goal, Plan, Daily Tasks, Study Sessions, Learning Events, and prepared
+      Knowledge chunks when available.
     </p>
 
     <form class="tutor-form" @submit.prevent="askTutor">
@@ -24,6 +24,13 @@
       <p>{{ response.suggestedNextAction }}</p>
       <h3>Knowledge sources</h3>
       <p>{{ response.sourceNotice }}</p>
+      <div v-if="response.groundingChunks?.length" class="grounding-list">
+        <article v-for="chunk in response.groundingChunks" :key="chunk.chunkId" class="chunk-item">
+          <strong>{{ chunk.metadata?.subject }} / {{ chunk.metadata?.topic }}</strong>
+          <p>{{ chunk.content }}</p>
+          <small>Score {{ chunk.score }}</small>
+        </article>
+      </div>
       <h3>Related learning event</h3>
       <p>{{ response.relatedLearningEvent?.summary }}</p>
     </article>

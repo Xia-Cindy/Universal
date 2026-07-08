@@ -57,6 +57,16 @@ Milestone 4.2 adds the Retrieval foundation:
 
 Milestone 4.2 does not implement real vector database deployment, Tutor integration, RAG answer generation, or Knowledge Graph.
 
+Milestone 4.3 connects Retrieval to Study Tutor through AI Core:
+
+- AI Core ToolRouter execution for allowed tools
+- RetrieverTool adapter over RetrievalService
+- Knowledge chunk context injection for Tutor
+- grounded Tutor metadata and Learning Event records
+- Tutor UI grounding display
+
+Milestone 4.3 does not implement Knowledge Graph, automatic summarization, Memory Intelligence, or new Agents.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Test

@@ -28,6 +28,7 @@ class AIRequest:
     capability: str
     user_question: str
     context_payload: dict[str, Any]
+    tool_payloads: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -45,4 +46,3 @@ class AIResponse:
         }
         payload.update(self.metadata)
         return payload
-

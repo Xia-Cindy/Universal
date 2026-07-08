@@ -9,6 +9,10 @@ class StudyTutorContextProvider:
         tasks = payload.get("dailyTasks", [])
         sessions = payload.get("studySessions", [])
         learning_events = payload.get("learningEvents", [])
+        retrieval_result = payload.get("toolResults", {}).get("retrieval.search", {})
+        grounding_chunks = retrieval_result.get("results", [])
+        retrieval_invoked = bool(retrieval_result.get("available"))
+        knowledge_sources_available = bool(grounding_chunks)
         next_task = tasks[0] if tasks else None
         goal_name = goal.get("goalName", "your active learning goal")
         task_text = (
@@ -16,16 +20,29 @@ class StudyTutorContextProvider:
             if next_task
             else " Create or review your next daily task."
         )
-        answer = (
-            f"For {goal_name}, focus on the next concrete learning action."
-            f"{task_text} I can use your goal, plan, daily tasks, sessions, and learning events, "
-            "but uploaded knowledge sources are not available yet."
-        )
-        reasoning = (
-            f"Built from Study workflow context: {len(tasks)} task(s), "
-            f"{len(sessions)} finished session(s), and {len(learning_events)} learning event(s). "
-            "No RAG, embeddings, document chunks, or source citations were used."
-        )
+        if grounding_chunks:
+            top_chunk = grounding_chunks[0]
+            answer = (
+                f"For {goal_name}, use the retrieved Knowledge chunk to anchor your next step: "
+                f"{top_chunk['content']}{task_text}"
+            )
+            reasoning = (
+                f"Built from Study workflow context plus {len(grounding_chunks)} retrieved "
+                f"Knowledge chunk(s). Top match score: {top_chunk['score']}."
+            )
+            source_notice = "Knowledge grounding used retrieved chunks; no citation system is active yet."
+        else:
+            answer = (
+                f"For {goal_name}, focus on the next concrete learning action."
+                f"{task_text} I can use your goal, plan, daily tasks, sessions, and learning events, "
+                "but no matching Knowledge chunks are available."
+            )
+            reasoning = (
+                f"Built from Study workflow context: {len(tasks)} task(s), "
+                f"{len(sessions)} finished session(s), and {len(learning_events)} learning event(s). "
+                "No Knowledge chunks were used."
+            )
+            source_notice = "Knowledge grounding is unavailable because no matching prepared chunks were found."
         suggested_next_action = (
             f"Start {next_task['topic']} for {next_task['estimatedMinutes']} minutes."
             if next_task
@@ -39,16 +56,21 @@ class StudyTutorContextProvider:
                 "dailyTasks": tasks,
                 "studySessions": sessions,
                 "learningEvents": learning_events,
-                "knowledgeSourcesAvailable": False,
+                "knowledgeSourcesAvailable": knowledge_sources_available,
+                "knowledgeContext": {
+                    "retrievalInvoked": retrieval_invoked,
+                    "chunks": grounding_chunks,
+                },
                 "responseHints": {
                     "answer": answer,
                     "reasoning": reasoning,
                     "suggestedNextAction": suggested_next_action,
                     "metadata": {
-                        "knowledgeSourcesAvailable": False,
-                        "sourceNotice": "Knowledge sources are unavailable until the Knowledge/RAG milestone.",
+                        "retrievalInvoked": retrieval_invoked,
+                        "knowledgeSourcesAvailable": knowledge_sources_available,
+                        "sourceNotice": source_notice,
+                        "groundingChunks": grounding_chunks,
                     },
                 },
             }
         )
-
