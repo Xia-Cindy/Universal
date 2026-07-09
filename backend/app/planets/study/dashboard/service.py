@@ -55,6 +55,21 @@ class StudyHomeService:
             }
         )
 
+        progress_summary = {
+            "totalTasks": len(all_tasks),
+            "completedTasks": len(completed_tasks),
+            "taskCompletionRate": round(len(completed_tasks) / len(all_tasks), 2)
+            if all_tasks
+            else 0,
+        }
+        progress_snapshot = {
+            "todayStudyMinutes": sum(session.duration_minutes for session in today_sessions),
+            "weekStudyMinutes": sum(session.duration_minutes for session in week_sessions),
+            "studyStreakDays": self._study_streak_days(finished_sessions),
+        }
+        knowledge_overview = knowledge_status or {}
+        analytics_insight = ai_insight or self._empty_ai_insight()
+
         return {
             "user": user.to_dict(),
             "planet": {
@@ -64,30 +79,39 @@ class StudyHomeService:
             "state": "ready",
             "currentGoal": {
                 **goal.to_dict(),
-                "remainingDays": max((goal.deadline - today).days, 0),
+                "remainingDays": max((goal.deadline - today).days, 0)
+                if goal.deadline
+                else None,
             },
             "todayTasks": [task.to_dict() for task in today_tasks],
             "primaryNextAction": primary_action,
-            "aiInsight": ai_insight or self._empty_ai_insight(),
-            "aiRecommendation": ai_insight or self._empty_ai_insight(),
+            "aiInsight": analytics_insight,
+            "analyticsInsight": analytics_insight,
+            "aiRecommendation": analytics_insight,
             "reviewDue": [],
             "recentStudyRecords": [session.to_dict() for session in finished_sessions[:5]],
-            "knowledgeStatus": knowledge_status or {},
-            "progressSummary": {
-                "totalTasks": len(all_tasks),
-                "completedTasks": len(completed_tasks),
-                "taskCompletionRate": round(len(completed_tasks) / len(all_tasks), 2)
-                if all_tasks
-                else 0,
-            },
-            "progressSnapshot": {
-                "todayStudyMinutes": sum(session.duration_minutes for session in today_sessions),
-                "weekStudyMinutes": sum(session.duration_minutes for session in week_sessions),
-                "studyStreakDays": self._study_streak_days(finished_sessions),
+            "knowledgeStatus": knowledge_overview,
+            "knowledgeOverview": knowledge_overview,
+            "progressSummary": progress_summary,
+            "progressSnapshot": progress_snapshot,
+            "progress": {
+                **progress_summary,
+                **progress_snapshot,
             },
         }
 
     def _empty_home(self, *, user: UserProfile, planet: Planet) -> dict[str, object]:
+        ai_insight = self._empty_ai_insight()
+        progress_summary = {
+            "totalTasks": 0,
+            "completedTasks": 0,
+            "taskCompletionRate": 0,
+        }
+        progress_snapshot = {
+            "todayStudyMinutes": 0,
+            "weekStudyMinutes": 0,
+            "studyStreakDays": 0,
+        }
         return {
             "user": user.to_dict(),
             "planet": {
@@ -102,20 +126,18 @@ class StudyHomeService:
                 "route": "/study/onboarding",
             },
             "todayTasks": [],
-            "aiInsight": self._empty_ai_insight(),
-            "aiRecommendation": self._empty_ai_insight(),
+            "aiInsight": ai_insight,
+            "analyticsInsight": ai_insight,
+            "aiRecommendation": ai_insight,
             "reviewDue": [],
             "recentStudyRecords": [],
             "knowledgeStatus": {},
-            "progressSummary": {
-                "totalTasks": 0,
-                "completedTasks": 0,
-                "taskCompletionRate": 0,
-            },
-            "progressSnapshot": {
-                "todayStudyMinutes": 0,
-                "weekStudyMinutes": 0,
-                "studyStreakDays": 0,
+            "knowledgeOverview": {},
+            "progressSummary": progress_summary,
+            "progressSnapshot": progress_snapshot,
+            "progress": {
+                **progress_summary,
+                **progress_snapshot,
             },
         }
 

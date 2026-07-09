@@ -313,6 +313,7 @@ Primary next action：
 
 UI 形式：
 
+- Goal Type selector：考试目标、知识学习、成长目标。
 - Timeline view。
 - Goal → Monthly Plan → Weekly Plan → Daily Task。
 - 不使用纯表格作为主视图。
@@ -320,15 +321,16 @@ UI 形式：
 Goal 摘要示例：
 
 ```text
-2027 MEM
-Deadline: 2026-12-26
+成为 AI 工程师
+Type: 成长目标
+Deadline: Long-term
 Progress: 35%
-AI: Math foundation needs reinforcement.
+AI: Finish today's systems reading session.
 ```
 
 Empty State：
 
-- 引导填写 exam name、deadline、subjects、daily available minutes。
+- 引导选择目标类型，并填写 goal name、description、optional deadline、subjects、daily available minutes。
 
 Loading State：
 

@@ -20,7 +20,7 @@ class PlanService:
             user_id=user_id,
             goal_id=goal.id,
             year=start_date.year,
-            title=payload.get("title", f"{goal.exam_name} Learning Plan"),
+            title=payload.get("title", f"{goal.goal_name} Learning Plan"),
         )
         self._repository.save_year_plan(year)
 
@@ -97,7 +97,7 @@ class PlanService:
         return self._repository.save_daily_task(task)
 
     def _default_tasks(self, goal, start_date):
-        subjects = list(goal.subjects) or [goal.exam_name]
+        subjects = list(goal.subjects) or [goal.goal_name]
         tasks = []
         for offset in range(7):
             subject = subjects[offset % len(subjects)]

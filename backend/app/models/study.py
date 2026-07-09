@@ -12,6 +12,12 @@ class GoalStatus(StrEnum):
     ARCHIVED = "archived"
 
 
+class GoalType(StrEnum):
+    EXAM = "exam"
+    LEARNING = "learning"
+    GROWTH = "growth"
+
+
 class PlanStatus(StrEnum):
     ACTIVE = "active"
     DRAFT = "draft"
@@ -37,11 +43,13 @@ def _id() -> str:
 class StudyGoal:
     user_id: str
     goal_name: str
-    exam_name: str
-    deadline: date
     subjects: tuple[str, ...]
     current_level: str
     daily_available_minutes: int
+    goal_type: GoalType = GoalType.EXAM
+    deadline: date | None = None
+    description: str = ""
+    exam_name: str | None = None
     priority: str = "medium"
     status: GoalStatus = GoalStatus.ACTIVE
     id: str = field(default_factory=_id)
@@ -52,9 +60,11 @@ class StudyGoal:
         return {
             "id": self.id,
             "userId": self.user_id,
+            "goalType": self.goal_type.value,
             "goalName": self.goal_name,
             "examName": self.exam_name,
-            "deadline": self.deadline.isoformat(),
+            "deadline": self.deadline.isoformat() if self.deadline else None,
+            "description": self.description,
             "subjects": list(self.subjects),
             "currentLevel": self.current_level,
             "dailyAvailableMinutes": self.daily_available_minutes,

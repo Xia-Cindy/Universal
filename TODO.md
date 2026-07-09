@@ -98,6 +98,17 @@
 - [x] Add frontend Onboarding and Session screens.
 - [x] Keep AI Core architecture, Agents, Planets, RAG, Knowledge Graph and autonomous planning unchanged.
 
+## Study Workspace Product Experience
+
+- [x] Add Universe Home return entry in Study Workspace.
+- [x] Show current Planet and user location in Study Workspace.
+- [x] Extend Study Goal for exam, learning, and growth goals.
+- [x] Allow Goal deadline to be empty for non-exam learning scenarios.
+- [x] Add Goal description field.
+- [x] Replace Knowledge manual document registration with real file selection.
+- [x] Support txt and markdown upload with processing.
+- [x] Support PDF metadata upload without parser/RAG expansion.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.

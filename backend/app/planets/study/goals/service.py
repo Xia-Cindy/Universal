@@ -2,7 +2,7 @@ from datetime import date
 
 from backend.app.core.dates import local_today, local_now, parse_local_date
 from backend.app.memory import MemoryService
-from backend.app.models import MemoryScope, StudyGoal
+from backend.app.models import GoalType, MemoryScope, StudyGoal
 from backend.app.planets.study.repository import StudyRepository
 
 
@@ -12,13 +12,17 @@ class GoalService:
         self._memory = memory
 
     def create_goal(self, user_id: str, payload: dict) -> StudyGoal:
-        deadline = parse_local_date(payload["deadline"])
-        self._validate_deadline(deadline)
+        deadline = self._parse_optional_deadline(payload.get("deadline"))
+        if deadline:
+            self._validate_deadline(deadline)
+        goal_type = GoalType(payload.get("goalType", GoalType.EXAM.value))
         goal = StudyGoal(
             user_id=user_id,
             goal_name=payload["goalName"],
-            exam_name=payload["examName"],
+            goal_type=goal_type,
+            exam_name=payload.get("examName"),
             deadline=deadline,
+            description=payload.get("description", ""),
             subjects=tuple(payload["subjects"]),
             current_level=payload.get("currentLevel", "unknown"),
             daily_available_minutes=int(payload.get("dailyAvailableMinutes", 60)),
@@ -30,20 +34,25 @@ class GoalService:
             scope=MemoryScope.PLANET,
             planet_type="study",
             key="active_goal_id",
-            value={"goal_id": goal.id},
+            value={"goal_id": goal.id, "goal_type": goal.goal_type.value},
         )
         return goal
 
     def update_goal(self, user_id: str, goal_id: str, payload: dict) -> StudyGoal:
         goal = self._repository.get_goal(goal_id, user_id)
         if "deadline" in payload:
-            deadline = parse_local_date(payload["deadline"])
-            self._validate_deadline(deadline)
+            deadline = self._parse_optional_deadline(payload["deadline"])
+            if deadline:
+                self._validate_deadline(deadline)
             goal.deadline = deadline
+        if "goalType" in payload:
+            goal.goal_type = GoalType(payload["goalType"])
         if "goalName" in payload:
             goal.goal_name = payload["goalName"]
         if "examName" in payload:
             goal.exam_name = payload["examName"]
+        if "description" in payload:
+            goal.description = payload["description"]
         if "subjects" in payload:
             goal.subjects = tuple(payload["subjects"])
         if "currentLevel" in payload:
@@ -62,3 +71,7 @@ class GoalService:
         if deadline < local_today():
             raise ValueError("deadline must not be earlier than today")
 
+    def _parse_optional_deadline(self, value) -> date | None:
+        if value in (None, ""):
+            return None
+        return parse_local_date(value)

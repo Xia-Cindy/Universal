@@ -612,10 +612,12 @@ Stores：
 {
   "id": "uuid",
   "user_id": "uuid",
-  "goal_name": "2027 MEM",
-  "exam_name": "MEM",
-  "deadline": "2026-12-26",
-  "subjects": ["math", "english", "logic", "writing"],
+  "goal_type": "exam | learning | growth",
+  "goal_name": "成为 AI 工程师",
+  "description": "长期能力建设目标",
+  "exam_name": null,
+  "deadline": null,
+  "subjects": ["machine learning", "systems", "product engineering"],
   "current_level": "basic",
   "daily_available_minutes": 90,
   "priority": "high",
@@ -1314,6 +1316,30 @@ Not implemented in Milestone 7:
 - Knowledge Graph.
 - New Retrieval architecture.
 - New database tables.
+
+## Post-Milestone 7 Product Experience Update
+
+Status: completed.
+
+Implemented:
+
+- Study Workspace Universe Home return entry.
+- Study Workspace current Planet and user location display.
+- Study Goal model expansion with `goal_type`, optional `deadline`, optional `exam_name` and `description`.
+- Database migration `006_study_goal_model_expansion.sql`.
+- Study onboarding goal type selection for exam, learning and growth goals.
+- Study Plan goal form updated for non-exam learning scenarios.
+- Study Home response aliases: `progress`, `knowledgeOverview` and `analyticsInsight`.
+- Knowledge upload UI with real file selection for txt, markdown and PDF metadata.
+- Tests for goal types, navigation contract and Knowledge upload flow.
+
+Not changed:
+
+- AI Core architecture.
+- Agent registration.
+- RAG pipeline.
+- Knowledge Graph.
+- Future Planet implementation.
 
 ---
 

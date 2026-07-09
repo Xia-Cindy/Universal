@@ -15,3 +15,4 @@
 - Milestone 6 Study Intelligence foundation: Study Agent Analyst capability, Analytics service, progress metrics, structured reports, Analytics frontend, and tests without autonomous decisions, new Agents, or new Planets.
 - Milestone 7 Study product learning loop: Study onboarding, manual plan productization, Study Home control center, session execution wrapper, factual Memory write points, Analytics insight integration, frontend loop screens, and tests without AI Core redesign or new Planets.
 - Local browser run chain: Vite dev server now proxies `/api` to the local FastAPI backend and README documents the two-terminal startup flow.
+- Study workspace experience update: Universe return navigation, configurable exam/learning/growth goals, optional deadlines, real Knowledge file selection for txt/markdown/PDF metadata, and Home response aliases for progress, Knowledge overview and Analytics insight.

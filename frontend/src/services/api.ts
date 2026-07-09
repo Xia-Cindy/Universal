@@ -9,11 +9,15 @@ export interface PlanetSummary {
   enterable: boolean
 }
 
+export type StudyGoalType = 'exam' | 'learning' | 'growth'
+
 export interface StudyGoalPayload {
+  goalType: StudyGoalType
   goalName: string
-  examName: string
+  examName?: string | null
   targetDirection?: string
-  deadline: string
+  deadline?: string | null
+  description?: string
   subjects: string[]
   currentLevel: string
   dailyAvailableMinutes: number

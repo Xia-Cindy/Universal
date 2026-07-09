@@ -1,40 +1,31 @@
 <template>
   <section class="study-plan knowledge-space" aria-labelledby="knowledge-title">
     <p class="eyebrow">Knowledge</p>
-    <h2 id="knowledge-title">Knowledge Foundation</h2>
+    <h2 id="knowledge-title">Knowledge Space</h2>
 
-    <form class="knowledge-form" @submit.prevent="registerDocument">
-      <label>
-        File name
-        <input v-model="form.fileName" required placeholder="algebra-notes.md" />
+    <form class="knowledge-form" @submit.prevent="uploadDocument">
+      <label class="wide-field">
+        File
+        <input accept=".txt,.md,.markdown,.pdf" required type="file" @change="selectFile" />
       </label>
       <label>
-        Type
-        <select v-model="form.fileType" required>
-          <option value="txt">txt</option>
-          <option value="markdown">markdown</option>
-          <option value="pdf">pdf</option>
-        </select>
+        File type
+        <input :value="form.fileType || 'Select a file'" disabled />
       </label>
       <label>
         Subject
-        <input v-model="form.subject" required placeholder="math" />
+        <input v-model="form.subject" required placeholder="systems" />
       </label>
       <label>
         Topic
-        <input v-model="form.topic" required placeholder="functions" />
+        <input v-model="form.topic" required placeholder="chapter 1" />
       </label>
-      <label class="knowledge-content">
-        Content
-        <textarea
-          v-model="form.content"
-          :disabled="form.fileType === 'pdf'"
-          rows="7"
-          placeholder="Paste txt or markdown content here"
-        />
+      <label class="wide-field">
+        Notes
+        <textarea v-model="form.notes" rows="3" placeholder="Optional reading note or context" />
       </label>
       <div class="knowledge-actions">
-        <button type="submit" :disabled="isLoading">Register Document</button>
+        <button type="submit" :disabled="isLoading || !selectedFileName">Upload</button>
         <span>{{ statusMessage }}</span>
       </div>
     </form>
@@ -59,10 +50,10 @@
             <small>{{ document.subject }} / {{ document.topic }}</small>
           </button>
           <div class="document-meta">
-            <span class="status-pill">{{ document.processingStatus }}</span>
+            <span class="status-pill">{{ displayStatus(document.processingStatus) }}</span>
             <button
               type="button"
-              :disabled="document.processingStatus === 'processed'"
+              :disabled="document.processingStatus === 'processed' || document.fileType === 'pdf'"
               @click="processDocument(document.id)"
             >
               Process
@@ -78,6 +69,9 @@
           <h3>{{ selectedDocument.document.fileName }}</h3>
           <p class="surface-copy">
             {{ selectedDocument.chunks.length }} chunks prepared.
+            <span v-if="selectedDocument.document.fileType === 'pdf'">
+              PDF metadata is saved; parser support is not enabled yet.
+            </span>
           </p>
           <div v-if="selectedDocument.chunks.length" class="chunk-list">
             <article v-for="chunk in selectedDocument.chunks" :key="chunk.id" class="chunk-item">
@@ -108,15 +102,16 @@ import {
 } from '../../../services/api'
 
 const form = ref<KnowledgeDocumentPayload>({
-  fileName: 'algebra-notes.md',
-  fileType: 'markdown',
-  subject: 'math',
-  topic: 'functions',
-  content: '# Functions\n\nA function maps each input to one output.',
+  fileName: '',
+  fileType: 'txt',
+  subject: '',
+  topic: '',
+  content: '',
 })
+const selectedFileName = ref('')
 const documents = ref<KnowledgeDocument[]>([])
 const selectedDocument = ref<KnowledgeDocumentDetail | null>(null)
-const statusMessage = ref('Register a document, then process it into chunks.')
+const statusMessage = ref('Upload txt, markdown, or PDF metadata.')
 const isLoading = ref(false)
 
 onMounted(loadDocuments)
@@ -133,22 +128,74 @@ async function loadDocuments() {
   }
 }
 
-async function registerDocument() {
+async function uploadDocument() {
   isLoading.value = true
   try {
-    const payload = { ...form.value }
+    const payload = { ...form.value, storagePath: selectedFileName.value }
     if (payload.fileType === 'pdf') {
       payload.content = ''
     }
     const document = await createKnowledgeDocument(payload)
-    statusMessage.value = 'Document registered.'
+    statusMessage.value = document.fileType === 'pdf' ? 'PDF metadata uploaded.' : 'Document uploaded.'
+    if (document.fileType !== 'pdf') {
+      selectedDocument.value = await processKnowledgeDocument(document.id)
+      statusMessage.value =
+        selectedDocument.value.document.processingStatus === 'processed'
+          ? 'Document uploaded and processed.'
+          : 'Document uploaded but processing failed.'
+    }
     await loadDocuments()
     await selectDocument(document.id)
   } catch (error) {
-    statusMessage.value = error instanceof Error ? error.message : 'Document registration failed.'
+    statusMessage.value = error instanceof Error ? error.message : 'Document upload failed.'
   } finally {
     isLoading.value = false
   }
+}
+
+async function selectFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) {
+    selectedFileName.value = ''
+    return
+  }
+  const fileType = detectFileType(file.name)
+  if (!fileType) {
+    statusMessage.value = 'Supported file types: txt, markdown, pdf.'
+    input.value = ''
+    selectedFileName.value = ''
+    return
+  }
+  selectedFileName.value = file.name
+  form.value.fileName = file.name
+  form.value.fileType = fileType
+  form.value.content = fileType === 'pdf' ? '' : await file.text()
+  if (!form.value.topic) {
+    form.value.topic = file.name.replace(/\.[^.]+$/, '')
+  }
+  statusMessage.value =
+    fileType === 'pdf'
+      ? 'PDF metadata is ready to upload.'
+      : 'File content is ready to upload and process.'
+}
+
+function detectFileType(fileName: string): KnowledgeDocumentPayload['fileType'] | null {
+  const lower = fileName.toLowerCase()
+  if (lower.endsWith('.txt')) {
+    return 'txt'
+  }
+  if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
+    return 'markdown'
+  }
+  if (lower.endsWith('.pdf')) {
+    return 'pdf'
+  }
+  return null
+}
+
+function displayStatus(status: KnowledgeDocument['processingStatus']) {
+  return status === 'parsing' || status === 'chunking' ? 'processing' : status
 }
 
 async function selectDocument(documentId: string) {

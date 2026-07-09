@@ -193,9 +193,9 @@ MVP 中这些 Planet 只允许展示名称、视觉占位、状态文案和“co
 
 ## Flow 002: 创建学习目标并生成计划
 
-1. 用户在 Goal 中创建 MEM 目标。
-2. 用户输入考试名称、截止日期、科目、当前水平、每日可用时间。
-3. Planner Agent 生成 Learning Plan。
+1. 用户在 Goal 中选择目标类型：考试目标、知识学习或成长目标。
+2. 用户输入目标名称、描述、可选截止日期、科目/主题、当前水平、每日可用时间。
+3. 系统基于 Goal 创建或展示 Learning Plan。
 4. 系统保存 Long Term Goal、Monthly Plan、Weekly Plan、Daily Task。
 5. Study Home 自动显示今天的第一优先任务。
 
@@ -278,9 +278,11 @@ MVP 中这些 Planet 只允许展示名称、视觉占位、状态文案和“co
 
 MVP 字段：
 
+- goal_type：exam / learning / growth
 - goal_name
-- exam_name
-- deadline
+- description
+- exam_name：仅考试目标需要
+- deadline：可为空
 - subjects
 - current_level
 - daily_available_minutes
@@ -290,6 +292,7 @@ MVP 字段：
 验收标准：
 
 - Given 用户填写 Goal 表单，When 点击保存，Then 系统创建 Goal 并返回 Goal 详情。
+- Given 用户选择知识学习或成长目标，When deadline 为空，Then 系统允许保存。
 - Given deadline 早于今天，When 用户保存，Then 系统阻止保存并显示明确错误。
 - Given 用户已有 active Goal，When 进入 Study Home，Then Goal 被作为 Study Planet 当前上下文。
 

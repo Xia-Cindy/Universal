@@ -4,6 +4,7 @@ from backend.app.models.planet import Planet, PlanetModule, PlanetStatus
 from backend.app.models.study import (
     DailyTask,
     GoalStatus,
+    GoalType,
     LearningEvent,
     MonthPlan,
     PlanStatus,
@@ -23,6 +24,7 @@ __all__ = [
     "DocumentStatus",
     "DocumentType",
     "GoalStatus",
+    "GoalType",
     "LearningEvent",
     "MemoryEntry",
     "MemoryScope",

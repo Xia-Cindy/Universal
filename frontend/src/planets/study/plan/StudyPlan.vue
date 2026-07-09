@@ -7,21 +7,33 @@
 
     <template v-else>
       <form v-if="!hasPlan" class="study-form" @submit.prevent="submitGoal">
+        <div class="goal-type-picker wide-field" aria-label="Goal type">
+          <button
+            v-for="option in goalTypes"
+            :key="option.value"
+            type="button"
+            :class="{ selected: goalForm.goalType === option.value }"
+            @click="goalForm.goalType = option.value"
+          >
+            <strong>{{ option.label }}</strong>
+            <span>{{ option.description }}</span>
+          </button>
+        </div>
         <label>
           Goal
           <input v-model="goalForm.goalName" required />
         </label>
         <label>
-          Exam
-          <input v-model="goalForm.examName" required />
-        </label>
-        <label>
           Deadline
-          <input v-model="goalForm.deadline" type="date" required />
+          <input v-model="goalForm.deadline" type="date" />
+        </label>
+        <label class="wide-field">
+          Description
+          <textarea v-model="goalForm.description" rows="3" />
         </label>
         <label>
           Subjects
-          <input v-model="subjectsText" placeholder="math, english, logic" required />
+          <input v-model="subjectsText" placeholder="math, systems, AI engineering" required />
         </label>
         <label>
           Current level
@@ -76,12 +88,19 @@ import {
   fetchCurrentPlan,
   updateTask,
   type DailyTask,
+  type StudyGoalType,
 } from '../../../services/api'
 
+const goalTypes: Array<{ value: StudyGoalType; label: string; description: string }> = [
+  { value: 'exam', label: '考试目标', description: '面向考试或证书' },
+  { value: 'learning', label: '知识学习', description: '学习书籍、课程或主题' },
+  { value: 'growth', label: '成长目标', description: '长期能力建设' },
+]
 const goalForm = ref({
+  goalType: 'learning' as StudyGoalType,
   goalName: '',
-  examName: '',
   deadline: '',
+  description: '',
   currentLevel: '',
   dailyAvailableMinutes: 60,
   priority: 'medium',
@@ -110,6 +129,8 @@ async function loadCurrentPlan() {
 async function submitGoal() {
   await createGoal({
     ...goalForm.value,
+    deadline: goalForm.value.deadline || null,
+    examName: goalForm.value.goalType === 'exam' ? goalForm.value.goalName : null,
     subjects: subjectsText.value
       .split(',')
       .map((subject) => subject.trim())

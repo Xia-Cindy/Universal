@@ -16,9 +16,10 @@
       <template v-else>
         <section class="home-band" aria-label="Current goal">
           <div>
-            <span class="status-pill">{{ home.currentGoal.examName }}</span>
+            <span class="status-pill">{{ goalTypeLabel }}</span>
             <h3>{{ home.currentGoal.goalName }}</h3>
-            <p>{{ home.currentGoal.deadline }} · {{ home.currentGoal.remainingDays }} days left</p>
+            <p>{{ deadlineText }}</p>
+            <p v-if="home.currentGoal.description">{{ home.currentGoal.description }}</p>
           </div>
           <RouterLink class="primary-action" :to="primaryRoute">{{ primaryLabel }}</RouterLink>
         </section>
@@ -83,10 +84,12 @@ import { fetchStudyHome } from '../../../services/api'
 const home = ref({
   state: 'empty',
   currentGoal: null as null | {
+    goalType: string
     goalName: string
-    examName: string
-    deadline: string
-    remainingDays: number
+    examName?: string | null
+    deadline?: string | null
+    description?: string
+    remainingDays: number | null
   },
   todayTasks: [] as Array<{
     id: string
@@ -125,6 +128,20 @@ const title = computed(() =>
 )
 const primaryLabel = computed(() => home.value.primaryNextAction.label)
 const primaryRoute = computed(() => home.value.primaryNextAction.route)
+const goalTypeLabel = computed(() => {
+  const labels: Record<string, string> = {
+    exam: '考试目标',
+    learning: '知识学习',
+    growth: '成长目标',
+  }
+  return home.value.currentGoal ? labels[home.value.currentGoal.goalType] || '学习目标' : '学习目标'
+})
+const deadlineText = computed(() => {
+  if (!home.value.currentGoal?.deadline) {
+    return 'Long-term goal'
+  }
+  return `${home.value.currentGoal.deadline} · ${home.value.currentGoal.remainingDays} days left`
+})
 const dataQualityLabel = computed(() =>
   home.value.aiInsight.dataQuality.state === 'ready' ? 'Ready' : 'More data needed',
 )

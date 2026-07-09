@@ -238,9 +238,11 @@ Study Home
 ```text
 Plan
 ├── Goal
-│   ├── Exam Name
-│   ├── Deadline
-│   ├── Subjects
+│   ├── Goal Type: exam / learning / growth
+│   ├── Goal Name
+│   ├── Description
+│   ├── Deadline: optional
+│   ├── Subjects / Topics
 │   ├── Current Level
 │   └── Daily Available Minutes
 ├── Learning Plan

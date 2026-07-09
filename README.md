@@ -99,6 +99,8 @@ Milestone 7 completes the Study Planet product learning loop:
 
 Milestone 7 does not redesign AI Core, add new Agents, add new Planets, or implement autonomous planning.
 
+Current Study Workspace polish adds configurable Goal types for exam, knowledge learning, and growth goals; optional deadlines; a Universe Home return path; and Knowledge file selection for txt, markdown, and PDF metadata.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run

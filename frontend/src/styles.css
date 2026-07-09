@@ -101,6 +101,22 @@ button:disabled {
   justify-content: space-between;
 }
 
+.universe-return {
+  border: 1px solid rgba(238, 247, 248, 0.14);
+  border-radius: 8px;
+  color: #8fd5cf;
+  display: inline-flex;
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding: 0.55rem 0.7rem;
+  text-decoration: none;
+}
+
+.workspace-location {
+  color: rgba(238, 247, 248, 0.68);
+  margin: -1.2rem 0 0;
+}
+
 .signals span,
 .study-nav a,
 .progress-snapshot span {
@@ -117,7 +133,19 @@ button:disabled {
 .workspace-grid {
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  grid-template-columns: 160px minmax(0, 1fr) minmax(240px, 320px);
+}
+
+.workspace-grid > .study-nav {
+  align-items: stretch;
+  align-self: start;
+  flex-direction: column;
+  margin: 0;
+}
+
+.workspace-grid > .study-nav a.router-link-active {
+  border-color: rgba(125, 211, 199, 0.7);
+  color: #8fd5cf;
 }
 
 .study-home h2,
@@ -275,6 +303,31 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.goal-type-picker {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.goal-type-picker button {
+  background: rgba(238, 247, 248, 0.08);
+  border: 1px solid rgba(238, 247, 248, 0.16);
+  color: #eef7f8;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.goal-type-picker button.selected {
+  border-color: rgba(125, 211, 199, 0.8);
+  color: #8fd5cf;
+}
+
+.goal-type-picker span {
+  color: rgba(238, 247, 248, 0.68);
+  font-weight: 500;
+}
+
 .session-active label {
   display: grid;
   gap: 6px;
@@ -430,6 +483,10 @@ textarea {
   .home-band,
   .task-row-split {
     display: block;
+  }
+
+  .workspace-grid > .study-nav {
+    margin-bottom: 18px;
   }
 
   .ai-panel {
