@@ -101,6 +101,37 @@ Milestone 7 does not redesign AI Core, add new Agents, add new Planets, or imple
 
 The source of truth lives in `AGENTS.md` and `docs/`.
 
+## Local Browser Run
+
+Run the backend API in one terminal:
+
+```bash
+cd /Users/xiaxin/Documents/Codex/Universal
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+
+Run the frontend workspace in another terminal:
+
+```bash
+cd /Users/xiaxin/Documents/Codex/Universal/frontend
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+The Vite dev server proxies `/api` requests to `http://127.0.0.1:8000`, so the browser can use Universe Portal, Study onboarding, Plan, Session, Knowledge, Tutor and Analytics from the frontend.
+
+Backend API docs are available at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
 ## Test
 
 Run the dependency-light foundation tests:

@@ -14,3 +14,4 @@
 - Milestone 5 Memory Intelligence foundation: shared Memory Manager, lifecycle/status fields, scoped retrieval, AI context preparation, Memory API, Tutor memory context payload, and tests without autonomous extraction or personality inference.
 - Milestone 6 Study Intelligence foundation: Study Agent Analyst capability, Analytics service, progress metrics, structured reports, Analytics frontend, and tests without autonomous decisions, new Agents, or new Planets.
 - Milestone 7 Study product learning loop: Study onboarding, manual plan productization, Study Home control center, session execution wrapper, factual Memory write points, Analytics insight integration, frontend loop screens, and tests without AI Core redesign or new Planets.
+- Local browser run chain: Vite dev server now proxies `/api` to the local FastAPI backend and README documents the two-terminal startup flow.
