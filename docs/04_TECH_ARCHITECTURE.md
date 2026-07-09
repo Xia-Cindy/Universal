@@ -1326,8 +1326,8 @@ Implemented:
 - Study Workspace Universe Home return entry.
 - Study Workspace current Planet and user location display.
 - Study Goal model expansion with `goal_type`, optional `deadline`, optional `exam_name` and `description`.
-- Database migration `006_study_goal_model_expansion.sql`.
-- Study onboarding goal type selection for exam, learning and growth goals.
+- Database migration `007_study_goal_model_expansion.sql`.
+- Study onboarding goal type selection for exam, learning, reading and growth goals.
 - Study Plan goal form updated for non-exam learning scenarios.
 - Study Home response aliases: `progress`, `knowledgeOverview` and `analyticsInsight`.
 - Knowledge upload UI with real file selection for txt, markdown and PDF metadata.
@@ -1340,6 +1340,33 @@ Not changed:
 - RAG pipeline.
 - Knowledge Graph.
 - Future Planet implementation.
+
+## Milestone 7.5 Study Domain Model Refinement
+
+Status: completed.
+
+Implemented:
+
+- Normalized migration numbering before adding new Study domain migration.
+- Database migration `008_study_domain_refinement.sql`.
+- Added `reading` as a Study Goal type.
+- Supported multiple Goals without automatically archiving previous Goals.
+- Added Goal switching API contract.
+- Supported multiple Plans per Goal without completing previous Plans.
+- Added `plan_type` metadata for long-term, monthly and weekly plan records.
+- Added optional `goal_id` relationship on Knowledge documents.
+- Preserved Knowledge documents without Goal linkage.
+- Added tests for multiple Goals, Goal switching, nullable deadline, multiple Plans, plan type separation, Knowledge with and without Goal, Tutor compatibility and Analytics compatibility.
+
+Not changed:
+
+- AI Core architecture.
+- Agent registration.
+- RAGFlow integration.
+- RAG pipeline.
+- Embeddings or vector database.
+- Knowledge Graph.
+- Autonomous planning.
 
 ---
 

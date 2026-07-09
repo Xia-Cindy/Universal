@@ -52,7 +52,30 @@
         <span>{{ status }}</span>
       </div>
 
+      <div v-if="currentPlan" class="plan-hierarchy" aria-label="Learning plan hierarchy">
+        <section class="analytics-section">
+          <h3>Long Term Plan</h3>
+          <p>{{ currentPlan.yearPlan.title }}</p>
+          <small>{{ currentPlan.yearPlan.planType }}</small>
+        </section>
+        <section class="analytics-section">
+          <h3>Monthly Plan</h3>
+          <article v-for="month in currentPlan.monthPlans" :key="month.id" class="chunk-item">
+            <strong>{{ month.title }}</strong>
+            <p>{{ month.focus }}</p>
+          </article>
+        </section>
+        <section class="analytics-section">
+          <h3>Weekly Plan</h3>
+          <article v-for="week in currentPlan.weekPlans" :key="week.id" class="chunk-item">
+            <strong>{{ week.title }}</strong>
+            <p>{{ week.weekStart }} - {{ week.weekEnd }} · {{ week.focus }}</p>
+          </article>
+        </section>
+      </div>
+
       <div v-if="tasks.length" class="task-list">
+        <h3>Daily Tasks</h3>
         <article v-for="task in tasks" :key="task.id" class="task-row">
           <div class="task-edit">
             <input v-model="task.subject" aria-label="Subject" />
@@ -93,7 +116,8 @@ import {
 
 const goalTypes: Array<{ value: StudyGoalType; label: string; description: string }> = [
   { value: 'exam', label: '考试目标', description: '面向考试或证书' },
-  { value: 'learning', label: '知识学习', description: '学习书籍、课程或主题' },
+  { value: 'learning', label: '知识学习', description: '学习课程或主题' },
+  { value: 'reading', label: '阅读目标', description: '阅读一本书或一组资料' },
   { value: 'growth', label: '成长目标', description: '长期能力建设' },
 ]
 const goalForm = ref({
@@ -107,6 +131,7 @@ const goalForm = ref({
 })
 const subjectsText = ref('')
 const tasks = ref<DailyTask[]>([])
+const currentPlan = ref<Record<string, any> | null>(null)
 const status = ref('Create a Goal or load the current Plan.')
 const loadState = ref('loading')
 const hasPlan = computed(() => tasks.value.length > 0)
@@ -117,6 +142,7 @@ async function loadCurrentPlan() {
   loadState.value = 'loading'
   try {
     const plan = await fetchCurrentPlan()
+    currentPlan.value = plan
     tasks.value = plan?.dailyTasks || []
     status.value = tasks.value.length ? 'Current Plan loaded.' : 'No active Plan yet.'
   } catch {
@@ -141,6 +167,7 @@ async function submitGoal() {
 
 async function generatePlan() {
   const plan = await createPlan({ startDate: new Date().toISOString().slice(0, 10) })
+  currentPlan.value = plan
   tasks.value = plan.dailyTasks
   status.value = 'Plan generated.'
 }

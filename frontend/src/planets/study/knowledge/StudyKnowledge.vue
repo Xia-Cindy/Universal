@@ -20,6 +20,15 @@
         Topic
         <input v-model="form.topic" required placeholder="chapter 1" />
       </label>
+      <label>
+        Goal link
+        <select v-model="form.goalId">
+          <option :value="null">Independent Knowledge</option>
+          <option v-for="goal in goals" :key="goal.id" :value="goal.id">
+            {{ goal.goalName }}
+          </option>
+        </select>
+      </label>
       <label class="wide-field">
         Notes
         <textarea v-model="form.notes" rows="3" placeholder="Optional reading note or context" />
@@ -95,6 +104,7 @@ import {
   createKnowledgeDocument,
   fetchKnowledgeDocument,
   fetchKnowledgeDocuments,
+  fetchStudyGoals,
   processKnowledgeDocument,
   type KnowledgeDocument,
   type KnowledgeDocumentDetail,
@@ -106,8 +116,10 @@ const form = ref<KnowledgeDocumentPayload>({
   fileType: 'txt',
   subject: '',
   topic: '',
+  goalId: null,
   content: '',
 })
+const goals = ref<Array<{ id: string; goalName: string }>>([])
 const selectedFileName = ref('')
 const documents = ref<KnowledgeDocument[]>([])
 const selectedDocument = ref<KnowledgeDocumentDetail | null>(null)
@@ -115,6 +127,7 @@ const statusMessage = ref('Upload txt, markdown, or PDF metadata.')
 const isLoading = ref(false)
 
 onMounted(loadDocuments)
+onMounted(loadGoals)
 
 async function loadDocuments() {
   isLoading.value = true
@@ -126,6 +139,10 @@ async function loadDocuments() {
   } finally {
     isLoading.value = false
   }
+}
+
+async function loadGoals() {
+  goals.value = await fetchStudyGoals()
 }
 
 async function uploadDocument() {

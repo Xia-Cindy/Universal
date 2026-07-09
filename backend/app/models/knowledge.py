@@ -32,6 +32,7 @@ class Document:
     file_type: DocumentType
     subject: str
     topic: str
+    goal_id: str | None = None
     content: str = ""
     storage_path: str | None = None
     processing_status: DocumentStatus = DocumentStatus.UPLOADED
@@ -44,6 +45,7 @@ class Document:
         return {
             "id": self.id,
             "userId": self.user_id,
+            "goalId": self.goal_id,
             "fileName": self.file_name,
             "fileType": self.file_type.value,
             "subject": self.subject,
@@ -98,4 +100,3 @@ class Concept:
             "source": self.source,
             "createdAt": self.created_at.isoformat(),
         }
-

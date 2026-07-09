@@ -336,14 +336,14 @@ Recommended default:
 5. Optional backfill: re-upload local documents to RAGFlow when original file/content is available.
 6. After stable operation, deprecate local chunk embedding pipeline but keep read compatibility.
 
-## 4.6 Existing Migration Number Risk
+## 4.6 Migration Numbering Risk
 
-Current migration directory contains duplicate numeric prefix `006_*` files:
+Milestone 7.5 normalized the previously duplicated `006_*` prefix by moving Study Goal expansion to:
 
-- `006_memory_intelligence_foundation.sql`
-- `006_study_goal_model_expansion.sql`
+- `007_study_goal_model_expansion.sql`
+- `008_study_domain_refinement.sql`
 
-Before adding RAGFlow migrations, normalize migration ordering policy or use a timestamp/sequence convention to avoid ambiguous execution order.
+Before adding RAGFlow migrations, continue using a monotonic sequence or switch to a timestamp convention to avoid ambiguous execution order.
 
 ---
 

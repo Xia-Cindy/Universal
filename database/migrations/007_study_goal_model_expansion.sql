@@ -3,7 +3,7 @@
 
 ALTER TABLE study_goals
     ADD COLUMN IF NOT EXISTS goal_type TEXT NOT NULL DEFAULT 'exam'
-    CHECK (goal_type IN ('exam', 'learning', 'growth'));
+    CHECK (goal_type IN ('exam', 'learning', 'reading', 'growth'));
 
 ALTER TABLE study_goals
     ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';

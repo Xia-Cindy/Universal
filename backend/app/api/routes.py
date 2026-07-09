@@ -133,9 +133,17 @@ class ApiFacade:
         user = self.users.current_user()
         return self.study_goals.create_goal(user.id, payload).to_dict()
 
+    def list_goals(self) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return [goal.to_dict() for goal in self.study_goals.list_goals(user.id)]
+
     def update_goal(self, goal_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         return self.study_goals.update_goal(user.id, goal_id, payload).to_dict()
+
+    def switch_goal(self, goal_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_goals.switch_goal(user.id, goal_id).to_dict()
 
     def get_active_goal(self) -> dict[str, object] | None:
         user = self.users.current_user()
@@ -201,6 +209,8 @@ class ApiFacade:
 
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
+        if payload.get("goalId"):
+            self.study_repository.get_goal(payload["goalId"], user.id)
         return self.knowledge.create_document(user.id, payload).to_dict()
 
     def knowledge_overview(self) -> dict[str, object]:
@@ -212,9 +222,17 @@ class ApiFacade:
         *,
         subject: str | None = None,
         topic: str | None = None,
+        goal_id: str | None = None,
     ) -> list[dict[str, object]]:
         user = self.users.current_user()
-        return self.knowledge.list_documents(user.id, subject=subject, topic=topic)
+        if goal_id:
+            self.study_repository.get_goal(goal_id, user.id)
+        return self.knowledge.list_documents(
+            user.id,
+            subject=subject,
+            topic=topic,
+            goal_id=goal_id,
+        )
 
     def get_knowledge_document(self, document_id: str) -> dict[str, object]:
         user = self.users.current_user()

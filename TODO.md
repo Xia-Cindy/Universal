@@ -102,9 +102,13 @@
 
 - [x] Add Universe Home return entry in Study Workspace.
 - [x] Show current Planet and user location in Study Workspace.
-- [x] Extend Study Goal for exam, learning, and growth goals.
+- [x] Extend Study Goal for exam, learning, reading, and growth goals.
 - [x] Allow Goal deadline to be empty for non-exam learning scenarios.
 - [x] Add Goal description field.
+- [x] Support multiple Goals and Goal switching.
+- [x] Support multiple Plans per Goal.
+- [x] Add plan type separation for long-term, monthly, and weekly plans.
+- [x] Allow Knowledge documents to exist independently or link to a Goal.
 - [x] Replace Knowledge manual document registration with real file selection.
 - [x] Support txt and markdown upload with processing.
 - [x] Support PDF metadata upload without parser/RAG expansion.

@@ -38,6 +38,9 @@ class GoalService:
         )
         return goal
 
+    def list_goals(self, user_id: str) -> list[StudyGoal]:
+        return self._repository.list_goals(user_id)
+
     def update_goal(self, user_id: str, goal_id: str, payload: dict) -> StudyGoal:
         goal = self._repository.get_goal(goal_id, user_id)
         if "deadline" in payload:
@@ -63,6 +66,20 @@ class GoalService:
             goal.priority = payload["priority"]
         goal.updated_at = local_now()
         return self._repository.save_goal(goal)
+
+    def switch_goal(self, user_id: str, goal_id: str) -> StudyGoal:
+        goal = self._repository.get_goal(goal_id, user_id)
+        goal.status = type(goal.status).ACTIVE
+        goal.updated_at = local_now()
+        self._repository.save_goal(goal)
+        self._memory.add(
+            user_id=user_id,
+            scope=MemoryScope.PLANET,
+            planet_type="study",
+            key="active_goal_id",
+            value={"goal_id": goal.id, "goal_type": goal.goal_type.value},
+        )
+        return goal
 
     def get_active_goal(self, user_id: str) -> StudyGoal | None:
         return self._repository.get_active_goal(user_id)

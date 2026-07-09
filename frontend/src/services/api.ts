@@ -9,7 +9,7 @@ export interface PlanetSummary {
   enterable: boolean
 }
 
-export type StudyGoalType = 'exam' | 'learning' | 'growth'
+export type StudyGoalType = 'exam' | 'learning' | 'reading' | 'growth'
 
 export interface StudyGoalPayload {
   goalType: StudyGoalType
@@ -39,15 +39,18 @@ export type KnowledgeDocumentType = 'txt' | 'markdown' | 'pdf'
 export interface KnowledgeDocumentPayload {
   fileName: string
   fileType: KnowledgeDocumentType
+  goalId?: string | null
   subject: string
   topic: string
   content?: string
   storagePath?: string
+  notes?: string
 }
 
 export interface KnowledgeDocument {
   id: string
   userId: string
+  goalId?: string | null
   fileName: string
   fileType: KnowledgeDocumentType
   subject: string
@@ -114,6 +117,24 @@ export async function createGoal(payload: StudyGoalPayload) {
   })
   if (!response.ok) {
     throw new Error('Unable to create goal')
+  }
+  return response.json()
+}
+
+export async function fetchStudyGoals() {
+  const response = await fetch(`${API_BASE}/study/goals`)
+  if (!response.ok) {
+    throw new Error('Unable to load goals')
+  }
+  return response.json()
+}
+
+export async function switchStudyGoal(goalId: string) {
+  const response = await fetch(`${API_BASE}/study/goals/${goalId}/switch`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error('Unable to switch goal')
   }
   return response.json()
 }
@@ -268,13 +289,16 @@ export async function fetchKnowledgeOverview() {
   return response.json()
 }
 
-export async function fetchKnowledgeDocuments(filters: { subject?: string; topic?: string } = {}) {
+export async function fetchKnowledgeDocuments(filters: { subject?: string; topic?: string; goalId?: string } = {}) {
   const params = new URLSearchParams()
   if (filters.subject) {
     params.set('subject', filters.subject)
   }
   if (filters.topic) {
     params.set('topic', filters.topic)
+  }
+  if (filters.goalId) {
+    params.set('goalId', filters.goalId)
   }
   const query = params.toString()
   const response = await fetch(`${API_BASE}/study/knowledge/documents${query ? `?${query}` : ''}`)

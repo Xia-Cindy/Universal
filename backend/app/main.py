@@ -49,9 +49,17 @@ def create_app():
     def create_goal(payload: dict):
         return api.create_goal(payload)
 
+    @app.get("/api/study/goals")
+    def list_goals():
+        return api.list_goals()
+
     @app.patch("/api/study/goals/{goal_id}")
     def update_goal(goal_id: str, payload: dict):
         return api.update_goal(goal_id, payload)
+
+    @app.post("/api/study/goals/{goal_id}/switch")
+    def switch_goal(goal_id: str):
+        return api.switch_goal(goal_id)
 
     @app.get("/api/study/goals/active")
     def get_active_goal():
@@ -110,8 +118,12 @@ def create_app():
         return api.knowledge_overview()
 
     @app.get("/api/study/knowledge/documents")
-    def list_knowledge_documents(subject: str | None = None, topic: str | None = None):
-        return api.list_knowledge_documents(subject=subject, topic=topic)
+    def list_knowledge_documents(
+        subject: str | None = None,
+        topic: str | None = None,
+        goalId: str | None = None,
+    ):
+        return api.list_knowledge_documents(subject=subject, topic=topic, goal_id=goalId)
 
     @app.get("/api/study/knowledge/documents/{document_id}")
     def get_knowledge_document(document_id: str):

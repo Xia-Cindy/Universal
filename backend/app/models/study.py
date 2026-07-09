@@ -15,7 +15,15 @@ class GoalStatus(StrEnum):
 class GoalType(StrEnum):
     EXAM = "exam"
     LEARNING = "learning"
+    READING = "reading"
     GROWTH = "growth"
+
+
+class PlanType(StrEnum):
+    LONG_TERM = "long_term"
+    MONTHLY = "monthly"
+    WEEKLY = "weekly"
+    DAILY = "daily"
 
 
 class PlanStatus(StrEnum):
@@ -81,6 +89,7 @@ class YearPlan:
     goal_id: str
     year: int
     title: str
+    plan_type: PlanType = PlanType.LONG_TERM
     status: PlanStatus = PlanStatus.ACTIVE
     id: str = field(default_factory=_id)
     created_at: datetime = field(default_factory=local_now)
@@ -93,6 +102,7 @@ class YearPlan:
             "goalId": self.goal_id,
             "year": self.year,
             "title": self.title,
+            "planType": self.plan_type.value,
             "status": self.status.value,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
@@ -107,6 +117,7 @@ class MonthPlan:
     month: int
     title: str
     focus: str
+    plan_type: PlanType = PlanType.MONTHLY
     status: PlanStatus = PlanStatus.ACTIVE
     id: str = field(default_factory=_id)
     created_at: datetime = field(default_factory=local_now)
@@ -121,6 +132,7 @@ class MonthPlan:
             "month": self.month,
             "title": self.title,
             "focus": self.focus,
+            "planType": self.plan_type.value,
             "status": self.status.value,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
@@ -136,6 +148,7 @@ class WeekPlan:
     week_end: date
     title: str
     focus: str
+    plan_type: PlanType = PlanType.WEEKLY
     status: PlanStatus = PlanStatus.ACTIVE
     id: str = field(default_factory=_id)
     created_at: datetime = field(default_factory=local_now)
@@ -151,6 +164,7 @@ class WeekPlan:
             "weekEnd": self.week_end.isoformat(),
             "title": self.title,
             "focus": self.focus,
+            "planType": self.plan_type.value,
             "status": self.status.value,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),

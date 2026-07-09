@@ -66,7 +66,8 @@ const subjectsText = ref('')
 const status = ref('Study Planet will open after the Goal is created.')
 const goalTypes: Array<{ value: StudyGoalType; label: string; description: string }> = [
   { value: 'exam', label: '考试目标', description: '有明确考试或截止日期' },
-  { value: 'learning', label: '知识学习', description: '学习一本书、一门课或一个主题' },
+  { value: 'learning', label: '知识学习', description: '学习一门课或一个主题' },
+  { value: 'reading', label: '阅读目标', description: '阅读一本书或一组资料' },
   { value: 'growth', label: '成长目标', description: '长期能力建设和职业成长' },
 ]
 const form = ref({

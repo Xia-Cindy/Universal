@@ -132,6 +132,7 @@ const goalTypeLabel = computed(() => {
   const labels: Record<string, string> = {
     exam: '考试目标',
     learning: '知识学习',
+    reading: '阅读目标',
     growth: '成长目标',
   }
   return home.value.currentGoal ? labels[home.value.currentGoal.goalType] || '学习目标' : '学习目标'

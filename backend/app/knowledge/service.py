@@ -25,6 +25,7 @@ class KnowledgeService:
             file_type=DocumentType(file_type),
             subject=payload["subject"],
             topic=payload["topic"],
+            goal_id=payload.get("goalId"),
             content=payload.get("content", ""),
             storage_path=payload.get("storagePath"),
         )
@@ -36,6 +37,8 @@ class KnowledgeService:
             document.subject = payload["subject"]
         if "topic" in payload:
             document.topic = payload["topic"]
+        if "goalId" in payload:
+            document.goal_id = payload["goalId"]
         document.updated_at = local_now()
         return self._repository.save_document(document)
 
@@ -66,6 +69,7 @@ class KnowledgeService:
                     content=content,
                     metadata={
                         "fileName": document.file_name,
+                        "goalId": document.goal_id,
                         "subject": document.subject,
                         "topic": document.topic,
                     },
@@ -98,10 +102,16 @@ class KnowledgeService:
         *,
         subject: str | None = None,
         topic: str | None = None,
+        goal_id: str | None = None,
     ) -> list[dict[str, object]]:
         return [
             document.to_dict()
-            for document in self._repository.list_documents(user_id, subject=subject, topic=topic)
+            for document in self._repository.list_documents(
+                user_id,
+                subject=subject,
+                topic=topic,
+                goal_id=goal_id,
+            )
         ]
 
     def document_detail(self, user_id: str, document_id: str) -> dict[str, object]:
@@ -129,4 +139,3 @@ class KnowledgeService:
                 for subject, topics in sorted(subject_map.items())
             ],
         }
-

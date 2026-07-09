@@ -31,10 +31,6 @@ class StudyRepository:
         self.learning_events: dict[str, LearningEvent] = {}
 
     def save_goal(self, goal: StudyGoal) -> StudyGoal:
-        if goal.status.value == "active":
-            for existing in self.goals.values():
-                if existing.user_id == goal.user_id and existing.id != goal.id:
-                    existing.status = type(goal.status).ARCHIVED
         self.goals[goal.id] = goal
         return goal
 
@@ -45,16 +41,21 @@ class StudyRepository:
         return goal
 
     def get_active_goal(self, user_id: str) -> StudyGoal | None:
-        for goal in self.goals.values():
-            if goal.user_id == user_id and goal.status.value == "active":
-                return goal
-        return None
+        active_goals = [
+            goal for goal in self.goals.values() if goal.user_id == user_id and goal.status.value == "active"
+        ]
+        if not active_goals:
+            return None
+        return sorted(active_goals, key=lambda goal: goal.updated_at, reverse=True)[0]
+
+    def list_goals(self, user_id: str) -> list[StudyGoal]:
+        return sorted(
+            [goal for goal in self.goals.values() if goal.user_id == user_id],
+            key=lambda goal: goal.updated_at,
+            reverse=True,
+        )
 
     def save_year_plan(self, plan: YearPlan) -> YearPlan:
-        if plan.status == PlanStatus.ACTIVE:
-            for existing in self.year_plans.values():
-                if existing.user_id == plan.user_id and existing.goal_id == plan.goal_id and existing.id != plan.id:
-                    existing.status = PlanStatus.COMPLETED
         self.year_plans[plan.id] = plan
         return plan
 
@@ -136,4 +137,3 @@ class StudyRepository:
             key=lambda event: event.created_at,
             reverse=True,
         )
-
