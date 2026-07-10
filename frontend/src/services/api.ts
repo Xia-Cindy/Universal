@@ -26,11 +26,34 @@ export interface StudyGoalPayload {
 
 export interface DailyTask {
   id: string
+  goalId?: string
+  weekPlanId?: string
   subject: string
   topic: string
   taskDate: string
   estimatedMinutes: number
   status: string
+}
+
+export interface StudyGoal {
+  id: string
+  userId: string
+  goalType: StudyGoalType
+  goalName: string
+  examName?: string | null
+  deadline?: string | null
+  description?: string
+  subjects: string[]
+  currentLevel: string
+  dailyAvailableMinutes: number
+  priority: string
+  status: string
+  remainingDays?: number | null
+  progress?: {
+    totalTasks: number
+    completedTasks: number
+    taskCompletionRate: number
+  }
 }
 
 export type KnowledgeDocumentStatus = 'uploaded' | 'parsing' | 'chunking' | 'processed' | 'failed'
@@ -84,11 +107,43 @@ export interface StudyAnalyticsPayload {
   recommendedActions: string[]
   report: Record<string, any>
   dataQuality: Record<string, any>
+  learningSummary?: Record<string, any>
 }
 
 export interface StudyOnboardingState {
   state: 'needs_onboarding' | 'ready'
   activeGoal: Record<string, any> | null
+}
+
+export interface StudyWorkspacePayload {
+  state: 'needs_goal' | 'ready'
+  currentGoal: StudyGoal | null
+  goals: StudyGoal[]
+  plans: {
+    longTermPlans: Array<Record<string, any>>
+    monthlyPlans: Array<Record<string, any>>
+    weeklyPlans: Array<Record<string, any>>
+    dailyTasks: DailyTask[]
+  }
+  planSummary: {
+    hasPlan: boolean
+    longTermPlanCount: number
+    monthlyPlanCount: number
+    weeklyPlanCount: number
+    dailyTaskCount: number
+    completedTaskCount: number
+    taskCompletionRate: number
+  }
+  todayTasks: DailyTask[]
+  knowledgeSummary: {
+    documents: KnowledgeDocument[]
+    statusCounts: Record<string, number>
+    subjects: Array<Record<string, any>>
+    documentCount: number
+    goalLinkedCount: number
+    independentCount: number
+  }
+  analyticsSummary: StudyAnalyticsPayload
 }
 
 const API_BASE = '/api'
@@ -109,6 +164,14 @@ export async function fetchStudyHome() {
   return response.json()
 }
 
+export async function fetchStudyWorkspace(): Promise<StudyWorkspacePayload> {
+  const response = await fetch(`${API_BASE}/study/workspace`)
+  if (!response.ok) {
+    throw new Error('Unable to load Study Workspace')
+  }
+  return response.json()
+}
+
 export async function createGoal(payload: StudyGoalPayload) {
   const response = await fetch(`${API_BASE}/study/goals`, {
     method: 'POST',
@@ -121,7 +184,7 @@ export async function createGoal(payload: StudyGoalPayload) {
   return response.json()
 }
 
-export async function fetchStudyGoals() {
+export async function fetchStudyGoals(): Promise<StudyGoal[]> {
   const response = await fetch(`${API_BASE}/study/goals`)
   if (!response.ok) {
     throw new Error('Unable to load goals')
@@ -289,7 +352,9 @@ export async function fetchKnowledgeOverview() {
   return response.json()
 }
 
-export async function fetchKnowledgeDocuments(filters: { subject?: string; topic?: string; goalId?: string } = {}) {
+export async function fetchKnowledgeDocuments(
+  filters: { subject?: string; topic?: string; goalId?: string } = {},
+): Promise<KnowledgeDocument[]> {
   const params = new URLSearchParams()
   if (filters.subject) {
     params.set('subject', filters.subject)
@@ -328,7 +393,7 @@ export async function processKnowledgeDocument(documentId: string): Promise<Know
 
 export async function updateKnowledgeDocument(
   documentId: string,
-  payload: Partial<Pick<KnowledgeDocumentPayload, 'subject' | 'topic'>>,
+  payload: Partial<Pick<KnowledgeDocumentPayload, 'subject' | 'topic' | 'goalId'>>,
 ) {
   const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}`, {
     method: 'PATCH',

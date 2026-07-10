@@ -3,6 +3,7 @@ import UniversePortal from '../universe/portal/UniversePortal.vue'
 import StudyWorkspace from '../planets/study/layout/StudyWorkspace.vue'
 import StudyHome from '../planets/study/home/StudyHome.vue'
 import StudyOnboarding from '../planets/study/onboarding/StudyOnboarding.vue'
+import StudyGoals from '../planets/study/goals/StudyGoals.vue'
 import StudyPlan from '../planets/study/plan/StudyPlan.vue'
 import StudySession from '../planets/study/session/StudySession.vue'
 import StudyPlaceholder from '../planets/study/placeholder/StudyPlaceholder.vue'
@@ -20,6 +21,7 @@ export const router = createRouter({
       children: [
         { path: '', name: 'StudyHome', component: StudyHome },
         { path: 'onboarding', name: 'StudyOnboarding', component: StudyOnboarding },
+        { path: 'goals', name: 'StudyGoals', component: StudyGoals },
         { path: 'plan', name: 'StudyPlan', component: StudyPlan },
         { path: 'session/:sessionId', name: 'StudySession', component: StudySession },
         { path: 'knowledge', name: 'StudyKnowledge', component: StudyKnowledge },

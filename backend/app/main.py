@@ -37,6 +37,10 @@ def create_app():
     def get_study_home():
         return api.get_study_home()
 
+    @app.get("/api/study/workspace")
+    def get_study_workspace():
+        return api.get_study_workspace()
+
     @app.get("/api/study/onboarding")
     def get_study_onboarding():
         return api.get_study_onboarding()

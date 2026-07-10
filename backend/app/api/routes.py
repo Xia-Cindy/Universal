@@ -14,6 +14,7 @@ from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
+from backend.app.planets.study.workspace import StudyWorkspaceService
 from backend.app.retrieval import RetrievalQuery, RetrievalService, RetrieverTool
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
@@ -91,6 +92,7 @@ class ApiFacade:
             ai_core=self.ai_core,
         )
         self.study_home = StudyHomeService(self.study_repository)
+        self.study_workspace = StudyWorkspaceService(self.study_repository)
         self.study_analytics = StudyAnalyticsService(
             repository=self.study_repository,
             ai_core=self.ai_core,
@@ -119,6 +121,18 @@ class ApiFacade:
                 "dataQuality": analytics["dataQuality"],
             },
             knowledge_status=self.knowledge.overview(user.id),
+        )
+
+    def get_study_workspace(self) -> dict[str, object]:
+        user = self.users.current_user()
+        planet = self.registry.get_enterable_planet("study")
+        memory_context = self.memory.prepare_context(user.id, planet_type="study")
+        analytics = self.study_analytics.analytics(user=user, memory_context=memory_context)
+        return self.study_workspace.workspace(
+            user=user,
+            planet=planet,
+            knowledge_summary=self.knowledge.overview(user.id),
+            analytics_summary=analytics,
         )
 
     def get_study_onboarding(self) -> dict[str, object]:

@@ -112,6 +112,17 @@
 - [x] Replace Knowledge manual document registration with real file selection.
 - [x] Support txt and markdown upload with processing.
 - [x] Support PDF metadata upload without parser/RAG expansion.
+- [x] Add Study Workspace aggregation API for current Goal, Goals, Plans, Today Tasks, Knowledge summary and Analytics summary.
+- [x] Add Goal management page for listing, creating and switching Goals.
+- [x] Refactor Study Home to use current Goal, plan hierarchy, Today Tasks and Analytics-only recommendations.
+- [x] Refactor Plan UI into a current-Goal plan tree without raw plan type selection.
+- [x] Add Knowledge Goal filter while preserving independent Knowledge.
+- [x] Move Current Goal display and switching into the Study Workspace header.
+- [x] Keep primary Study navigation to Home, Plan, Knowledge, Tutor, Review and Analytics.
+- [x] Downgrade Goals to a management entry instead of a primary navigation item.
+- [x] Refine Study Home around Current Goal, Today Mission, Primary Action, Recent Progress and AI Insight.
+- [x] Replace separate Plan creation actions with one `Create Plan Structure` action.
+- [x] Fix Knowledge upload button enablement so valid file selections can be submitted.
 
 ## Later Milestones
 

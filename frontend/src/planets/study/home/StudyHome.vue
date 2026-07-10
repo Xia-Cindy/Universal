@@ -1,40 +1,33 @@
 <template>
   <section class="study-home" aria-labelledby="study-home-title">
     <p class="eyebrow">Study Home</p>
-    <h2 id="study-home-title">{{ title }}</h2>
+    <h2 id="study-home-title">{{ pageTitle }}</h2>
 
-    <div v-if="loadState === 'loading'" class="knowledge-state">Loading Study Planet...</div>
-    <div v-else-if="loadState === 'offline'" class="knowledge-state">Study Home is unavailable.</div>
+    <div v-if="loadState === 'loading'" class="knowledge-state">Loading Study Workspace...</div>
+    <div v-else-if="loadState === 'offline'" class="knowledge-state">Study Workspace is unavailable.</div>
 
     <template v-else>
-      <div v-if="!home.currentGoal" class="knowledge-state">
+      <div v-if="!workspace.currentGoal" class="knowledge-state">
         <strong>Study Planet needs a Goal.</strong>
-        <span>Create one Goal to open today’s learning loop.</span>
-        <RouterLink class="primary-action" to="/study/onboarding">Start Onboarding</RouterLink>
+        <span>Create a learning direction before plans, tasks, and Knowledge start to connect.</span>
+        <RouterLink class="primary-action" to="/study/goals">Create Goal</RouterLink>
       </div>
 
       <template v-else>
         <section class="home-band" aria-label="Current goal">
           <div>
-            <span class="status-pill">{{ goalTypeLabel }}</span>
-            <h3>{{ home.currentGoal.goalName }}</h3>
+            <span class="status-pill">{{ goalTypeLabel(workspace.currentGoal.goalType) }}</span>
+            <h3>{{ workspace.currentGoal.goalName }}</h3>
             <p>{{ deadlineText }}</p>
-            <p v-if="home.currentGoal.description">{{ home.currentGoal.description }}</p>
+            <p v-if="workspace.currentGoal.description">{{ workspace.currentGoal.description }}</p>
           </div>
-          <RouterLink class="primary-action" :to="primaryRoute">{{ primaryLabel }}</RouterLink>
+          <RouterLink class="secondary-action" to="/study/goals">Switch Goal</RouterLink>
         </section>
-
-        <div class="progress-snapshot" aria-label="Progress snapshot">
-          <span>Today {{ home.progressSnapshot.todayStudyMinutes }} min</span>
-          <span>This week {{ home.progressSnapshot.weekStudyMinutes }} min</span>
-          <span>{{ home.progressSummary.completedTasks }}/{{ home.progressSummary.totalTasks }} tasks</span>
-          <span>Streak {{ home.progressSnapshot.studyStreakDays }} days</span>
-        </div>
 
         <section class="home-section">
           <h3>Today’s Mission</h3>
-          <div v-if="home.todayTasks.length" class="task-list">
-            <article v-for="task in home.todayTasks" :key="task.id" class="task-row task-row-split">
+          <div v-if="workspace.todayTasks.length" class="task-list">
+            <article v-for="task in workspace.todayTasks" :key="task.id" class="task-row task-row-split">
               <div>
                 <strong>{{ task.subject }}</strong>
                 <span>{{ task.topic }}</span>
@@ -50,8 +43,25 @@
             </article>
           </div>
           <div v-else class="knowledge-state">
-            <span>No tasks are scheduled for today.</span>
-            <RouterLink class="primary-action" to="/study/plan">Open Plan</RouterLink>
+            <span>No task is scheduled for today under the current Goal.</span>
+          </div>
+        </section>
+
+        <section class="home-section">
+          <div class="section-heading">
+            <h3>Primary Action</h3>
+            <RouterLink class="primary-action" :to="primaryAction.route">{{ primaryAction.label }}</RouterLink>
+          </div>
+          <p class="surface-copy">{{ primaryAction.description }}</p>
+        </section>
+
+        <section class="home-section">
+          <h3>Recent Progress</h3>
+          <div class="progress-snapshot" aria-label="Learning summary">
+            <span>Today {{ learningSummary.todayStudyMinutes || 0 }} min</span>
+            <span>This week {{ learningSummary.weekStudyMinutes || 0 }} min</span>
+            <span>{{ learningSummary.completedTasks || 0 }}/{{ learningSummary.totalTasks || 0 }} tasks</span>
+            <span>{{ workspace.knowledgeSummary.documentCount || 0 }} documents</span>
           </div>
         </section>
 
@@ -59,13 +69,13 @@
           <h3>AI Insight</h3>
           <div class="knowledge-state">
             <strong>{{ dataQualityLabel }}</strong>
-            <ul v-if="home.aiInsight.learningInsights.length">
-              <li v-for="insight in home.aiInsight.learningInsights" :key="insight">
+            <ul v-if="workspace.analyticsSummary.learningInsights.length">
+              <li v-for="insight in workspace.analyticsSummary.learningInsights" :key="insight">
                 {{ insight }}
               </li>
             </ul>
-            <ul v-if="home.aiInsight.recommendedActions.length">
-              <li v-for="action in home.aiInsight.recommendedActions" :key="action">
+            <ul v-if="workspace.analyticsSummary.recommendedActions.length">
+              <li v-for="action in workspace.analyticsSummary.recommendedActions" :key="action">
                 {{ action }}
               </li>
             </ul>
@@ -79,89 +89,138 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { fetchStudyHome } from '../../../services/api'
+import {
+  fetchStudyWorkspace,
+  type StudyGoalType,
+  type StudyWorkspacePayload,
+} from '../../../services/api'
 
-const home = ref({
-  state: 'empty',
-  currentGoal: null as null | {
-    goalType: string
-    goalName: string
-    examName?: string | null
-    deadline?: string | null
-    description?: string
-    remainingDays: number | null
+const emptyWorkspace: StudyWorkspacePayload = {
+  state: 'needs_goal',
+  currentGoal: null,
+  goals: [],
+  plans: {
+    longTermPlans: [],
+    monthlyPlans: [],
+    weeklyPlans: [],
+    dailyTasks: [],
   },
-  todayTasks: [] as Array<{
-    id: string
-    subject: string
-    topic: string
-    estimatedMinutes: number
-    status: string
-  }>,
-  primaryNextAction: {
-    label: 'Create Goal',
-    route: '/study/onboarding',
-  },
-  aiInsight: {
-    learningInsights: [] as string[],
-    recommendedActions: [] as string[],
-    dataQuality: {
-      state: 'insufficient',
-      limitations: ['No Study workflow data is available.'] as string[],
-    },
-  },
-  progressSummary: {
-    totalTasks: 0,
-    completedTasks: 0,
+  planSummary: {
+    hasPlan: false,
+    longTermPlanCount: 0,
+    monthlyPlanCount: 0,
+    weeklyPlanCount: 0,
+    dailyTaskCount: 0,
+    completedTaskCount: 0,
     taskCompletionRate: 0,
   },
-  progressSnapshot: {
-    todayStudyMinutes: 0,
-    weekStudyMinutes: 0,
-    studyStreakDays: 0,
+  todayTasks: [],
+  knowledgeSummary: {
+    documents: [],
+    statusCounts: {},
+    subjects: [],
+    documentCount: 0,
+    goalLinkedCount: 0,
+    independentCount: 0,
   },
-})
-const loadState = ref('ready')
+  analyticsSummary: {
+    progressSummary: {},
+    learningInsights: [],
+    weakAreas: [],
+    recommendedActions: [],
+    report: {},
+    dataQuality: {
+      state: 'insufficient',
+      limitations: ['Complete study tasks and sessions first.'],
+    },
+    learningSummary: {},
+  },
+}
 
-const title = computed(() =>
-  home.value.currentGoal ? home.value.currentGoal.goalName : 'Create your first learning Goal',
+const workspace = ref<StudyWorkspacePayload>(emptyWorkspace)
+const loadState = ref('loading')
+
+const pageTitle = computed(() =>
+  workspace.value.currentGoal ? workspace.value.currentGoal.goalName : 'Create your learning space',
 )
-const primaryLabel = computed(() => home.value.primaryNextAction.label)
-const primaryRoute = computed(() => home.value.primaryNextAction.route)
-const goalTypeLabel = computed(() => {
-  const labels: Record<string, string> = {
+const learningSummary = computed(() => workspace.value.analyticsSummary.learningSummary || {})
+const primaryAction = computed(() => {
+  const currentGoal = workspace.value.currentGoal
+  if (!currentGoal) {
+    return {
+      label: 'Create Goal',
+      route: '/study/goals',
+      description: 'Start by choosing the learning direction for this Study Workspace.',
+    }
+  }
+  if (!workspace.value.planSummary.hasPlan) {
+    return {
+      label: 'Create Plan Structure',
+      route: '/study/plan',
+      description: 'Turn the current Goal into a long-term, monthly, weekly, and daily structure.',
+    }
+  }
+  const nextTask = workspace.value.todayTasks.find((task) => task.status !== 'completed')
+  if (nextTask) {
+    return {
+      label: 'Start Learning',
+      route: `/study/session/new?taskId=${nextTask.id}`,
+      description: `${nextTask.subject}: ${nextTask.topic}`,
+    }
+  }
+  if (!workspace.value.todayTasks.length) {
+    return {
+      label: 'Add Daily Task',
+      route: '/study/plan',
+      description: 'Create or adjust Daily Tasks under the current Goal.',
+    }
+  }
+  return {
+    label: 'View Analytics',
+    route: '/study/analytics',
+    description: 'Today’s tasks are complete. Review the latest learning signal.',
+  }
+})
+const deadlineText = computed(() => {
+  const goal = workspace.value.currentGoal
+  if (!goal?.deadline) {
+    return 'Open-ended learning direction'
+  }
+  return `${goal.deadline} · ${goal.remainingDays ?? 0} days left`
+})
+const dataQualityLabel = computed(() =>
+  workspace.value.analyticsSummary.dataQuality?.state === 'ready' ? 'Ready' : 'More data needed',
+)
+const hasInsight = computed(
+  () =>
+    workspace.value.analyticsSummary.learningInsights.length > 0 ||
+    workspace.value.analyticsSummary.recommendedActions.length > 0,
+)
+const firstLimitation = computed(
+  () =>
+    workspace.value.analyticsSummary.dataQuality?.limitations?.[0] ||
+    'Study activity will unlock useful recommendations.',
+)
+
+onMounted(loadWorkspace)
+
+function goalTypeLabel(type: StudyGoalType) {
+  const labels: Record<StudyGoalType, string> = {
     exam: '考试目标',
     learning: '知识学习',
     reading: '阅读目标',
     growth: '成长目标',
   }
-  return home.value.currentGoal ? labels[home.value.currentGoal.goalType] || '学习目标' : '学习目标'
-})
-const deadlineText = computed(() => {
-  if (!home.value.currentGoal?.deadline) {
-    return 'Long-term goal'
-  }
-  return `${home.value.currentGoal.deadline} · ${home.value.currentGoal.remainingDays} days left`
-})
-const dataQualityLabel = computed(() =>
-  home.value.aiInsight.dataQuality.state === 'ready' ? 'Ready' : 'More data needed',
-)
-const hasInsight = computed(
-  () =>
-    home.value.aiInsight.learningInsights.length > 0 ||
-    home.value.aiInsight.recommendedActions.length > 0,
-)
-const firstLimitation = computed(
-  () => home.value.aiInsight.dataQuality.limitations[0] || 'Complete tasks and sessions first.',
-)
+  return labels[type]
+}
 
-onMounted(async () => {
+async function loadWorkspace() {
   try {
     loadState.value = 'loading'
-    home.value = await fetchStudyHome()
+    workspace.value = await fetchStudyWorkspace()
     loadState.value = 'ready'
   } catch {
     loadState.value = 'offline'
   }
-})
+}
 </script>

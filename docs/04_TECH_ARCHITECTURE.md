@@ -1368,6 +1368,56 @@ Not changed:
 - Knowledge Graph.
 - Autonomous planning.
 
+## Milestone 7.6 Study Product Workspace UX
+
+Status: completed.
+
+Implemented:
+
+- Added Study Workspace aggregation API `GET /api/study/workspace`.
+- Aggregated existing Study Goal, Plan, Daily Task, Knowledge overview and Analytics output without duplicating business logic.
+- Added Study Goal management UI for listing, creating and switching Goals.
+- Refactored Study Home to use the current Goal, Goal switcher, plan hierarchy, Today Tasks, Knowledge count and Analytics-only insight.
+- Refactored Study Plan UI into a current-Goal guided hierarchy for long-term, monthly, weekly and daily task layers.
+- Added Knowledge Goal filtering while preserving independent Knowledge documents.
+- Added tests for multiple Goals, Goal switching, plan hierarchy, task filtering and Knowledge goal relation.
+
+Not changed:
+
+- AI Core architecture.
+- Agent registration.
+- RAG pipeline.
+- Retrieval architecture.
+- Memory architecture.
+- Knowledge Graph.
+- Future Planet implementation.
+
+## Milestone 7.8.1 Study Workspace IA Refactor
+
+Status: completed.
+
+Implemented:
+
+- Kept Goal as Study Workspace context instead of a standalone primary navigation module.
+- Added Current Goal display and switching to the Study Workspace header.
+- Kept primary Study navigation focused on Home, Plan, Knowledge, Tutor, Review and Analytics.
+- Preserved Goals as a management route for listing, creating and switching Goals.
+- Refined Study Home around Current Goal, Today Mission, Primary Action, Recent Progress and AI Insight.
+- Added `planSummary` to `GET /api/study/workspace` while preserving the existing `plans` payload.
+- Refined Study Plan to use one `Create Plan Structure` action and display Goal → Long Term → Monthly → Weekly → Daily Tasks hierarchy.
+- Fixed Knowledge upload enablement without changing Knowledge API behavior.
+- Added IA tests for Current Goal, Home data filtering, Plan hierarchy, navigation and compatibility.
+
+Not changed:
+
+- AI Core architecture.
+- Agent registration.
+- Retrieval architecture.
+- Memory architecture.
+- Database schema or migrations.
+- RAGFlow integration.
+- Autonomous planning.
+
 ---
 
 # End

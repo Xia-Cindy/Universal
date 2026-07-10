@@ -3,6 +3,19 @@
     <p class="eyebrow">Knowledge</p>
     <h2 id="knowledge-title">Knowledge Space</h2>
 
+    <div class="knowledge-filter">
+      <label>
+        Goal filter
+        <select v-model="goalFilter" @change="loadDocuments">
+          <option value="all">All Knowledge</option>
+          <option value="independent">Independent Knowledge</option>
+          <option v-for="goal in goals" :key="goal.id" :value="goal.id">
+            {{ goal.goalName }}
+          </option>
+        </select>
+      </label>
+    </div>
+
     <form class="knowledge-form" @submit.prevent="uploadDocument">
       <label class="wide-field">
         File
@@ -34,7 +47,7 @@
         <textarea v-model="form.notes" rows="3" placeholder="Optional reading note or context" />
       </label>
       <div class="knowledge-actions">
-        <button type="submit" :disabled="isLoading || !selectedFileName">Upload</button>
+        <button type="submit" :disabled="!canUpload">Upload</button>
         <span>{{ statusMessage }}</span>
       </div>
     </form>
@@ -57,6 +70,7 @@
           <button type="button" class="document-main" @click="selectDocument(document.id)">
             <span>{{ document.fileName }}</span>
             <small>{{ document.subject }} / {{ document.topic }}</small>
+            <small>{{ documentGoalLabel(document.goalId) }}</small>
           </button>
           <div class="document-meta">
             <span class="status-pill">{{ displayStatus(document.processingStatus) }}</span>
@@ -99,16 +113,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   createKnowledgeDocument,
   fetchKnowledgeDocument,
   fetchKnowledgeDocuments,
-  fetchStudyGoals,
+  fetchStudyWorkspace,
   processKnowledgeDocument,
   type KnowledgeDocument,
   type KnowledgeDocumentDetail,
   type KnowledgeDocumentPayload,
+  type StudyGoal,
 } from '../../../services/api'
 
 const form = ref<KnowledgeDocumentPayload>({
@@ -119,20 +134,44 @@ const form = ref<KnowledgeDocumentPayload>({
   goalId: null,
   content: '',
 })
-const goals = ref<Array<{ id: string; goalName: string }>>([])
+const goals = ref<StudyGoal[]>([])
+const goalFilter = ref('all')
 const selectedFileName = ref('')
 const documents = ref<KnowledgeDocument[]>([])
 const selectedDocument = ref<KnowledgeDocumentDetail | null>(null)
 const statusMessage = ref('Upload txt, markdown, or PDF metadata.')
 const isLoading = ref(false)
+const isUploading = ref(false)
+const canUpload = computed(
+  () =>
+    !isUploading.value &&
+    Boolean(selectedFileName.value) &&
+    Boolean(form.value.fileName) &&
+    Boolean(form.value.subject.trim()) &&
+    Boolean(form.value.topic.trim()),
+)
 
 onMounted(loadDocuments)
-onMounted(loadGoals)
+onMounted(loadGoalContext)
 
 async function loadDocuments() {
   isLoading.value = true
   try {
-    documents.value = await fetchKnowledgeDocuments()
+    const remoteDocuments = await fetchKnowledgeDocuments(
+      goalFilter.value !== 'all' && goalFilter.value !== 'independent'
+        ? { goalId: goalFilter.value }
+        : {},
+    )
+    documents.value =
+      goalFilter.value === 'independent'
+        ? remoteDocuments.filter((document: KnowledgeDocument) => !document.goalId)
+        : remoteDocuments
+    if (
+      selectedDocument.value &&
+      !documents.value.some((document) => document.id === selectedDocument.value?.document.id)
+    ) {
+      selectedDocument.value = null
+    }
     if (documents.value.length && !selectedDocument.value) {
       await selectDocument(documents.value[0].id)
     }
@@ -141,12 +180,22 @@ async function loadDocuments() {
   }
 }
 
-async function loadGoals() {
-  goals.value = await fetchStudyGoals()
+async function loadGoalContext() {
+  const workspace = await fetchStudyWorkspace()
+  goals.value = workspace.goals
+  if (workspace.currentGoal && !form.value.goalId) {
+    form.value.goalId = workspace.currentGoal.id
+    goalFilter.value = workspace.currentGoal.id
+    await loadDocuments()
+  }
 }
 
 async function uploadDocument() {
-  isLoading.value = true
+  if (!canUpload.value) {
+    statusMessage.value = 'Choose a supported file and fill Subject and Topic first.'
+    return
+  }
+  isUploading.value = true
   try {
     const payload = { ...form.value, storagePath: selectedFileName.value }
     if (payload.fileType === 'pdf') {
@@ -166,7 +215,7 @@ async function uploadDocument() {
   } catch (error) {
     statusMessage.value = error instanceof Error ? error.message : 'Document upload failed.'
   } finally {
-    isLoading.value = false
+    isUploading.value = false
   }
 }
 
@@ -213,6 +262,13 @@ function detectFileType(fileName: string): KnowledgeDocumentPayload['fileType'] 
 
 function displayStatus(status: KnowledgeDocument['processingStatus']) {
   return status === 'parsing' || status === 'chunking' ? 'processing' : status
+}
+
+function documentGoalLabel(goalId?: string | null) {
+  if (!goalId) {
+    return 'Independent Knowledge'
+  }
+  return goals.value.find((goal) => goal.id === goalId)?.goalName || 'Linked Goal'
 }
 
 async function selectDocument(documentId: string) {

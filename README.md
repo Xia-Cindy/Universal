@@ -101,6 +101,22 @@ Milestone 7 does not redesign AI Core, add new Agents, add new Planets, or imple
 
 Current Study Workspace polish adds configurable Goal types for exam, knowledge learning, reading, and growth goals; optional deadlines; multiple goals with switching; multiple plans per goal; a Universe Home return path; and Knowledge file selection for txt, markdown, and PDF metadata.
 
+Milestone 7.6 refactors the Study frontend workflow around the current Goal:
+
+- `/api/study/workspace` aggregates current Goal, all Goals, plan hierarchy, Today Tasks, Knowledge summary, and Analytics summary.
+- Study Home shows the current Goal, Goal switcher, plan hierarchy, Today Tasks, learning summary, and Analytics-only AI insight.
+- Goals page supports listing, creating, and switching exam, learning, reading, and growth goals.
+- Plan page shows a guided current-Goal plan tree and daily tasks without exposing raw plan type fields.
+- Knowledge page supports Goal filtering while still allowing independent Knowledge.
+
+Milestone 7.8.1 stabilizes Study Workspace information architecture:
+
+- Current Goal appears in the Study Workspace header with switching and a Goals management entry.
+- Primary navigation stays focused on Home, Plan, Knowledge, Tutor, Review, and Analytics.
+- Study Home focuses on the current Goal, Today Mission, Primary Action, Recent Progress, and Analytics-only AI Insight.
+- Plan uses a single `Create Plan Structure` action and displays the Goal → Plan → Task hierarchy.
+- Knowledge upload keeps the existing API and enables submission once a supported file, Subject, and Topic are present.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run
