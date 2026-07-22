@@ -14,14 +14,14 @@
       <div class="analytics-summary">
         <span>
           <strong>{{ analytics.progressSummary.completedTasks || 0 }}</strong>
-          tasks done
+          tasks completed
         </span>
         <span>
           <strong>{{ analytics.progressSummary.totalStudyMinutes || 0 }}</strong>
           minutes studied
         </span>
         <span>
-          <strong>{{ analytics.progressSummary.taskCompletionRate || 0 }}</strong>
+          <strong>{{ completionRateLabel }}</strong>
           completion rate
         </span>
       </div>
@@ -44,7 +44,7 @@
         <h3>Weak areas</h3>
         <article v-for="area in analytics.weakAreas" :key="area.subject" class="chunk-item">
           <strong>{{ area.subject }}</strong>
-          <p>{{ area.reason }} · {{ area.completionRate }} completion</p>
+          <p>{{ weakAreaReason(area.reason) }} · {{ Math.round((area.completionRate || 0) * 100) }}% completion</p>
         </article>
       </section>
 
@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   createStudyAnalyticsReport,
   fetchStudyAnalytics,
@@ -82,6 +82,9 @@ import {
 const analytics = ref<StudyAnalyticsPayload | null>(null)
 const isLoading = ref(false)
 const status = ref('Analyst reads current Study signals.')
+const completionRateLabel = computed(() =>
+  `${Math.round(((analytics.value?.progressSummary.taskCompletionRate as number) || 0) * 100)}%`,
+)
 
 onMounted(loadAnalytics)
 
@@ -102,5 +105,12 @@ async function refreshReport() {
   } finally {
     isLoading.value = false
   }
+}
+
+function weakAreaReason(reason: string) {
+  const labels: Record<string, string> = {
+    low_task_completion: '任务推进偏慢',
+  }
+  return labels[reason] || reason
 }
 </script>

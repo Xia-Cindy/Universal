@@ -32,6 +32,7 @@ class StudyWorkspaceIATests(unittest.TestCase):
 
         self.assertEqual(workspace["currentGoal"]["id"], goal["id"])
         self.assertTrue(workspace["planSummary"]["hasPlan"])
+        self.assertEqual(workspace["primaryAction"]["type"], "start_learning")
         self.assertEqual(workspace["planSummary"]["longTermPlanCount"], 1)
         self.assertEqual(workspace["planSummary"]["monthlyPlanCount"], 1)
         self.assertEqual(workspace["planSummary"]["weeklyPlanCount"], 1)
@@ -58,6 +59,7 @@ class StudyWorkspaceIATests(unittest.TestCase):
         workspace = self.api.get_study_workspace()
 
         self.assertFalse(workspace_without_plan["planSummary"]["hasPlan"])
+        self.assertEqual(workspace_without_plan["primaryAction"]["type"], "create_plan")
         self.assertEqual(workspace["plans"]["longTermPlans"][0]["goalId"], goal["id"])
         self.assertEqual(workspace["plans"]["monthlyPlans"][0]["goalId"], goal["id"])
         self.assertEqual(workspace["plans"]["weeklyPlans"][0]["goalId"], goal["id"])

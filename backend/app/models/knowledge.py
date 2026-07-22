@@ -34,7 +34,12 @@ class Document:
     topic: str
     goal_id: str | None = None
     content: str = ""
+    content_encoding: str = "text"
     storage_path: str | None = None
+    provider: str = "local"
+    provider_dataset_id: str | None = None
+    provider_document_id: str | None = None
+    provider_status: str | None = None
     processing_status: DocumentStatus = DocumentStatus.UPLOADED
     error_message: str | None = None
     id: str = field(default_factory=_id)
@@ -51,6 +56,11 @@ class Document:
             "subject": self.subject,
             "topic": self.topic,
             "storagePath": self.storage_path,
+            "contentEncoding": self.content_encoding,
+            "provider": self.provider,
+            "providerDatasetId": self.provider_dataset_id,
+            "providerDocumentId": self.provider_document_id,
+            "providerStatus": self.provider_status,
             "processingStatus": self.processing_status.value,
             "errorMessage": self.error_message,
             "createdAt": self.created_at.isoformat(),

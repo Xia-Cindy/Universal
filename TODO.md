@@ -123,12 +123,37 @@
 - [x] Refine Study Home around Current Goal, Today Mission, Primary Action, Recent Progress and AI Insight.
 - [x] Replace separate Plan creation actions with one `Create Plan Structure` action.
 - [x] Fix Knowledge upload button enablement so valid file selections can be submitted.
+- [x] Make Home and Workspace primary action backend-owned so the frontend only renders the service decision.
+- [x] Replace completed-task Start Session action with a progress/review-oriented action.
+- [x] Clarify PDF Knowledge uploads as metadata-only when the parser is unavailable.
+- [x] Add Tutor empty-question validation.
+- [x] Reduce duplicate Current Goal display in the Study header.
+- [x] Group Goals page into Current Goal, Other Goals and Create Goal sections.
+- [x] Convert Analytics copy from raw engineering metrics to user-facing learning language.
+- [x] Rename static side guidance to Study Context so AI recommendations only come from Analytics/Analyst.
+- [x] Mark Review / Wrong Questions as a later closed-loop feature instead of implying it is complete.
+
+## Milestone 8.1 RAGFlow Knowledge Provider
+
+- [x] Add KnowledgeProvider protocol and RAGFlow adapter.
+- [x] Add provider metadata migration for Knowledge documents.
+- [x] Keep Universe frontend, Tutor, Study Planet and AI Core behind Universe Backend APIs.
+- [x] Route provider-backed document processing through RAGFlow upload, parse and chunk APIs.
+- [x] Route provider-backed retrieval through RAGFlow retrieval API.
+- [x] Preserve local Knowledge fallback when `KNOWLEDGE_PROVIDER=local`.
+- [x] Display provider-backed status in Study Knowledge.
+- [x] Add mocked RAGFlow provider tests.
+- [x] Add project-local RAGFlow Docker Compose stack.
+- [x] Add RAGFlow installation and Universe connection documentation.
 
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
 - [ ] Connect Knowledge services to PostgreSQL adapters and object/file storage.
-- [ ] Add production vector storage adapter.
-- [ ] Implement Knowledge + RAG with citations.
+- [ ] Run production RAGFlow runtime validation with a real API key and embedding model configured.
+- [ ] Add provider status polling and retry handling.
+- [ ] Add provider-backed citation formatting for Tutor answers.
+- [ ] Backfill existing local documents into RAGFlow when original content is available.
+- [ ] Productize Plan Builder with editable long-term, monthly and weekly plan layers.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
 - [ ] Implement Wrong Questions and Review.

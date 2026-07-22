@@ -77,6 +77,18 @@ def create_app():
     def get_current_plan():
         return api.get_current_plan()
 
+    @app.patch("/api/study/plans/year/{plan_id}")
+    def update_year_plan(plan_id: str, payload: dict):
+        return api.update_year_plan(plan_id, payload)
+
+    @app.patch("/api/study/plans/month/{plan_id}")
+    def update_month_plan(plan_id: str, payload: dict):
+        return api.update_month_plan(plan_id, payload)
+
+    @app.patch("/api/study/plans/week/{plan_id}")
+    def update_week_plan(plan_id: str, payload: dict):
+        return api.update_week_plan(plan_id, payload)
+
     @app.patch("/api/study/tasks/{task_id}")
     def update_task(task_id: str, payload: dict):
         return api.update_task(task_id, payload)

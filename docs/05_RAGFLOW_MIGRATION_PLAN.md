@@ -1,15 +1,38 @@
 # Universe OS
 # 05_RAGFLOW_MIGRATION_PLAN.md
 
-Version: 0.1
+Version: 0.2
 
 Document Type: Architecture Review and Migration Plan
 
-Status: Planning Only
+Status: Provider Adapter Implemented
 
 Scope: RAGFlow Knowledge Infrastructure Migration
 
 ---
+
+# 0. Runtime Setup Status
+
+Universe OS now includes a local RAGFlow Docker Compose stack:
+
+```text
+docker/ragflow/
+├── docker-compose.yml
+├── .env.example
+├── universe.env.example
+├── init.sql
+├── start.sh
+├── stop.sh
+└── README.md
+```
+
+Installation steps are documented in:
+
+```text
+docs/06_RAGFLOW_INSTALLATION.md
+```
+
+This stack is for local development and integration validation. Production hardening still requires real credentials, runtime monitoring, backup strategy, status polling, and retry handling.
 
 # 1. Current Architecture Analysis
 
@@ -154,7 +177,7 @@ AI Core → RAGFlow
 
 ## 2.1 Knowledge Provider Interface
 
-未来新增 provider boundary：
+当前已新增 provider boundary：
 
 ```text
 backend/app/knowledge/providers/
@@ -162,23 +185,22 @@ backend/app/knowledge/providers/
 └── ragflow.py
 ```
 
-建议 interface：
+当前 interface：
 
 ```python
 class KnowledgeProvider(Protocol):
-    def upload_document(self, *, user_id: str, document: dict, file_payload: dict) -> dict:
+    name: str
+
+    def upload_document(self, *, user_id: str, document: Document) -> dict[str, object]:
         ...
 
-    def get_document_status(self, *, user_id: str, provider_document_id: str) -> dict:
+    def parse_document(self, *, user_id: str, dataset_id: str, document_id: str) -> dict[str, object]:
         ...
 
-    def delete_document(self, *, user_id: str, provider_document_id: str) -> dict:
+    def list_document_chunks(self, *, user_id: str, dataset_id: str, document_id: str, limit: int = 30) -> list[dict[str, object]]:
         ...
 
-    def search(self, *, user_id: str, query: str, filters: dict, limit: int) -> dict:
-        ...
-
-    def get_document_info(self, *, user_id: str, provider_document_id: str) -> dict:
+    def search(self, *, user_id: str, query: str, dataset_ids: list[str], document_ids: list[str] | None = None, limit: int = 5) -> dict[str, object]:
         ...
 ```
 
@@ -186,15 +208,16 @@ Provider 返回值必须被 Universe OS adapter normalized，不能把 RAGFlow r
 
 ## 2.2 Provider Selection
 
-短期建议只支持一个 active provider：
+短期只支持一个 active provider：
 
 ```text
 KNOWLEDGE_PROVIDER=local | ragflow
 ```
 
-但 data model 应从第一天支持 per-document provider：
+data model 支持 per-document provider：
 
 - `provider`
+- `content_encoding`
 - `provider_dataset_id`
 - `provider_document_id`
 - `provider_status`
@@ -222,7 +245,7 @@ KNOWLEDGE_PROVIDER=local | ragflow
 
 # 4. Database Migration Strategy
 
-This milestone does not create migrations. The following is the future strategy.
+Migration `009_ragflow_provider_metadata.sql` extends `documents` with provider references while preserving local Knowledge compatibility.
 
 ## 4.1 Keep Existing Tables During Migration
 
@@ -255,6 +278,7 @@ documents
 ├── file_type
 ├── subject
 ├── topic
+├── content_encoding
 ├── provider
 ├── provider_dataset_id
 ├── provider_document_id
@@ -329,12 +353,12 @@ Recommended default:
 
 ## 4.5 Migration Phases
 
-1. Add provider metadata fields while keeping local flow.
-2. New uploads write `provider='ragflow'` and provider ids.
-3. Existing local documents remain `provider='local'`.
-4. RetrievalService searches provider based on document/provider metadata.
-5. Optional backfill: re-upload local documents to RAGFlow when original file/content is available.
-6. After stable operation, deprecate local chunk embedding pipeline but keep read compatibility.
+1. [x] Add provider metadata fields while keeping local flow.
+2. [x] New uploads write `provider='ragflow'` and provider ids when configured.
+3. [x] Existing local documents remain `provider='local'`.
+4. [x] RetrievalService searches provider based on document/provider metadata.
+5. [ ] Optional backfill: re-upload local documents to RAGFlow when original file/content is available.
+6. [ ] After stable operation, deprecate local chunk embedding pipeline but keep read compatibility.
 
 ## 4.6 Migration Numbering Risk
 
@@ -388,7 +412,9 @@ Response should remain normalized:
 
 ## 5.3 Status API
 
-`GET document detail` should refresh provider status through KnowledgeService, then return Universe-normalized status.
+`GET document detail` currently returns Universe-normalized document and chunk cache state. Provider-backed processing can be invoked through `POST /process`; repeated processing reuses the existing provider document id instead of uploading duplicates.
+
+Future production work should add background polling or a status refresh path for long-running RAGFlow parsing/indexing.
 
 Do not expose:
 
@@ -424,19 +450,21 @@ Do not return generated answers from RetrievalService.
 
 Frontend should not know about RAGFlow.
 
-Expected frontend changes in future implementation:
+Implemented frontend behavior:
 
 - Display provider-backed processing status.
 - Keep upload UI the same: file, subject, topic, optional goal/context.
-- Show document status transitions from backend:
+- Send PDF content as base64 when RAGFlow is active through the backend provider.
+- Keep local PDF uploads labeled as metadata-only when no parser/RAGFlow provider is configured.
+
+Expected backend status transitions:
   - uploaded
   - parsing / processing
   - chunking
-  - embedding / indexing
   - processed
   - failed
-- If RAGFlow status names differ, backend maps them to Universe OS canonical statuses.
-- Chunk detail may become provider-backed preview rather than locally stored full chunk rows.
+- RAGFlow status names are held in `providerStatus`; Universe status remains canonical.
+- Chunk detail is currently a local compatibility cache populated from provider chunk previews when available.
 
 No frontend direct calls to:
 
@@ -450,24 +478,25 @@ No frontend direct calls to:
 
 ## Milestone 8.1: RAGFlow Provider Adapter
 
+Status: completed.
+
 Objective:
 
 Add provider interface and RAGFlow adapter without changing user-facing behavior.
 
-Scope:
+Implemented:
 
 - Add `KnowledgeProvider` protocol.
-- Add `LocalKnowledgeProvider` adapter around current local behavior if useful.
-- Add `RAGFlowKnowledgeProvider` skeleton/client boundary.
+- Add `RAGFlowKnowledgeProvider` client boundary.
 - Add provider config.
 - Add tests with mocked RAGFlow responses.
+- Normalize dataset, document, chunk and retrieval responses.
 
-Out of scope:
+Not changed:
 
-- Production RAGFlow calls from current upload flow.
-- Database migration.
-- Frontend change.
-- Tutor change.
+- AI Core.
+- Tutor direct dependencies.
+- Frontend direct provider calls.
 
 Acceptance criteria:
 
@@ -476,6 +505,8 @@ Acceptance criteria:
 - No AI Core import or dependency on RAGFlow.
 
 ## Milestone 8.2: Knowledge Service Migration
+
+Status: completed for backend provider orchestration; production status polling remains open.
 
 Objective:
 
@@ -498,6 +529,8 @@ Acceptance criteria:
 
 ## Milestone 8.3: Retrieval Migration
 
+Status: completed for provider-backed retrieval search and local fallback.
+
 Objective:
 
 Move retrieval search from local embedding/vector store to provider-backed search.
@@ -518,6 +551,8 @@ Acceptance criteria:
 - No generated answers from RetrievalService.
 
 ## Milestone 8.4: Tutor Grounded Knowledge Validation
+
+Status: partially covered by existing ToolRouter path; real RAGFlow runtime validation remains open.
 
 Objective:
 
@@ -645,15 +680,16 @@ Mitigation:
    - RAGFlow stores originals and Universe OS stores references only
 
 3. Chunk visibility:
-   - keep local chunk cache for UI preview
-   - fetch chunk previews from RAGFlow on demand
+   - current choice: keep local chunk cache for UI preview when provider chunks are available
+   - future option: fetch chunk previews from RAGFlow on demand
 
 4. Provider fallback:
-   - local fallback only for existing documents
-   - local fallback also for new documents when RAGFlow is down
+   - current choice: `KNOWLEDGE_PROVIDER=local` remains the default
+   - open: local fallback for new provider-backed uploads when RAGFlow is down
 
 5. Status mapping:
-   - exact RAGFlow status names must be mapped to Universe canonical statuses after adapter spike.
+   - current choice: Universe uses canonical `processing_status`; raw provider lifecycle is stored as `provider_status`.
+   - open: background polling and richer RAGFlow status mapping.
 
 ---
 

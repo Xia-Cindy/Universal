@@ -95,9 +95,9 @@ class StudyAnalyticsService:
         learning_insights = self._learning_insights(progress, weak_areas, memory_context)
         recommended_actions = self._recommended_actions(tasks, weak_areas)
         report_summary = (
-            "Study data is ready for interpretation."
+            "学习数据已经足够生成基础分析。"
             if data_quality["state"] == "ready"
-            else "Study data is still limited; complete more tasks and sessions."
+            else "学习数据还不够，请先完成更多任务和学习记录。"
         )
         return {
             "progressSummary": progress,
@@ -127,15 +127,15 @@ class StudyAnalyticsService:
             },
             "learningInsights": [],
             "weakAreas": [],
-            "recommendedActions": ["Create a Goal and generate a Study Plan."],
+            "recommendedActions": ["先创建一个学习目标，并为它建立学习计划。"],
             "report": {
-                "summary": "Analytics needs an active Goal before it can explain progress.",
+                "summary": "需要先有当前学习目标，Analytics 才能解释学习进展。",
                 "mode": "empty",
                 "actionsApplied": [],
             },
             "dataQuality": {
                 "state": "insufficient",
-                "limitations": ["No active Goal exists."],
+                "limitations": ["当前还没有学习目标。"],
             },
         }
 
@@ -174,9 +174,9 @@ class StudyAnalyticsService:
     def _data_quality(self, *, tasks, sessions) -> dict[str, object]:
         limitations = []
         if not tasks:
-            limitations.append("No Daily Tasks exist.")
+            limitations.append("当前目标还没有每日任务。")
         if not sessions:
-            limitations.append("No finished Study Sessions exist.")
+            limitations.append("还没有完成的学习记录。")
         return {
             "state": "ready" if not limitations else "insufficient",
             "limitations": limitations,
@@ -189,25 +189,25 @@ class StudyAnalyticsService:
         memory_context: dict[str, object],
     ) -> list[str]:
         insights = [
-            f"Task completion is {progress['taskCompletionRate']}.",
-            f"Finished study time is {progress['totalStudyMinutes']} minutes.",
+            f"当前任务完成率为 {int(progress['taskCompletionRate'] * 100)}%。",
+            f"累计已记录学习时间 {progress['totalStudyMinutes']} 分钟。",
         ]
         if weak_areas:
-            insights.append(f"{len(weak_areas)} subject(s) need steadier follow-through.")
+            insights.append(f"{len(weak_areas)} 个主题推进偏慢，需要更稳定的学习节奏。")
         memory_count = sum(len(memory_context.get(scope, [])) for scope in ("global", "planet", "session"))
         if memory_count:
-            insights.append(f"{memory_count} memory item(s) are available for interpretation.")
+            insights.append(f"已有 {memory_count} 条 Memory 可用于理解你的学习状态。")
         return insights
 
     def _recommended_actions(self, tasks, weak_areas: list[dict[str, object]]) -> list[str]:
         next_task = next((task for task in tasks if task.status != TaskStatus.COMPLETED), None)
         actions = []
         if next_task:
-            actions.append(f"Continue {next_task.subject} / {next_task.topic}.")
+            actions.append(f"继续完成 {next_task.subject} / {next_task.topic}。")
         if weak_areas:
-            actions.append(f"Schedule a focused session for {weak_areas[0]['subject']}.")
+            actions.append(f"为 {weak_areas[0]['subject']} 安排一次专注学习。")
         if not actions:
-            actions.append("Review your completed tasks and plan the next week.")
+            actions.append("回顾已完成任务，并规划下一周学习。")
         return actions
 
     def _retrieval_query(self, payload: dict[str, object]) -> str:

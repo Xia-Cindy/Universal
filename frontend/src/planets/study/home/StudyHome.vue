@@ -1,10 +1,20 @@
 <template>
   <section class="study-home" aria-labelledby="study-home-title">
-    <p class="eyebrow">Study Home</p>
-    <h2 id="study-home-title">{{ pageTitle }}</h2>
+    <div class="study-home-intro">
+      <div>
+        <p class="eyebrow">Study Home</p>
+        <h2 id="study-home-title">{{ pageTitle }}</h2>
+      </div>
+      <span class="status-pill">Next Action First</span>
+    </div>
 
-    <div v-if="loadState === 'loading'" class="knowledge-state">Loading Study Workspace...</div>
-    <div v-else-if="loadState === 'offline'" class="knowledge-state">Study Workspace is unavailable.</div>
+    <div v-if="loadState === 'loading'" class="knowledge-state ambient-state">
+      Loading Goal, Plan, Memory, and Analytics...
+    </div>
+    <div v-else-if="loadState === 'offline'" class="knowledge-state ambient-state">
+      <strong>Study Workspace is unavailable.</strong>
+      <span>Goal and task data could not be loaded. Retry when the backend is reachable.</span>
+    </div>
 
     <template v-else>
       <div v-if="!workspace.currentGoal" class="knowledge-state">
@@ -14,6 +24,20 @@
       </div>
 
       <template v-else>
+        <section class="next-action-room" aria-label="Primary next action">
+          <div class="next-action-copy">
+            <span class="status-pill">{{ primaryActionTag }}</span>
+            <h3>{{ primaryAction.label }}</h3>
+            <p>{{ primaryAction.description }}</p>
+            <RouterLink class="primary-action" :to="primaryAction.route">{{ primaryAction.label }}</RouterLink>
+          </div>
+          <aside class="recommendation-card">
+            <p class="eyebrow">AI Insight</p>
+            <strong>{{ dataQualityLabel }}</strong>
+            <p>{{ recommendationText }}</p>
+          </aside>
+        </section>
+
         <section class="home-band" aria-label="Current goal">
           <div>
             <span class="status-pill">{{ goalTypeLabel(workspace.currentGoal.goalType) }}</span>
@@ -24,51 +48,53 @@
           <RouterLink class="secondary-action" to="/study/goals">Switch Goal</RouterLink>
         </section>
 
-        <section class="home-section">
-          <h3>Today’s Mission</h3>
-          <div v-if="workspace.todayTasks.length" class="task-list">
-            <article v-for="task in workspace.todayTasks" :key="task.id" class="task-row task-row-split">
-              <div>
-                <strong>{{ task.subject }}</strong>
-                <span>{{ task.topic }}</span>
-                <small>{{ task.estimatedMinutes }} min · {{ task.status }}</small>
-              </div>
-              <RouterLink
-                v-if="task.status !== 'completed'"
-                class="primary-action"
-                :to="`/study/session/new?taskId=${task.id}`"
-              >
-                Start
-              </RouterLink>
-            </article>
+        <section class="home-layout">
+          <div class="home-section today-panel">
+            <div class="section-heading">
+              <h3>Today’s Mission</h3>
+              <span>{{ workspace.todayTasks.length }} tasks</span>
+            </div>
+            <div v-if="workspace.todayTasks.length" class="task-list">
+              <article v-for="task in workspace.todayTasks" :key="task.id" class="task-row task-row-split">
+                <div>
+                  <strong>{{ task.subject }}</strong>
+                  <span>{{ task.topic }}</span>
+                  <small>{{ task.estimatedMinutes }} min · {{ task.status }}</small>
+                </div>
+                <RouterLink
+                  v-if="task.status !== 'completed'"
+                  class="primary-action"
+                  :to="`/study/session/new?taskId=${task.id}`"
+                >
+                  Start
+                </RouterLink>
+                <RouterLink v-else class="secondary-action" to="/study/analytics">
+                  View Record / Review
+                </RouterLink>
+              </article>
+            </div>
+            <div v-else class="knowledge-state">
+              <span>No task is scheduled for today under the current Goal.</span>
+            </div>
           </div>
-          <div v-else class="knowledge-state">
-            <span>No task is scheduled for today under the current Goal.</span>
+
+          <div class="home-section progress-panel">
+            <h3>Progress Snapshot</h3>
+            <div class="progress-snapshot" aria-label="Learning summary">
+              <span><strong>{{ learningSummary.todayStudyMinutes || 0 }}</strong>Today min</span>
+              <span><strong>{{ learningSummary.weekStudyMinutes || 0 }}</strong>This week min</span>
+              <span><strong>{{ learningSummary.completedTasks || 0 }}/{{ learningSummary.totalTasks || 0 }}</strong>Tasks</span>
+              <span><strong>{{ workspace.knowledgeSummary.documentCount || 0 }}</strong>Documents</span>
+            </div>
           </div>
         </section>
 
-        <section class="home-section">
-          <div class="section-heading">
-            <h3>Primary Action</h3>
-            <RouterLink class="primary-action" :to="primaryAction.route">{{ primaryAction.label }}</RouterLink>
+        <section class="home-section insight-panel">
+          <div>
+            <h3>Recommendation Evidence</h3>
+            <p class="surface-copy">AI advice should explain what it used, not appear as a generic prompt.</p>
           </div>
-          <p class="surface-copy">{{ primaryAction.description }}</p>
-        </section>
-
-        <section class="home-section">
-          <h3>Recent Progress</h3>
-          <div class="progress-snapshot" aria-label="Learning summary">
-            <span>Today {{ learningSummary.todayStudyMinutes || 0 }} min</span>
-            <span>This week {{ learningSummary.weekStudyMinutes || 0 }} min</span>
-            <span>{{ learningSummary.completedTasks || 0 }}/{{ learningSummary.totalTasks || 0 }} tasks</span>
-            <span>{{ workspace.knowledgeSummary.documentCount || 0 }} documents</span>
-          </div>
-        </section>
-
-        <section class="home-section">
-          <h3>AI Insight</h3>
           <div class="knowledge-state">
-            <strong>{{ dataQualityLabel }}</strong>
             <ul v-if="workspace.analyticsSummary.learningInsights.length">
               <li v-for="insight in workspace.analyticsSummary.learningInsights" :key="insight">
                 {{ insight }}
@@ -115,6 +141,12 @@ const emptyWorkspace: StudyWorkspacePayload = {
     taskCompletionRate: 0,
   },
   todayTasks: [],
+  primaryAction: {
+    type: 'create_goal',
+    label: 'Create Goal',
+    route: '/study/goals',
+    description: 'Start by choosing the learning direction for this Study Workspace.',
+  },
   knowledgeSummary: {
     documents: [],
     statusCounts: {},
@@ -141,45 +173,19 @@ const workspace = ref<StudyWorkspacePayload>(emptyWorkspace)
 const loadState = ref('loading')
 
 const pageTitle = computed(() =>
-  workspace.value.currentGoal ? workspace.value.currentGoal.goalName : 'Create your learning space',
+  workspace.value.currentGoal ? 'What should I do next today?' : 'Create your learning space',
 )
 const learningSummary = computed(() => workspace.value.analyticsSummary.learningSummary || {})
-const primaryAction = computed(() => {
-  const currentGoal = workspace.value.currentGoal
-  if (!currentGoal) {
-    return {
-      label: 'Create Goal',
-      route: '/study/goals',
-      description: 'Start by choosing the learning direction for this Study Workspace.',
-    }
+const primaryAction = computed(() => workspace.value.primaryAction)
+const primaryActionTag = computed(() => {
+  const labels: Record<string, string> = {
+    create_goal: 'CREATE GOAL',
+    generate_plan: 'GENERATE PLAN',
+    start_learning: 'PRIMARY NEXT ACTION',
+    start_review: 'REVIEW DUE',
+    view_record: 'TODAY COMPLETE',
   }
-  if (!workspace.value.planSummary.hasPlan) {
-    return {
-      label: 'Create Plan Structure',
-      route: '/study/plan',
-      description: 'Turn the current Goal into a long-term, monthly, weekly, and daily structure.',
-    }
-  }
-  const nextTask = workspace.value.todayTasks.find((task) => task.status !== 'completed')
-  if (nextTask) {
-    return {
-      label: 'Start Learning',
-      route: `/study/session/new?taskId=${nextTask.id}`,
-      description: `${nextTask.subject}: ${nextTask.topic}`,
-    }
-  }
-  if (!workspace.value.todayTasks.length) {
-    return {
-      label: 'Add Daily Task',
-      route: '/study/plan',
-      description: 'Create or adjust Daily Tasks under the current Goal.',
-    }
-  }
-  return {
-    label: 'View Analytics',
-    route: '/study/analytics',
-    description: 'Today’s tasks are complete. Review the latest learning signal.',
-  }
+  return labels[primaryAction.value.type] || 'PRIMARY NEXT ACTION'
 })
 const deadlineText = computed(() => {
   const goal = workspace.value.currentGoal
@@ -200,6 +206,12 @@ const firstLimitation = computed(
   () =>
     workspace.value.analyticsSummary.dataQuality?.limitations?.[0] ||
     'Study activity will unlock useful recommendations.',
+)
+const recommendationText = computed(
+  () =>
+    workspace.value.analyticsSummary.recommendedActions[0] ||
+    workspace.value.analyticsSummary.learningInsights[0] ||
+    firstLimitation.value,
 )
 
 onMounted(loadWorkspace)

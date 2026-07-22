@@ -20,7 +20,7 @@ class PlanService:
             user_id=user_id,
             goal_id=goal.id,
             year=start_date.year,
-            title=payload.get("title", f"{goal.goal_name} Learning Plan"),
+            title=payload.get("title", f"{goal.goal_name} 学习计划"),
         )
         self._repository.save_year_plan(year)
 
@@ -30,7 +30,7 @@ class PlanService:
             year_plan_id=year.id,
             month=start_date.month,
             title=payload.get("monthTitle", f"{start_date.month}月学习计划"),
-            focus=payload.get("monthFocus", "Build a steady daily learning rhythm."),
+            focus=payload.get("monthFocus", "建立稳定的每日学习节奏。"),
         )
         self._repository.save_month_plan(month)
 
@@ -40,8 +40,8 @@ class PlanService:
             month_plan_id=month.id,
             week_start=start_date,
             week_end=start_date + timedelta(days=6),
-            title=payload.get("weekTitle", "This week learning focus"),
-            focus=payload.get("weekFocus", "Complete daily tasks and record real study time."),
+            title=payload.get("weekTitle", "本周学习重点"),
+            focus=payload.get("weekFocus", "完成每日任务，并记录真实学习时间。"),
         )
         self._repository.save_week_plan(week)
 
@@ -68,6 +68,31 @@ class PlanService:
         if not plan:
             return None
         return self._serialize_plan(plan)
+
+    def update_year_plan(self, user_id: str, plan_id: str, payload: dict) -> YearPlan:
+        plan = self._repository.get_year_plan(plan_id, user_id)
+        if "title" in payload:
+            plan.title = payload["title"]
+        plan.updated_at = local_now()
+        return self._repository.save_year_plan(plan)
+
+    def update_month_plan(self, user_id: str, plan_id: str, payload: dict) -> MonthPlan:
+        plan = self._repository.get_month_plan(plan_id, user_id)
+        if "title" in payload:
+            plan.title = payload["title"]
+        if "focus" in payload:
+            plan.focus = payload["focus"]
+        plan.updated_at = local_now()
+        return self._repository.save_month_plan(plan)
+
+    def update_week_plan(self, user_id: str, plan_id: str, payload: dict) -> WeekPlan:
+        plan = self._repository.get_week_plan(plan_id, user_id)
+        if "title" in payload:
+            plan.title = payload["title"]
+        if "focus" in payload:
+            plan.focus = payload["focus"]
+        plan.updated_at = local_now()
+        return self._repository.save_week_plan(plan)
 
     def update_task(self, user_id: str, task_id: str, payload: dict) -> DailyTask:
         task = self._repository.get_task(task_id, user_id)
@@ -104,7 +129,7 @@ class PlanService:
             tasks.append(
                 {
                     "subject": subject,
-                    "topic": f"{subject} foundation",
+                    "topic": f"{subject} 基础",
                     "taskDate": (start_date + timedelta(days=offset)).isoformat(),
                     "estimatedMinutes": goal.daily_available_minutes,
                 }

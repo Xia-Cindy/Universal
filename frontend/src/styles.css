@@ -321,6 +321,66 @@ textarea {
   gap: 10px;
 }
 
+.compact-goal-band {
+  margin-bottom: 18px;
+}
+
+.plan-empty-state {
+  border: 1px solid rgba(125, 211, 199, 0.28);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 18px;
+}
+
+.plan-empty-state h3 {
+  margin: 0;
+}
+
+.plan-empty-state p {
+  color: rgba(238, 247, 248, 0.72);
+  margin: 0;
+}
+
+.plan-roadmap {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.roadmap-step {
+  border: 1px solid rgba(238, 247, 248, 0.12);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 14px;
+}
+
+.roadmap-step h3,
+.roadmap-step p {
+  margin: 0;
+}
+
+.roadmap-step p:not(.eyebrow),
+.roadmap-step small {
+  color: rgba(238, 247, 248, 0.68);
+}
+
+.step-index {
+  align-items: center;
+  background: rgba(125, 211, 199, 0.16);
+  border: 1px solid rgba(125, 211, 199, 0.34);
+  border-radius: 999px;
+  color: #8fd5cf;
+  display: inline-flex;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
 .task-list {
   display: grid;
   gap: 12px;
@@ -346,10 +406,38 @@ textarea {
   display: block;
 }
 
+.readable-task {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.readable-task .status-pill {
+  display: inline-flex;
+  margin-bottom: 8px;
+  width: fit-content;
+}
+
+.task-edit-panel {
+  grid-column: 1 / -1;
+}
+
+.task-edit-panel summary {
+  color: #8fd5cf;
+  cursor: pointer;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
 .task-edit {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.task-edit label {
+  color: rgba(238, 247, 248, 0.76);
+  display: grid;
+  font-size: 0.9rem;
+  gap: 6px;
 }
 
 .wide-field {
@@ -541,6 +629,7 @@ textarea {
   .knowledge-grid,
   .home-band,
   .task-row-split,
+  .readable-task,
   .goal-list .knowledge-document,
   .section-heading {
     display: block;
@@ -556,5 +645,842 @@ textarea {
 
   .ai-panel {
     margin-top: 18px;
+  }
+}
+
+/* Universe OS interaction redesign */
+:root {
+  color: #131923;
+  background: #edf3f5;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #edf3f5;
+}
+
+button,
+.primary-action,
+.secondary-action {
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.92rem;
+  font-weight: 800;
+  justify-content: center;
+  line-height: 1.1;
+  min-height: 40px;
+  padding: 0.72rem 1rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.primary-action {
+  background: #0b8a88;
+  color: #ffffff;
+}
+
+.secondary-action {
+  background: #ffffff;
+  border: 1px solid #d5dee4;
+  color: #0b6f70;
+}
+
+button:disabled {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(238, 247, 248, 0.58);
+  cursor: not-allowed;
+}
+
+.eyebrow {
+  color: #0b8a88;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 0.45rem;
+  text-transform: uppercase;
+}
+
+.status-pill {
+  align-items: center;
+  background: #e4f5f4;
+  border: 1px solid rgba(11, 138, 136, 0.18);
+  border-radius: 999px;
+  color: #0b6f70;
+  display: inline-flex;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0.48rem 0.68rem;
+  width: fit-content;
+}
+
+.surface-copy {
+  color: #5b6877;
+  line-height: 1.45;
+  margin: 0.2rem 0 1rem;
+}
+
+.portal-shell {
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(17, 130, 140, 0.35), transparent 18rem),
+    radial-gradient(circle at 19% 29%, rgba(35, 92, 201, 0.22), transparent 16rem),
+    radial-gradient(circle at 78% 32%, rgba(125, 114, 191, 0.2), transparent 15rem),
+    linear-gradient(140deg, #101722 0%, #172334 58%, #0f1722 100%);
+}
+
+.portal-shell::before {
+  background-image:
+    radial-gradient(circle, rgba(210, 239, 245, 0.86) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(210, 239, 245, 0.45) 0 1px, transparent 1.6px);
+  background-position:
+    8px 14px,
+    42px 38px;
+  background-size:
+    78px 58px,
+    112px 86px;
+  content: "";
+  inset: 0;
+  opacity: 0.7;
+  position: absolute;
+}
+
+.portal-hero {
+  display: grid;
+  gap: 48px;
+  margin: 0 auto;
+  max-width: 1180px;
+  min-height: 100vh;
+  padding: 56px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.portal-copy {
+  max-width: 780px;
+}
+
+.portal-copy .eyebrow {
+  color: #8fd5cf;
+}
+
+.portal-hero h1 {
+  color: #eef7f8;
+  font-size: clamp(2.7rem, 8vw, 5.7rem);
+  line-height: 0.96;
+  margin: 0;
+  max-width: 900px;
+}
+
+.portal-copy p:not(.eyebrow) {
+  color: #c7d7e0;
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 1rem 0 0;
+  max-width: 650px;
+}
+
+.planet-field {
+  min-height: 560px;
+  position: relative;
+}
+
+.planet-object {
+  align-items: center;
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  color: #dde8ee;
+  display: flex;
+  flex-direction: column;
+  height: 150px;
+  justify-content: center;
+  padding: 22px;
+  position: absolute;
+  text-align: center;
+  width: 150px;
+}
+
+.planet-object.active {
+  background: #168c93;
+  border-color: rgba(125, 230, 219, 0.76);
+  box-shadow:
+    0 0 0 40px rgba(125, 230, 219, 0.08),
+    0 28px 72px rgba(13, 130, 132, 0.28);
+  height: 280px;
+  width: 280px;
+}
+
+.planet-object .status-pill {
+  background: transparent;
+  border: 0;
+  color: #d9eef0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.planet-orbit {
+  display: none;
+}
+
+.planet-object.study {
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+}
+
+.planet-object.work {
+  left: 5%;
+  top: 70px;
+}
+
+.planet-object.novel {
+  right: 13%;
+  top: 120px;
+}
+
+.planet-object.life {
+  bottom: 88px;
+  left: 12%;
+}
+
+.planet-object.creator {
+  bottom: 84px;
+  right: 16%;
+}
+
+.planet-object h2 {
+  color: #eef7f8;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  margin: 0;
+  order: 1;
+}
+
+.planet-object p {
+  display: none;
+}
+
+.planet-object button {
+  margin-top: 1.3rem;
+  order: 3;
+}
+
+.planet-object button:disabled {
+  display: none;
+}
+
+.planet-object.active .status-pill {
+  color: #e7fffc;
+  font-size: 1.1rem;
+  order: 2;
+}
+
+.planet-object.active h2 {
+  font-size: 1.7rem;
+  max-width: 200px;
+}
+
+.portal-status {
+  align-self: end;
+  color: #a4bac8;
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.study-workspace {
+  margin: 0 auto;
+  max-width: 1240px;
+  min-height: 100vh;
+  padding: 36px 24px 56px;
+}
+
+.study-header {
+  align-items: stretch;
+  background: linear-gradient(135deg, #e7f6f5 0%, #f9fbfb 62%, #eef2f4 100%);
+  border: 1px solid #d5dee4;
+  border-radius: 16px;
+  box-shadow: 0 18px 46px rgba(26, 46, 55, 0.08);
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  justify-content: initial;
+  padding: 24px;
+}
+
+.workspace-title h1 {
+  color: #131923;
+  font-size: clamp(2.2rem, 5vw, 4.2rem);
+  line-height: 0.98;
+  margin: 0 0 1rem;
+  max-width: 720px;
+}
+
+.universe-return {
+  background: #ffffff;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #0b6f70;
+  display: inline-flex;
+  font-weight: 800;
+  margin-bottom: 16px;
+  padding: 0.58rem 0.72rem;
+  text-decoration: none;
+}
+
+.workspace-location {
+  color: #5b6877;
+  margin: 0;
+}
+
+.goal-context,
+.study-home,
+.study-plan,
+.ai-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #131923;
+  padding: 20px;
+}
+
+.goal-context {
+  align-content: start;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.goal-context strong,
+.ai-panel strong {
+  color: #131923;
+  display: block;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.goal-actions,
+.context-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.goal-context select,
+.study-form input,
+.study-form select,
+.study-form textarea,
+input,
+select,
+textarea {
+  background: #f8fbfc;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #131923;
+  font: inherit;
+  min-width: 0;
+  padding: 0.72rem 0.8rem;
+}
+
+.workspace-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 152px minmax(0, 1fr) minmax(240px, 300px);
+  margin-top: 18px;
+}
+
+.workspace-grid > .study-nav {
+  align-items: stretch;
+  align-self: start;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+}
+
+.workspace-grid > .study-nav a {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: #5b6877;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0.68rem 0.78rem;
+  text-decoration: none;
+}
+
+.workspace-grid > .study-nav a.router-link-active {
+  background: #0b8a88;
+  border-color: #0b8a88;
+  color: #ffffff;
+}
+
+.ai-panel {
+  align-self: start;
+  display: grid;
+  gap: 14px;
+}
+
+.ai-panel p:not(.eyebrow) {
+  color: #5b6877;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.context-stack span {
+  background: #f4f8f9;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #5b6877;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.58rem 0.62rem;
+}
+
+.study-home h2,
+.study-plan h2 {
+  color: #131923;
+  font-size: 1.75rem;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.study-home-intro,
+.section-heading,
+.home-band {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.next-action-room {
+  background: linear-gradient(135deg, #ffffff 0%, #edfafa 100%);
+  border: 1px solid #95d3d1;
+  border-radius: 8px;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  margin-top: 18px;
+  padding: 24px;
+}
+
+.next-action-copy h3 {
+  color: #131923;
+  font-size: clamp(1.7rem, 4vw, 2.65rem);
+  line-height: 1.04;
+  margin: 1rem 0 0.7rem;
+}
+
+.next-action-copy p {
+  color: #5b6877;
+  line-height: 1.45;
+  margin: 0 0 1rem;
+  max-width: 620px;
+}
+
+.recommendation-card {
+  background: #ffffff;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.recommendation-card strong {
+  color: #131923;
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.recommendation-card p:not(.eyebrow) {
+  color: #5b6877;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.home-band,
+.home-section,
+.session-active,
+.plan-empty-state,
+.roadmap-step,
+.task-row,
+.knowledge-state,
+.knowledge-document,
+.chunk-item,
+.tutor-response,
+.analytics-summary span,
+.analytics-section {
+  background: #ffffff;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #131923;
+}
+
+.home-band,
+.home-section,
+.session-active {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.home-band {
+  display: flex;
+}
+
+.home-band h3,
+.home-section h3,
+.plan-empty-state h3 {
+  color: #131923;
+  margin: 0 0 0.35rem;
+}
+
+.home-band p,
+.task-row small,
+.roadmap-step p:not(.eyebrow),
+.roadmap-step small,
+.document-main small,
+.chunk-item p,
+.analytics-section ul,
+.knowledge-form label,
+.knowledge-filter label,
+.study-form label,
+.task-edit label,
+.compact-control {
+  color: #5b6877;
+}
+
+.home-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+}
+
+.today-panel .section-heading span {
+  color: #5b6877;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.task-list,
+.plan-tree,
+.goal-list,
+.plan-roadmap,
+.knowledge-list,
+.chunk-list,
+.grounding-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.task-row {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.task-row-split,
+.readable-task {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.task-row strong,
+.task-row span,
+.task-row small {
+  display: block;
+}
+
+.progress-snapshot {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 6px;
+}
+
+.progress-snapshot span {
+  background: #f4f8f9;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #5b6877;
+  display: grid;
+  gap: 4px;
+  min-height: 74px;
+  padding: 14px;
+}
+
+.progress-snapshot strong,
+.analytics-summary strong,
+.session-active strong,
+.chunk-item small {
+  color: #0b8a88;
+}
+
+.progress-snapshot strong {
+  display: block;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.insight-panel {
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+}
+
+.knowledge-state {
+  display: grid;
+  gap: 8px;
+  line-height: 1.45;
+  padding: 16px;
+}
+
+.ambient-state {
+  margin-top: 18px;
+}
+
+.knowledge-state ul {
+  color: #5b6877;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.study-form,
+.knowledge-form,
+.task-edit,
+.goal-type-picker,
+.analytics-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.study-form,
+.knowledge-form {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin: 18px 0;
+}
+
+.goal-type-picker,
+.analytics-summary {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.goal-type-picker button {
+  background: #f8fbfc;
+  border: 1px solid #d5dee4;
+  color: #131923;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  white-space: normal;
+}
+
+.goal-type-picker button.selected,
+.knowledge-document.selected {
+  border-color: #0b8a88;
+  box-shadow: 0 0 0 1px rgba(11, 138, 136, 0.14);
+}
+
+.goal-type-picker span {
+  color: #5b6877;
+  font-weight: 500;
+}
+
+.step-index {
+  align-items: center;
+  background: #e4f5f4;
+  border: 1px solid rgba(11, 138, 136, 0.22);
+  border-radius: 999px;
+  color: #0b8a88;
+  display: inline-flex;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.document-main {
+  background: transparent;
+  color: #131923;
+  display: grid;
+  font-weight: 800;
+  gap: 4px;
+  padding: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.error-text {
+  color: #b8324f;
+}
+
+.inline-edit-form,
+.edit-surface,
+.task-edit-panel {
+  background: #f8fbfc;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.inline-edit-form,
+.edit-surface {
+  margin-top: 14px;
+}
+
+.inline-edit-form {
+  display: grid;
+  gap: 10px;
+}
+
+.inline-edit-form label {
+  color: #5b6877;
+  display: grid;
+  gap: 6px;
+}
+
+.edit-surface {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+}
+
+.task-edit-panel {
+  grid-column: 1 / -1;
+}
+
+.task-edit-panel .eyebrow {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 980px) {
+  .planet-field,
+  .study-header,
+  .workspace-grid,
+  .next-action-room,
+  .home-layout,
+  .insight-panel,
+  .knowledge-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planet-field {
+    align-items: stretch;
+  }
+
+  .planet-object.active {
+    transform: translate(-50%, -50%);
+  }
+
+  .planet-field {
+    min-height: 680px;
+  }
+
+  .planet-object.work {
+    left: 4%;
+    top: 54px;
+  }
+
+  .planet-object.novel {
+    right: 4%;
+    top: 82px;
+  }
+
+  .planet-object.life {
+    bottom: 88px;
+    left: 8%;
+  }
+
+  .planet-object.creator {
+    bottom: 72px;
+    right: 8%;
+  }
+
+  .workspace-grid > .study-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .workspace-grid > .study-nav a {
+    flex: 0 0 auto;
+  }
+
+  .ai-panel {
+    order: 3;
+  }
+}
+
+@media (max-width: 760px) {
+  .portal-hero,
+  .study-workspace {
+    padding: 28px 16px 40px;
+  }
+
+  .portal-hero h1 {
+    font-size: 3rem;
+  }
+
+  .planet-field {
+    min-height: 760px;
+  }
+
+  .planet-object.active {
+    height: 240px;
+    width: 240px;
+  }
+
+  .planet-object {
+    height: 132px;
+    width: 132px;
+  }
+
+  .study-header,
+  .study-home,
+  .study-plan,
+  .ai-panel {
+    padding: 16px;
+  }
+
+  .study-home-intro,
+  .home-band,
+  .section-heading,
+  .task-row-split,
+  .readable-task,
+  .goal-list .knowledge-document {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .next-action-room {
+    padding: 18px;
+  }
+
+  .progress-snapshot {
+    grid-template-columns: 1fr;
+  }
+
+  button,
+  .primary-action,
+  .secondary-action {
+    white-space: normal;
   }
 }

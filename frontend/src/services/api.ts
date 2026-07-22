@@ -66,6 +66,7 @@ export interface KnowledgeDocumentPayload {
   subject: string
   topic: string
   content?: string
+  contentEncoding?: 'text' | 'base64'
   storagePath?: string
   notes?: string
 }
@@ -79,6 +80,11 @@ export interface KnowledgeDocument {
   subject: string
   topic: string
   storagePath?: string | null
+  contentEncoding: string
+  provider: string
+  providerDatasetId?: string | null
+  providerDocumentId?: string | null
+  providerStatus?: string | null
   processingStatus: KnowledgeDocumentStatus
   errorMessage?: string | null
   createdAt: string
@@ -135,6 +141,13 @@ export interface StudyWorkspacePayload {
     taskCompletionRate: number
   }
   todayTasks: DailyTask[]
+  primaryAction: {
+    type: string
+    label: string
+    route: string
+    description: string
+    taskId?: string
+  }
   knowledgeSummary: {
     documents: KnowledgeDocument[]
     statusCounts: Record<string, number>
@@ -180,6 +193,18 @@ export async function createGoal(payload: StudyGoalPayload) {
   })
   if (!response.ok) {
     throw new Error('Unable to create goal')
+  }
+  return response.json()
+}
+
+export async function updateGoal(goalId: string, payload: Partial<StudyGoalPayload>) {
+  const response = await fetch(`${API_BASE}/study/goals/${goalId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to update goal')
   }
   return response.json()
 }
@@ -238,6 +263,42 @@ export async function fetchCurrentPlan() {
   const response = await fetch(`${API_BASE}/study/plans/current`)
   if (!response.ok) {
     throw new Error('Unable to load current plan')
+  }
+  return response.json()
+}
+
+export async function updateYearPlan(planId: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${API_BASE}/study/plans/year/${planId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to update long term plan')
+  }
+  return response.json()
+}
+
+export async function updateMonthPlan(planId: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${API_BASE}/study/plans/month/${planId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to update monthly plan')
+  }
+  return response.json()
+}
+
+export async function updateWeekPlan(planId: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${API_BASE}/study/plans/week/${planId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to update weekly plan')
   }
   return response.json()
 }

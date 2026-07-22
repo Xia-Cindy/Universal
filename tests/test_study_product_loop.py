@@ -41,7 +41,7 @@ class StudyProductLoopTests(unittest.TestCase):
         self.assertEqual(onboarding["state"], "needs_onboarding")
         self.assertIsNone(onboarding["activeGoal"])
         self.assertEqual(home["state"], "empty")
-        self.assertEqual(home["primaryNextAction"]["route"], "/study/onboarding")
+        self.assertEqual(home["primaryNextAction"]["route"], "/study/goals")
 
     def test_user_creates_goal_through_onboarding(self):
         onboarding = self.api.create_onboarding_goal(self._goal_payload())

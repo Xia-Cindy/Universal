@@ -37,12 +37,18 @@ class StudyWorkspaceService:
                 "plans": self._empty_plans(),
                 "planSummary": self._empty_plan_summary(),
                 "todayTasks": [],
+                "primaryAction": self._primary_action(
+                    has_goal=False,
+                    has_plan=False,
+                    today_tasks=[],
+                ),
                 "knowledgeSummary": self._knowledge_summary(knowledge_summary),
                 "analyticsSummary": analytics_summary,
             }
 
         all_tasks = self._repository.list_tasks_for_goal(user.id, current_goal.id)
         today_tasks = self._repository.list_tasks_for_date(user.id, current_goal.id, today)
+        long_term_plans = self._repository.list_year_plans_for_goal(user.id, current_goal.id)
         finished_sessions = self._repository.list_finished_sessions(user.id)
         week_start = today - timedelta(days=today.weekday())
         current_task_ids = {task.id for task in all_tasks}
@@ -82,6 +88,11 @@ class StudyWorkspaceService:
             "plans": self._plans_for_goal(user.id, current_goal.id),
             "planSummary": self._plan_summary(user.id, current_goal.id),
             "todayTasks": [task.to_dict() for task in today_tasks],
+            "primaryAction": self._primary_action(
+                has_goal=True,
+                has_plan=bool(long_term_plans),
+                today_tasks=today_tasks,
+            ),
             "knowledgeSummary": self._knowledge_summary(knowledge_summary),
             "analyticsSummary": {
                 **analytics_summary,
@@ -115,6 +126,50 @@ class StudyWorkspaceService:
                 task.to_dict()
                 for task in self._repository.list_tasks_for_goal(user_id, goal_id)
             ],
+        }
+
+    def _primary_action(
+        self,
+        *,
+        has_goal: bool,
+        has_plan: bool,
+        today_tasks,
+    ) -> dict[str, object]:
+        if not has_goal:
+            return {
+                "type": "create_goal",
+                "label": "Create Goal",
+                "route": "/study/goals",
+                "description": "Start by choosing the learning direction for this Study Workspace.",
+            }
+        if not has_plan:
+            return {
+                "type": "create_plan",
+                "label": "Create Plan Structure",
+                "route": "/study/plan",
+                "description": "Turn the current Goal into a long-term, monthly, weekly, and daily route.",
+            }
+        next_task = next((task for task in today_tasks if task.status != TaskStatus.COMPLETED), None)
+        if next_task:
+            return {
+                "type": "start_learning",
+                "label": "Start Learning",
+                "route": f"/study/session/new?taskId={next_task.id}",
+                "taskId": next_task.id,
+                "description": f"{next_task.subject}: {next_task.topic}",
+            }
+        if today_tasks:
+            return {
+                "type": "view_analytics",
+                "label": "View Analytics",
+                "route": "/study/analytics",
+                "description": "Today’s tasks are complete. Review the latest learning signal.",
+            }
+        return {
+            "type": "adjust_plan",
+            "label": "Add Daily Task",
+            "route": "/study/plan",
+            "description": "Create or adjust Daily Tasks under the current Goal.",
         }
 
     def _plan_summary(self, user_id: str, goal_id: str) -> dict[str, object]:

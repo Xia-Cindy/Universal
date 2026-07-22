@@ -40,6 +40,35 @@ class StudyLearningWorkflowTests(unittest.TestCase):
         self.assertEqual(len(plan["weekPlans"]), 1)
         self.assertEqual(len(plan["dailyTasks"]), 7)
 
+    def test_goal_and_plan_hierarchy_can_be_updated(self):
+        goal = self._create_goal()
+        plan = self.api.create_plan({"startDate": local_today().isoformat()})
+
+        updated_goal = self.api.update_goal(
+            goal["id"],
+            {
+                "goalName": "2027 MEM sprint",
+                "subjects": ["logic", "writing"],
+                "dailyAvailableMinutes": 60,
+            },
+        )
+        updated_year = self.api.update_year_plan(plan["yearPlan"]["id"], {"title": "MEM annual route"})
+        updated_month = self.api.update_month_plan(
+            plan["monthPlans"][0]["id"],
+            {"title": "Logic month", "focus": "Stabilize logic practice."},
+        )
+        updated_week = self.api.update_week_plan(
+            plan["weekPlans"][0]["id"],
+            {"title": "Week 1 logic", "focus": "Complete daily logic drills."},
+        )
+
+        self.assertEqual(updated_goal["goalName"], "2027 MEM sprint")
+        self.assertEqual(updated_goal["subjects"], ["logic", "writing"])
+        self.assertEqual(updated_goal["dailyAvailableMinutes"], 60)
+        self.assertEqual(updated_year["title"], "MEM annual route")
+        self.assertEqual(updated_month["focus"], "Stabilize logic practice.")
+        self.assertEqual(updated_week["title"], "Week 1 logic")
+
     def test_task_update_and_completion_are_reflected(self):
         self._create_goal()
         plan = self.api.create_plan({"startDate": local_today().isoformat()})
@@ -134,4 +163,3 @@ class StudyLearningWorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

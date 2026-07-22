@@ -1,6 +1,6 @@
 <template>
   <section class="study-home" aria-labelledby="placeholder-title">
-    <p class="eyebrow">Placeholder</p>
+    <p class="eyebrow">Coming Later</p>
     <h2 id="placeholder-title">{{ title }}</h2>
     <p>{{ message }}</p>
   </section>
@@ -11,7 +11,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const title = computed(() => `${String(route.params.section)} starts later`)
+const title = computed(() => `${String(route.params.section)} is not ready yet`)
 const message =
-  'Milestone 2 stays inside the learning workflow. Knowledge, Tutor, Review, and Analytics remain placeholders.'
+  'Wrong Questions and Review are part of the Study Planet MVP direction, but this workspace does not have the review loop implemented yet.'
 </script>

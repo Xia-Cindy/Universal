@@ -39,20 +39,10 @@ class StudyHomeService:
             if week_start <= session.start_time.date() <= today
         ]
         completed_tasks = [task for task in all_tasks if task.status == TaskStatus.COMPLETED]
-        primary_task = next((task for task in today_tasks if task.status != TaskStatus.COMPLETED), None)
-        primary_action = (
-            {
-                "type": "start_learning",
-                "label": "Start Learning",
-                "route": f"/study/session/new?taskId={primary_task.id}",
-                "taskId": primary_task.id,
-            }
-            if primary_task
-            else {
-                "type": "view_plan",
-                "label": "View Plan",
-                "route": "/study/plan",
-            }
+        plan = self._repository.get_current_plan(user.id, goal.id)
+        primary_action = self._primary_action(
+            has_plan=plan is not None,
+            today_tasks=today_tasks,
         )
 
         progress_summary = {
@@ -85,6 +75,7 @@ class StudyHomeService:
             },
             "todayTasks": [task.to_dict() for task in today_tasks],
             "primaryNextAction": primary_action,
+            "primaryAction": primary_action,
             "aiInsight": analytics_insight,
             "analyticsInsight": analytics_insight,
             "aiRecommendation": analytics_insight,
@@ -123,7 +114,14 @@ class StudyHomeService:
             "primaryNextAction": {
                 "type": "create_goal",
                 "label": "Create Goal",
-                "route": "/study/onboarding",
+                "route": "/study/goals",
+                "description": "Start by choosing the learning direction for this Study Workspace.",
+            },
+            "primaryAction": {
+                "type": "create_goal",
+                "label": "Create Goal",
+                "route": "/study/goals",
+                "description": "Start by choosing the learning direction for this Study Workspace.",
             },
             "todayTasks": [],
             "aiInsight": ai_insight,
@@ -151,6 +149,37 @@ class StudyHomeService:
             streak += 1
             cursor = cursor - timedelta(days=1)
         return streak
+
+    def _primary_action(self, *, has_plan: bool, today_tasks) -> dict[str, object]:
+        if not has_plan:
+            return {
+                "type": "create_plan",
+                "label": "Create Plan Structure",
+                "route": "/study/plan",
+                "description": "Turn the current Goal into a long-term, monthly, weekly, and daily route.",
+            }
+        primary_task = next((task for task in today_tasks if task.status != TaskStatus.COMPLETED), None)
+        if primary_task:
+            return {
+                "type": "start_learning",
+                "label": "Start Learning",
+                "route": f"/study/session/new?taskId={primary_task.id}",
+                "taskId": primary_task.id,
+                "description": f"{primary_task.subject}: {primary_task.topic}",
+            }
+        if today_tasks:
+            return {
+                "type": "view_analytics",
+                "label": "View Analytics",
+                "route": "/study/analytics",
+                "description": "Today’s tasks are complete. Review the latest learning signal.",
+            }
+        return {
+            "type": "adjust_plan",
+            "label": "Add Daily Task",
+            "route": "/study/plan",
+            "description": "Create or adjust Daily Tasks under the current Goal.",
+        }
 
     def _empty_ai_insight(self) -> dict[str, object]:
         return {

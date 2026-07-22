@@ -1418,6 +1418,59 @@ Not changed:
 - RAGFlow integration.
 - Autonomous planning.
 
+## Milestone 8.1 RAGFlow Knowledge Provider Adapter
+
+Status: completed for provider adapter and mocked integration tests.
+
+Implemented:
+
+- Added `KnowledgeProvider` as the backend boundary for external Knowledge infrastructure.
+- Added `RAGFlowKnowledgeProvider` and `RAGFlowClient` for dataset creation, document upload, parsing, chunk listing and retrieval search.
+- Added local RAGFlow Docker Compose runtime under `docker/ragflow/`.
+- Added installation guide `docs/06_RAGFLOW_INSTALLATION.md`.
+- Added provider metadata fields on Knowledge documents through migration `009_ragflow_provider_metadata.sql`.
+- Kept `documents.id` as the Universe canonical document id and stored RAGFlow ids only as provider references.
+- Routed Knowledge document processing through RAGFlow when `KNOWLEDGE_PROVIDER=ragflow`.
+- Routed Retrieval search through the provider while normalizing results back to Universe document metadata.
+- Preserved the local Knowledge and deterministic retrieval path when `KNOWLEDGE_PROVIDER=local`.
+- Updated Study Knowledge UI to show provider status and allow provider-backed PDF processing through the backend.
+
+Not changed:
+
+- AI Core remains provider-agnostic.
+- Tutor and Analyst still access Knowledge only through ToolRouter and RetrievalService.
+- Frontend does not call RAGFlow directly.
+- Study Planet does not own RAGFlow lifecycle or provider logic.
+- Production status polling, retry queues, real API-key runtime validation and citation formatting remain future work.
+
+## Post-7.8.1 PRD Smoke-Test Fixes
+
+Status: completed.
+
+Implemented:
+
+- Made `primaryAction` a backend-owned decision in Study Home / Workspace service output.
+- Kept the frontend Home as a renderer of the service-provided next action instead of duplicating next-action logic.
+- Updated completed Daily Task UI so completed tasks do not offer a new Start Session action.
+- Clarified PDF Knowledge uploads as metadata-only when PDF parsing is unavailable.
+- Added Tutor empty-question validation before API submission.
+- Reduced duplicate Current Goal display in the Study Workspace header.
+- Grouped Goals UI into Current Goal, Other Goals and Create Goal sections.
+- Converted Analytics copy from raw metric identifiers to user-facing learning language.
+- Renamed static right-side guidance to Study Context so recommendations remain sourced from Analytics / Analyst.
+- Marked Review / Wrong Questions as coming later until the closed loop is implemented.
+
+Not changed:
+
+- AI Core architecture.
+- Agent registration.
+- Retrieval architecture.
+- Memory architecture.
+- Database schema or migrations.
+- RAGFlow integration.
+- Autonomous planning.
+- Full Plan Builder editing for long-term, monthly and weekly layers.
+
 ---
 
 # End

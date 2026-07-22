@@ -48,7 +48,7 @@
       </label>
       <div class="knowledge-actions">
         <button type="submit" :disabled="!canUpload">Upload</button>
-        <span>{{ statusMessage }}</span>
+        <span>{{ uploadHint }}</span>
       </div>
     </form>
 
@@ -71,12 +71,14 @@
             <span>{{ document.fileName }}</span>
             <small>{{ document.subject }} / {{ document.topic }}</small>
             <small>{{ documentGoalLabel(document.goalId) }}</small>
+            <small>{{ providerLabel(document) }}</small>
           </button>
           <div class="document-meta">
-            <span class="status-pill">{{ displayStatus(document.processingStatus) }}</span>
+            <span class="status-pill">{{ displayDocumentStatus(document) }}</span>
             <button
+              v-if="canProcess(document)"
               type="button"
-              :disabled="document.processingStatus === 'processed' || document.fileType === 'pdf'"
+              :disabled="document.processingStatus === 'processed'"
               @click="processDocument(document.id)"
             >
               Process
@@ -91,9 +93,14 @@
           <p class="eyebrow">{{ selectedDocument.document.processingStatus }}</p>
           <h3>{{ selectedDocument.document.fileName }}</h3>
           <p class="surface-copy">
-            {{ selectedDocument.chunks.length }} chunks prepared.
-            <span v-if="selectedDocument.document.fileType === 'pdf'">
-              PDF metadata is saved; parser support is not enabled yet.
+            <span v-if="selectedDocument.document.fileType === 'pdf' && selectedDocument.document.provider === 'local'">
+              Metadata saved. PDF parser is not enabled yet.
+            </span>
+            <span v-else>
+              {{ selectedDocument.chunks.length }} chunks prepared.
+            </span>
+            <span v-if="selectedDocument.document.provider !== 'local'">
+              Provider: {{ selectedDocument.document.provider }} · {{ selectedDocument.document.providerStatus || 'pending' }}
             </span>
           </p>
           <div v-if="selectedDocument.chunks.length" class="chunk-list">
@@ -102,7 +109,13 @@
               <p>{{ chunk.content }}</p>
             </article>
           </div>
-          <div v-else class="knowledge-state">Process this document to create plain text chunks.</div>
+          <div
+            v-else-if="selectedDocument.document.fileType === 'pdf' && selectedDocument.document.provider === 'local'"
+            class="knowledge-state"
+          >
+            PDF metadata is available for organization. Text parsing will come in a later milestone.
+          </div>
+          <div v-else class="knowledge-state">Process this document to create provider-backed chunks.</div>
         </template>
         <template v-else>
           <div class="knowledge-state">Select a document to inspect its chunks.</div>
@@ -133,6 +146,7 @@ const form = ref<KnowledgeDocumentPayload>({
   topic: '',
   goalId: null,
   content: '',
+  contentEncoding: 'text',
 })
 const goals = ref<StudyGoal[]>([])
 const goalFilter = ref('all')
@@ -150,6 +164,15 @@ const canUpload = computed(
     Boolean(form.value.subject.trim()) &&
     Boolean(form.value.topic.trim()),
 )
+const uploadHint = computed(() => {
+  if (isUploading.value) {
+    return 'Uploading document...'
+  }
+  if (canUpload.value) {
+    return statusMessage.value
+  }
+  return 'Choose file + Subject + Topic to upload.'
+})
 
 onMounted(loadDocuments)
 onMounted(loadGoalContext)
@@ -198,9 +221,6 @@ async function uploadDocument() {
   isUploading.value = true
   try {
     const payload = { ...form.value, storagePath: selectedFileName.value }
-    if (payload.fileType === 'pdf') {
-      payload.content = ''
-    }
     const document = await createKnowledgeDocument(payload)
     statusMessage.value = document.fileType === 'pdf' ? 'PDF metadata uploaded.' : 'Document uploaded.'
     if (document.fileType !== 'pdf') {
@@ -236,7 +256,8 @@ async function selectFile(event: Event) {
   selectedFileName.value = file.name
   form.value.fileName = file.name
   form.value.fileType = fileType
-  form.value.content = fileType === 'pdf' ? '' : await file.text()
+  form.value.contentEncoding = fileType === 'pdf' ? 'base64' : 'text'
+  form.value.content = fileType === 'pdf' ? await fileToBase64(file) : await file.text()
   if (!form.value.topic) {
     form.value.topic = file.name.replace(/\.[^.]+$/, '')
   }
@@ -244,6 +265,18 @@ async function selectFile(event: Event) {
     fileType === 'pdf'
       ? 'PDF metadata is ready to upload.'
       : 'File content is ready to upload and process.'
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = String(reader.result || '')
+      resolve(result.includes(',') ? result.split(',')[1] : result)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
 }
 
 function detectFileType(fileName: string): KnowledgeDocumentPayload['fileType'] | null {
@@ -262,6 +295,24 @@ function detectFileType(fileName: string): KnowledgeDocumentPayload['fileType'] 
 
 function displayStatus(status: KnowledgeDocument['processingStatus']) {
   return status === 'parsing' || status === 'chunking' ? 'processing' : status
+}
+
+function displayDocumentStatus(document: KnowledgeDocument) {
+  if (document.fileType === 'pdf' && document.provider === 'local') {
+    return 'metadata saved'
+  }
+  return displayStatus(document.processingStatus)
+}
+
+function canProcess(document: KnowledgeDocument) {
+  return document.provider !== 'local' || document.fileType !== 'pdf'
+}
+
+function providerLabel(document: KnowledgeDocument) {
+  if (document.provider === 'local') {
+    return 'Local Knowledge'
+  }
+  return `Provider: ${document.provider}${document.providerStatus ? ` · ${document.providerStatus}` : ''}`
 }
 
 function documentGoalLabel(goalId?: string | null) {

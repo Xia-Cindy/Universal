@@ -10,9 +10,17 @@
     <form class="tutor-form" @submit.prevent="askTutor">
       <label>
         Question
-        <textarea v-model="question" rows="4" required />
+        <textarea
+          v-model="question"
+          placeholder="Ask about your current Goal, Plan, task, or uploaded Knowledge."
+          rows="4"
+          required
+        />
       </label>
-      <button type="submit">Ask Tutor</button>
+      <div class="knowledge-actions">
+        <button type="submit" :disabled="!canAsk">Ask Tutor</button>
+        <span v-if="!canAsk">Enter a question to ask Tutor.</span>
+      </div>
     </form>
 
     <article v-if="response" class="tutor-response">
@@ -38,13 +46,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { askStudyTutor } from '../../../services/api'
 
-const question = ref('What should I study next?')
+const question = ref('')
 const response = ref<any>(null)
+const canAsk = computed(() => question.value.trim().length > 0)
 
 async function askTutor() {
-  response.value = await askStudyTutor(question.value)
+  if (!canAsk.value) {
+    return
+  }
+  response.value = await askStudyTutor(question.value.trim())
 }
 </script>

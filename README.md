@@ -117,6 +117,21 @@ Milestone 7.8.1 stabilizes Study Workspace information architecture:
 - Plan uses a single `Create Plan Structure` action and displays the Goal → Plan → Task hierarchy.
 - Knowledge upload keeps the existing API and enables submission once a supported file, Subject, and Topic are present.
 
+Post-7.8.1 smoke-test fixes align the product loop more closely with the PRD:
+
+- Home and Workspace now use a backend-owned `primaryAction` as the single source for "what should I do next?"
+- Completed tasks no longer offer a new Study Session action from Plan.
+- PDF uploads are presented as metadata-only when PDF parsing is unavailable.
+- Tutor blocks empty questions before submission.
+- Goals, Analytics, Review, and the Study side panel use clearer product language for a personal learning workspace.
+
+Milestone 8.1 connects Knowledge to RAGFlow through a backend provider adapter:
+
+- `KNOWLEDGE_PROVIDER=local` remains the default local Knowledge path.
+- `KNOWLEDGE_PROVIDER=ragflow` routes new Knowledge processing and retrieval through RAGFlow.
+- Universe keeps document ownership, Goal relation, subject/topic metadata, and frontend API contracts.
+- Frontend, Tutor, Study Planet, and AI Core do not call RAGFlow directly.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run
@@ -149,6 +164,39 @@ Backend API docs are available at:
 ```text
 http://127.0.0.1:8000/docs
 ```
+
+## RAGFlow Knowledge Provider
+
+Start the local RAGFlow stack from this project:
+
+```bash
+cd /Users/xiaxin/Documents/Codex/Universal
+cp docker/ragflow/.env.example docker/ragflow/.env
+docker/ragflow/start.sh
+```
+
+Open RAGFlow:
+
+```text
+http://127.0.0.1:8088
+```
+
+Create a RAGFlow API key, then start the backend with:
+
+```bash
+cp docker/ragflow/universe.env.example docker/ragflow/universe.env
+# edit docker/ragflow/universe.env and set RAGFLOW_API_KEY
+set -a
+. docker/ragflow/universe.env
+set +a
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+
+If `RAGFLOW_DATASET_ID` is empty, Universe asks RAGFlow to create a dataset named by `RAGFLOW_DATASET_NAME`.
+
+Without those environment variables, Knowledge uses the local txt/markdown path and keeps PDF uploads as metadata-only.
+
+Full installation notes live in `docs/06_RAGFLOW_INSTALLATION.md`.
 
 ## Test
 

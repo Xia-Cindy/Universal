@@ -1,6 +1,7 @@
 from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
 from backend.app.core.settings import settings
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
+from backend.app.knowledge.providers import RAGFlowClient, RAGFlowKnowledgeProvider
 from backend.app.memory import MemoryService
 from backend.app.models import MemoryScope
 from backend.app.planet_engine import create_default_registry
@@ -30,8 +31,15 @@ class ApiFacade:
         self.memory = MemoryService()
         self.study_repository = StudyRepository()
         self.knowledge_repository = KnowledgeRepository()
-        self.knowledge = KnowledgeService(repository=self.knowledge_repository)
-        self.retrieval = RetrievalService(knowledge_repository=self.knowledge_repository)
+        self.knowledge_provider = self._create_knowledge_provider()
+        self.knowledge = KnowledgeService(
+            repository=self.knowledge_repository,
+            provider=self.knowledge_provider,
+        )
+        self.retrieval = RetrievalService(
+            knowledge_repository=self.knowledge_repository,
+            knowledge_provider=self.knowledge_provider,
+        )
         self.tool_router = DefaultToolRouter()
         self.tool_router.register(RetrieverTool(self.retrieval))
         self.ai_core = AICoreService(tool_router=self.tool_router)
@@ -96,6 +104,20 @@ class ApiFacade:
         self.study_analytics = StudyAnalyticsService(
             repository=self.study_repository,
             ai_core=self.ai_core,
+        )
+
+    def _create_knowledge_provider(self):
+        if settings.knowledge_provider != "ragflow":
+            return None
+        if not settings.ragflow_api_key:
+            raise ValueError("RAGFLOW_API_KEY is required when KNOWLEDGE_PROVIDER=ragflow")
+        return RAGFlowKnowledgeProvider(
+            client=RAGFlowClient(
+                base_url=settings.ragflow_base_url,
+                api_key=settings.ragflow_api_key,
+            ),
+            dataset_id=settings.ragflow_dataset_id or None,
+            dataset_name=settings.ragflow_dataset_name,
         )
 
     def health(self) -> dict[str, str]:
@@ -171,6 +193,18 @@ class ApiFacade:
     def get_current_plan(self) -> dict[str, object] | None:
         user = self.users.current_user()
         return self.study_plans.get_current_plan(user.id)
+
+    def update_year_plan(self, plan_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_plans.update_year_plan(user.id, plan_id, payload).to_dict()
+
+    def update_month_plan(self, plan_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_plans.update_month_plan(user.id, plan_id, payload).to_dict()
+
+    def update_week_plan(self, plan_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_plans.update_week_plan(user.id, plan_id, payload).to_dict()
 
     def update_task(self, task_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()

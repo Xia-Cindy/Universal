@@ -1,5 +1,6 @@
 from backend.app.core.dates import local_now
 from backend.app.knowledge.repository import KnowledgeRepository
+from backend.app.knowledge.providers import KnowledgeProvider
 from backend.app.models import DocumentStatus
 from backend.app.retrieval.embedding import DeterministicEmbeddingProvider, EmbeddingProvider
 from backend.app.retrieval.models import ChunkEmbeddingRecord, EmbeddingStatus, RetrievalQuery, RetrievalResult
@@ -15,14 +16,25 @@ class RetrievalService:
         repository: RetrievalRepository | None = None,
         embedding_provider: EmbeddingProvider | None = None,
         vector_store: VectorStore | None = None,
+        knowledge_provider: KnowledgeProvider | None = None,
     ) -> None:
         self._knowledge_repository = knowledge_repository
         self._repository = repository or RetrievalRepository()
         self._embedding_provider = embedding_provider or DeterministicEmbeddingProvider()
         self._vector_store = vector_store or InMemoryVectorStore()
+        self._knowledge_provider = knowledge_provider
 
     def prepare_document_embeddings(self, user_id: str, document_id: str) -> dict[str, object]:
         document = self._knowledge_repository.get_document(document_id, user_id)
+        if self._knowledge_provider:
+            return {
+                "documentId": document.id,
+                "status": "provider_backed" if document.provider_document_id else "not_ready",
+                "provider": document.provider,
+                "providerDatasetId": document.provider_dataset_id,
+                "providerDocumentId": document.provider_document_id,
+                "records": self.list_document_embeddings(user_id, document.id),
+            }
         if document.processing_status != DocumentStatus.PROCESSED:
             return {
                 "documentId": document.id,
@@ -46,6 +58,8 @@ class RetrievalService:
         ]
 
     def search(self, query: RetrievalQuery) -> dict[str, object]:
+        if self._knowledge_provider:
+            return self._provider_search(query)
         embedding = self._embedding_provider.embed(query.query)
         filters = {"userId": query.user_id}
         if query.document_id:
@@ -73,6 +87,102 @@ class RetrievalService:
         return {
             "query": query.query,
             "results": results,
+        }
+
+    def _provider_search(self, query: RetrievalQuery) -> dict[str, object]:
+        documents = []
+        if query.document_id:
+            documents = [self._knowledge_repository.get_document(query.document_id, query.user_id)]
+        else:
+            documents = self._knowledge_repository.list_documents(query.user_id)
+        provider_documents = [
+            document
+            for document in documents
+            if document.provider_dataset_id and document.provider_document_id
+        ]
+        dataset_ids = sorted({str(document.provider_dataset_id) for document in provider_documents})
+        document_ids = [str(document.provider_document_id) for document in provider_documents]
+        if not dataset_ids:
+            return {"query": query.query, "results": []}
+        provider_result = self._knowledge_provider.search(
+            user_id=query.user_id,
+            query=query.query,
+            dataset_ids=dataset_ids,
+            document_ids=document_ids if query.document_id else None,
+            limit=query.limit,
+        )
+        return self._normalize_provider_search_result(
+            query=query,
+            provider_result=provider_result,
+            documents=provider_documents,
+        )
+
+    def _normalize_provider_search_result(
+        self,
+        *,
+        query: RetrievalQuery,
+        provider_result: dict[str, object],
+        documents,
+    ) -> dict[str, object]:
+        document_by_provider_id = {
+            str(document.provider_document_id): document for document in documents if document.provider_document_id
+        }
+        chunk_by_provider_id = {}
+        for document in documents:
+            for chunk in self._knowledge_repository.list_chunks(document.id, query.user_id):
+                provider_chunk_id = chunk.metadata.get("providerChunkId")
+                if provider_chunk_id:
+                    chunk_by_provider_id[str(provider_chunk_id)] = chunk
+
+        normalized_results = []
+        for result in provider_result.get("results", []):
+            if not isinstance(result, dict):
+                continue
+            normalized = dict(result)
+            metadata = normalized.get("metadata", {})
+            metadata = dict(metadata) if isinstance(metadata, dict) else {}
+            identifiers = normalized.get("identifiers", {})
+            identifiers = dict(identifiers) if isinstance(identifiers, dict) else {}
+
+            provider_document_id = str(
+                identifiers.get("documentId")
+                or normalized.get("documentId")
+                or metadata.get("providerDocumentId")
+                or ""
+            )
+            provider_chunk_id = str(
+                identifiers.get("chunkId")
+                or normalized.get("chunkId")
+                or metadata.get("providerChunkId")
+                or ""
+            )
+            document = document_by_provider_id.get(provider_document_id)
+            chunk = chunk_by_provider_id.get(provider_chunk_id)
+
+            if document:
+                normalized["documentId"] = document.id
+                metadata.setdefault("fileName", document.file_name)
+                metadata.setdefault("goalId", document.goal_id)
+                metadata.setdefault("subject", document.subject)
+                metadata.setdefault("topic", document.topic)
+                metadata["providerDocumentId"] = provider_document_id
+                identifiers["documentId"] = document.id
+                identifiers["providerDocumentId"] = provider_document_id
+            if chunk:
+                normalized["chunkId"] = chunk.id
+                metadata["providerChunkId"] = provider_chunk_id
+                identifiers["chunkId"] = chunk.id
+                identifiers["providerChunkId"] = provider_chunk_id
+            elif provider_chunk_id:
+                metadata["providerChunkId"] = provider_chunk_id
+                identifiers["providerChunkId"] = provider_chunk_id
+
+            normalized["metadata"] = metadata
+            normalized["identifiers"] = identifiers
+            normalized_results.append(normalized)
+        return {
+            "query": str(provider_result.get("query") or query.query),
+            "results": normalized_results,
         }
 
     def _prepare_chunk_embedding(self, *, user_id: str, chunk) -> ChunkEmbeddingRecord:
@@ -107,4 +217,3 @@ class RetrievalService:
         record.error_message = None
         record.updated_at = local_now()
         return self._repository.save_record(record)
-

@@ -1,7 +1,7 @@
 <template>
   <main class="study-workspace">
     <header class="study-header">
-      <div>
+      <div class="workspace-title">
         <RouterLink class="universe-return" to="/">Universe Home</RouterLink>
         <p class="eyebrow">Study Planet</p>
         <h1>Study Workspace</h1>
@@ -10,14 +10,26 @@
         </p>
       </div>
       <div class="goal-context" aria-label="Current Goal">
-        <span class="eyebrow">Current Goal</span>
-        <strong>{{ currentGoalName }}</strong>
-        <select v-if="goals.length" v-model="selectedGoalId" @change="switchGoal">
+        <div>
+          <span class="eyebrow">Current Goal</span>
+          <strong>{{ currentGoalName }}</strong>
+        </div>
+        <div class="goal-actions">
+          <button
+            v-if="goals.length > 1"
+            class="secondary-action"
+            type="button"
+            @click="isGoalSwitcherOpen = !isGoalSwitcherOpen"
+          >
+            Switch Goal
+          </button>
+          <RouterLink class="secondary-action" to="/study/goals">Manage Goals</RouterLink>
+        </div>
+        <select v-if="isGoalSwitcherOpen" v-model="selectedGoalId" @change="switchGoal">
           <option v-for="goal in goals" :key="goal.id" :value="goal.id">
             {{ goal.goalName }}
           </option>
         </select>
-        <RouterLink class="secondary-action" to="/study/goals">Manage Goals</RouterLink>
       </div>
     </header>
 
@@ -29,11 +41,14 @@
       </nav>
       <RouterView />
       <aside class="ai-panel">
-        <p class="eyebrow">AI Recommendation</p>
-        <p>
-          Study guidance comes from Analytics and your current learning workflow. Knowledge stays
-          linked to the Goal when you choose one.
-        </p>
+        <p class="eyebrow">Study Context</p>
+        <strong>{{ currentGoalName }}</strong>
+        <p>AI suggestions appear when Study Analyst has enough Goal, Session, Knowledge, and Review signal.</p>
+        <div class="context-stack">
+          <span>AI Core ready</span>
+          <span>Planet Memory scoped</span>
+          <span>Knowledge-aware Tutor</span>
+        </div>
       </aside>
     </section>
   </main>
@@ -57,6 +72,7 @@ const route = useRoute()
 const goals = ref<StudyGoal[]>([])
 const selectedGoalId = ref('')
 const activeGoal = ref<StudyGoal | null>(null)
+const isGoalSwitcherOpen = ref(false)
 
 const currentLocation = computed(() => {
   const match = [...navigation]
@@ -85,6 +101,7 @@ async function switchGoal() {
     return
   }
   await switchStudyGoal(selectedGoalId.value)
+  isGoalSwitcherOpen.value = false
   await loadWorkspaceContext()
 }
 </script>

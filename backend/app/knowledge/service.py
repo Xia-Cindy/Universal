@@ -2,6 +2,7 @@ from collections import Counter, defaultdict
 
 from backend.app.core.dates import local_now
 from backend.app.files import FileService, UnsupportedFileTypeError
+from backend.app.knowledge.providers import KnowledgeProvider
 from backend.app.models import Concept, Document, DocumentChunk, DocumentStatus, DocumentType
 from backend.app.knowledge.repository import KnowledgeRepository
 
@@ -12,9 +13,11 @@ class KnowledgeService:
         *,
         repository: KnowledgeRepository | None = None,
         file_service: FileService | None = None,
+        provider: KnowledgeProvider | None = None,
     ) -> None:
         self._repository = repository or KnowledgeRepository()
         self._file_service = file_service or FileService()
+        self._provider = provider
 
     def create_document(self, user_id: str, payload: dict) -> Document:
         file_type = payload["fileType"]
@@ -27,7 +30,9 @@ class KnowledgeService:
             topic=payload["topic"],
             goal_id=payload.get("goalId"),
             content=payload.get("content", ""),
+            content_encoding=payload.get("contentEncoding", "text"),
             storage_path=payload.get("storagePath"),
+            provider=self._provider.name if self._provider else "local",
         )
         return self._repository.save_document(document)
 
@@ -44,6 +49,8 @@ class KnowledgeService:
 
     def process_document(self, user_id: str, document_id: str) -> dict[str, object]:
         document = self._repository.get_document(document_id, user_id)
+        if self._provider:
+            return self._process_with_provider(user_id, document)
         try:
             document.processing_status = DocumentStatus.PARSING
             document.error_message = None
@@ -95,6 +102,101 @@ class KnowledgeService:
             document.updated_at = local_now()
             self._repository.save_document(document)
             return self.document_detail(user_id, document.id)
+
+    def _process_with_provider(self, user_id: str, document: Document) -> dict[str, object]:
+        try:
+            if not document.content and not document.storage_path:
+                raise ValueError("RAGFlow processing requires document content or a stored file payload")
+            document.processing_status = DocumentStatus.PARSING
+            document.error_message = None
+            document.provider = self._provider.name
+            document.updated_at = local_now()
+            self._repository.save_document(document)
+
+            if document.provider_dataset_id and document.provider_document_id:
+                provider_dataset_id = str(document.provider_dataset_id)
+                provider_document_id = str(document.provider_document_id)
+                document.provider_status = document.provider_status or "uploaded"
+            else:
+                upload = self._provider.upload_document(user_id=user_id, document=document)
+                provider_dataset_id = str(upload["datasetId"])
+                provider_document_id = str(upload["documentId"])
+                document.provider_dataset_id = provider_dataset_id
+                document.provider_document_id = provider_document_id
+                document.provider_status = str(upload.get("status") or "uploaded")
+            document.processing_status = DocumentStatus.CHUNKING
+            document.updated_at = local_now()
+            self._repository.save_document(document)
+
+            parse_result = self._provider.parse_document(
+                user_id=user_id,
+                dataset_id=provider_dataset_id,
+                document_id=provider_document_id,
+            )
+            document.provider_status = str(parse_result.get("status") or "chunking")
+            chunks = self._provider.list_document_chunks(
+                user_id=user_id,
+                dataset_id=provider_dataset_id,
+                document_id=provider_document_id,
+            )
+            if chunks:
+                self._repository.replace_chunks(
+                    document.id,
+                    [
+                        DocumentChunk(
+                            user_id=user_id,
+                            document_id=document.id,
+                            chunk_index=index,
+                            content=str(chunk.get("content", "")),
+                            metadata=self._provider_chunk_metadata(
+                                chunk=chunk,
+                                document=document,
+                                provider_document_id=provider_document_id,
+                            ),
+                        )
+                        for index, chunk in enumerate(chunks)
+                        if chunk.get("content")
+                    ],
+                )
+                self._repository.save_concept(
+                    Concept(
+                        user_id=user_id,
+                        subject=document.subject,
+                        topic=document.topic,
+                        name=document.topic,
+                    )
+                )
+                document.processing_status = DocumentStatus.PROCESSED
+            else:
+                document.processing_status = DocumentStatus.CHUNKING
+            document.updated_at = local_now()
+            self._repository.save_document(document)
+            return self.document_detail(user_id, document.id)
+        except (RuntimeError, ValueError) as exc:
+            document.processing_status = DocumentStatus.FAILED
+            document.error_message = str(exc)
+            document.provider_status = "failed"
+            document.updated_at = local_now()
+            self._repository.save_document(document)
+            return self.document_detail(user_id, document.id)
+
+    def _provider_chunk_metadata(
+        self,
+        *,
+        chunk: dict[str, object],
+        document: Document,
+        provider_document_id: str,
+    ) -> dict[str, object]:
+        metadata = chunk.get("metadata", {})
+        return {
+            **(metadata if isinstance(metadata, dict) else {}),
+            "fileName": document.file_name,
+            "goalId": document.goal_id,
+            "subject": document.subject,
+            "topic": document.topic,
+            "providerChunkId": chunk.get("chunkId"),
+            "providerDocumentId": provider_document_id,
+        }
 
     def list_documents(
         self,

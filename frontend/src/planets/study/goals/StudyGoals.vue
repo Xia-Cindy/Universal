@@ -8,15 +8,83 @@
     <template v-else>
       <section class="home-section">
         <div class="section-heading">
-          <h3>Your learning directions</h3>
+          <h3>Current Goal</h3>
           <RouterLink class="secondary-action" to="/study/plan">Open Plan</RouterLink>
         </div>
-        <div v-if="goals.length" class="goal-list">
+        <p class="surface-copy">
+          The current Goal is the context for Home, Plan, Knowledge, Tutor, and Analytics.
+        </p>
+        <article v-if="activeGoal" class="knowledge-document selected">
+          <div>
+            <span class="status-pill">{{ goalTypeLabel(activeGoal.goalType) }}</span>
+            <h3>{{ activeGoal.goalName }}</h3>
+            <p class="surface-copy">{{ activeGoal.description || fallbackDescription(activeGoal.goalType) }}</p>
+            <small>{{ activeGoal.deadline || 'No deadline' }} · {{ activeGoal.status }}</small>
+          </div>
+          <div class="task-actions">
+            <button type="button" class="secondary-action" @click="startEdit(activeGoal)">Edit Goal</button>
+            <RouterLink class="secondary-action" to="/study/plan">View Plan</RouterLink>
+          </div>
+        </article>
+        <form
+          v-if="editingGoalId === activeGoal?.id"
+          class="study-form edit-surface"
+          @submit.prevent="submitGoalEdit"
+        >
+          <div class="goal-type-picker wide-field" aria-label="Edit goal type">
+            <button
+              v-for="option in goalTypes"
+              :key="option.value"
+              type="button"
+              :class="{ selected: editForm.goalType === option.value }"
+              @click="editForm.goalType = option.value"
+            >
+              <strong>{{ option.label }}</strong>
+              <span>{{ option.description }}</span>
+            </button>
+          </div>
+          <label>
+            Goal title
+            <input v-model="editForm.goalName" required />
+          </label>
+          <label>
+            Deadline
+            <input v-model="editForm.deadline" type="date" />
+          </label>
+          <label>
+            Daily minutes
+            <input v-model.number="editForm.dailyAvailableMinutes" min="1" required type="number" />
+          </label>
+          <label>
+            Current level
+            <input v-model="editForm.currentLevel" required />
+          </label>
+          <label class="wide-field">
+            Subjects
+            <input v-model="editSubjectsText" required placeholder="systems, algorithms, English" />
+          </label>
+          <label class="wide-field">
+            Description
+            <textarea v-model="editForm.description" rows="3" />
+          </label>
+          <div class="knowledge-actions">
+            <button type="submit" :disabled="isSavingEdit">Save Goal</button>
+            <button type="button" class="secondary-action" @click="cancelEdit">Cancel</button>
+          </div>
+        </form>
+        <div v-else class="knowledge-state">
+          <strong>No current Goal yet.</strong>
+          <span>Create one Goal to start connecting plans, tasks, and Knowledge.</span>
+        </div>
+      </section>
+
+      <section class="home-section">
+        <h3>Other Goals</h3>
+        <div v-if="otherGoals.length" class="goal-list">
           <article
-            v-for="goal in goals"
+            v-for="goal in otherGoals"
             :key="goal.id"
             class="knowledge-document"
-            :class="{ selected: goal.id === activeGoalId }"
           >
             <div>
               <span class="status-pill">{{ goalTypeLabel(goal.goalType) }}</span>
@@ -24,17 +92,56 @@
               <p class="surface-copy">{{ goal.description || fallbackDescription(goal.goalType) }}</p>
               <small>{{ goal.deadline || 'No deadline' }} · {{ goal.status }}</small>
             </div>
-            <button type="button" :disabled="goal.id === activeGoalId" @click="switchGoal(goal.id)">
-              {{ goal.id === activeGoalId ? 'Current' : 'Switch' }}
-            </button>
+            <div class="task-actions">
+              <button type="button" class="secondary-action" @click="startEdit(goal)">Edit</button>
+              <button type="button" @click="switchGoal(goal.id)">Switch</button>
+            </div>
+            <form
+              v-if="editingGoalId === goal.id"
+              class="study-form edit-surface"
+              @submit.prevent="submitGoalEdit"
+            >
+              <label>
+                Goal title
+                <input v-model="editForm.goalName" required />
+              </label>
+              <label>
+                Deadline
+                <input v-model="editForm.deadline" type="date" />
+              </label>
+              <label>
+                Daily minutes
+                <input v-model.number="editForm.dailyAvailableMinutes" min="1" required type="number" />
+              </label>
+              <label>
+                Current level
+                <input v-model="editForm.currentLevel" required />
+              </label>
+              <label class="wide-field">
+                Subjects
+                <input v-model="editSubjectsText" required />
+              </label>
+              <label class="wide-field">
+                Description
+                <textarea v-model="editForm.description" rows="3" />
+              </label>
+              <div class="knowledge-actions">
+                <button type="submit" :disabled="isSavingEdit">Save Goal</button>
+                <button type="button" class="secondary-action" @click="cancelEdit">Cancel</button>
+              </div>
+            </form>
           </article>
         </div>
         <div v-else class="knowledge-state">
-          <strong>No Goal yet.</strong>
-          <span>Create one Goal to start connecting plans, tasks, and Knowledge.</span>
+          <span>No other Goals yet.</span>
         </div>
       </section>
 
+      <section class="home-section">
+        <h3>Create Goal</h3>
+        <p class="surface-copy">
+          A Goal can be exam preparation, reading, general learning, or long-term growth.
+        </p>
       <form class="study-form" @submit.prevent="submitGoal">
         <div class="goal-type-picker wide-field" aria-label="Goal type">
           <button
@@ -77,6 +184,7 @@
           <span>{{ statusMessage }}</span>
         </div>
       </form>
+      </section>
     </template>
   </section>
 </template>
@@ -87,6 +195,7 @@ import {
   createGoal,
   fetchStudyWorkspace,
   switchStudyGoal,
+  updateGoal,
   type StudyGoal,
   type StudyGoalType,
 } from '../../../services/api'
@@ -102,6 +211,8 @@ const goals = ref<StudyGoal[]>([])
 const activeGoalId = ref('')
 const loadState = ref('loading')
 const statusMessage = ref('Create a Goal, then build Plans inside it.')
+const editingGoalId = ref('')
+const isSavingEdit = ref(false)
 const form = ref({
   goalType: 'learning' as StudyGoalType,
   goalName: '',
@@ -112,6 +223,16 @@ const form = ref({
   priority: 'medium',
 })
 const subjectsText = ref('')
+const editForm = ref({
+  goalType: 'learning' as StudyGoalType,
+  goalName: '',
+  deadline: '',
+  description: '',
+  currentLevel: '',
+  dailyAvailableMinutes: 60,
+  priority: 'medium',
+})
+const editSubjectsText = ref('')
 
 const subjects = computed(() =>
   subjectsText.value
@@ -119,6 +240,14 @@ const subjects = computed(() =>
     .map((subject) => subject.trim())
     .filter(Boolean),
 )
+const editSubjects = computed(() =>
+  editSubjectsText.value
+    .split(',')
+    .map((subject) => subject.trim())
+    .filter(Boolean),
+)
+const activeGoal = computed(() => goals.value.find((goal) => goal.id === activeGoalId.value) || null)
+const otherGoals = computed(() => goals.value.filter((goal) => goal.id !== activeGoalId.value))
 
 onMounted(loadGoals)
 
@@ -147,6 +276,46 @@ async function switchGoal(goalId: string) {
   await switchStudyGoal(goalId)
   statusMessage.value = 'Current Goal switched.'
   await loadGoals()
+}
+
+function startEdit(goal: StudyGoal) {
+  editingGoalId.value = goal.id
+  editForm.value = {
+    goalType: goal.goalType,
+    goalName: goal.goalName,
+    deadline: goal.deadline || '',
+    description: goal.description || '',
+    currentLevel: goal.currentLevel,
+    dailyAvailableMinutes: goal.dailyAvailableMinutes,
+    priority: goal.priority,
+  }
+  editSubjectsText.value = goal.subjects.join(', ')
+  statusMessage.value = `Editing ${goal.goalName}.`
+}
+
+function cancelEdit() {
+  editingGoalId.value = ''
+  statusMessage.value = 'Goal editing cancelled.'
+}
+
+async function submitGoalEdit() {
+  if (!editingGoalId.value) {
+    return
+  }
+  isSavingEdit.value = true
+  try {
+    await updateGoal(editingGoalId.value, {
+      ...editForm.value,
+      deadline: editForm.value.deadline || null,
+      examName: editForm.value.goalType === 'exam' ? editForm.value.goalName : null,
+      subjects: editSubjects.value,
+    })
+    statusMessage.value = 'Goal updated.'
+    editingGoalId.value = ''
+    await loadGoals()
+  } finally {
+    isSavingEdit.value = false
+  }
 }
 
 function resetForm() {

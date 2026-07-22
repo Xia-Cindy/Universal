@@ -71,6 +71,24 @@ class StudyRepository:
         self.daily_tasks[task.id] = task
         return task
 
+    def get_year_plan(self, plan_id: str, user_id: str) -> YearPlan:
+        plan = self.year_plans[plan_id]
+        if plan.user_id != user_id:
+            raise PermissionError("Plan does not belong to user")
+        return plan
+
+    def get_month_plan(self, plan_id: str, user_id: str) -> MonthPlan:
+        plan = self.month_plans[plan_id]
+        if plan.user_id != user_id:
+            raise PermissionError("Plan does not belong to user")
+        return plan
+
+    def get_week_plan(self, plan_id: str, user_id: str) -> WeekPlan:
+        plan = self.week_plans[plan_id]
+        if plan.user_id != user_id:
+            raise PermissionError("Plan does not belong to user")
+        return plan
+
     def get_task(self, task_id: str, user_id: str) -> DailyTask:
         task = self.daily_tasks[task_id]
         if task.user_id != user_id:
