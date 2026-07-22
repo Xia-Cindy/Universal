@@ -1471,6 +1471,33 @@ Not changed:
 - Autonomous planning.
 - Full Plan Builder editing for long-term, monthly and weekly layers.
 
+## Milestone 7.9 Study Goal and Plan Productization Slice
+
+Status: completed for the first Study-side implementation slice.
+
+Implemented:
+
+- Added drilled Goal creation route `/study/goals/new`.
+- Changed empty Study Home / Workspace primary action to route users into the Goal creation flow.
+- Kept Goals page as a management surface for Current Goal, Other Goals and editing.
+- Added Goal-type Knowledge Space preview for exam, reading, learning and growth goals.
+- Added Daily Task priority to the Study domain model.
+- Added migration `010_study_plan_calendar_priority.sql`.
+- Added Study Plan Calendar visualization for current Goal tasks.
+- Added task priority editing from Study Plan.
+- Added tests for task priority and Plan Calendar source behavior.
+
+Not changed:
+
+- AI Core architecture.
+- Agent registration.
+- RAGFlow provider architecture.
+- Retrieval architecture.
+- Memory architecture.
+- Work Planet implementation.
+- Dynamic Resume implementation.
+- Goal-aware Knowledge Spaces persistence for bookshelf/cards.
+
 ---
 
 # End

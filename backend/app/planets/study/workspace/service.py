@@ -139,7 +139,7 @@ class StudyWorkspaceService:
             return {
                 "type": "create_goal",
                 "label": "Create Goal",
-                "route": "/study/goals",
+                "route": "/study/goals/new",
                 "description": "Start by choosing the learning direction for this Study Workspace.",
             }
         if not has_plan:

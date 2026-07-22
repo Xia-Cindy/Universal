@@ -55,6 +55,7 @@ class PlanService:
                 topic=task_payload["topic"],
                 task_date=parse_local_date(task_payload["taskDate"]),
                 estimated_minutes=int(task_payload.get("estimatedMinutes", goal.daily_available_minutes)),
+                priority=task_payload.get("priority", "medium"),
             )
             self._repository.save_daily_task(task)
 
@@ -104,6 +105,8 @@ class PlanService:
             task.task_date = parse_local_date(payload["taskDate"])
         if "estimatedMinutes" in payload:
             task.estimated_minutes = int(payload["estimatedMinutes"])
+        if "priority" in payload:
+            task.priority = payload["priority"]
         if "status" in payload:
             task.status = TaskStatus(payload["status"])
             if task.status == TaskStatus.COMPLETED and task.completed_at is None:
@@ -132,6 +135,7 @@ class PlanService:
                     "topic": f"{subject} 基础",
                     "taskDate": (start_date + timedelta(days=offset)).isoformat(),
                     "estimatedMinutes": goal.daily_available_minutes,
+                    "priority": "high" if offset == 0 else "medium",
                 }
             )
         return tasks

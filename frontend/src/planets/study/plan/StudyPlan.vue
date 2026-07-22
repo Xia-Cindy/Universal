@@ -9,7 +9,7 @@
       <div v-if="!workspace.currentGoal" class="knowledge-state">
         <strong>No current Goal.</strong>
         <span>Create a Goal first, then add plans and daily tasks inside it.</span>
-        <RouterLink class="primary-action" to="/study/goals">Create Goal</RouterLink>
+        <RouterLink class="primary-action" to="/study/goals/new">Create Goal</RouterLink>
       </div>
 
       <template v-else>
@@ -104,15 +104,60 @@
           </article>
         </div>
 
+        <section v-if="hasPlan" class="home-section plan-calendar-section" aria-labelledby="plan-calendar-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Calendar</p>
+              <h3 id="plan-calendar-title">本周任务日历</h3>
+            </div>
+            <span>{{ calendarSummary }}</span>
+          </div>
+          <div class="plan-calendar" role="list" aria-label="Daily task calendar">
+            <article
+              v-for="day in calendarDays"
+              :key="day.date"
+              class="calendar-day"
+              :class="{ today: day.isToday, empty: !day.tasks.length }"
+              role="listitem"
+            >
+              <div class="calendar-day-heading">
+                <span>{{ day.weekday }}</span>
+                <strong>{{ day.dayLabel }}</strong>
+              </div>
+              <div v-if="day.tasks.length" class="calendar-task-stack">
+                <button
+                  v-for="task in day.tasks"
+                  :key="task.id"
+                  type="button"
+                  class="calendar-task"
+                  :class="[task.status, priorityClass(task.priority)]"
+                  @click="focusTask(task.id)"
+                >
+                  <span>{{ task.subject }}</span>
+                  <small>{{ task.topic }}</small>
+                  <em>{{ priorityLabel(task.priority) }} · {{ task.estimatedMinutes }} min</em>
+                </button>
+              </div>
+              <p v-else class="surface-copy">No task</p>
+            </article>
+          </div>
+        </section>
+
         <section class="home-section">
           <div class="section-heading">
             <h3>每日任务</h3>
             <span>当前 Goal 下有 {{ workspace.plans.dailyTasks.length }} 个任务</span>
           </div>
           <div v-if="workspace.plans.dailyTasks.length" class="task-list">
-            <article v-for="task in sortedTasks" :key="task.id" class="task-row readable-task">
+            <article
+              v-for="task in sortedTasks"
+              :key="task.id"
+              class="task-row readable-task"
+              :data-task-id="task.id"
+            >
               <div>
                 <span class="status-pill">{{ task.status }}</span>
+                <span class="status-pill priority-pill">{{ priorityLabel(task.priority) }}</span>
                 <strong>{{ task.subject }}</strong>
                 <span>{{ task.topic }}</span>
                 <small>{{ task.taskDate }} · {{ task.estimatedMinutes }} min</small>
@@ -150,6 +195,14 @@
                   <label>
                     Minutes
                     <input v-model.number="task.estimatedMinutes" type="number" min="1" aria-label="Minutes" />
+                  </label>
+                  <label>
+                    Priority
+                    <select v-model="task.priority" aria-label="Priority">
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
                   </label>
                 </div>
                 <button type="button" @click="saveTask(task)">Save Task</button>
@@ -203,7 +256,7 @@ const emptyWorkspace: StudyWorkspacePayload = {
   primaryAction: {
     type: 'create_goal',
     label: 'Create Goal',
-    route: '/study/goals',
+    route: '/study/goals/new',
     description: 'Start by choosing the learning direction for this Study Workspace.',
   },
   knowledgeSummary: {
@@ -245,6 +298,12 @@ const sortedTasks = computed(() =>
     `${left.taskDate}-${left.id}`.localeCompare(`${right.taskDate}-${right.id}`),
   ),
 )
+const calendarDays = computed(() => buildCalendarDays(sortedTasks.value))
+const calendarSummary = computed(() => {
+  const totalMinutes = sortedTasks.value.reduce((sum, task) => sum + Number(task.estimatedMinutes || 0), 0)
+  const highCount = sortedTasks.value.filter((task) => task.priority === 'high').length
+  return `${sortedTasks.value.length} tasks · ${totalMinutes} min · ${highCount} high priority`
+})
 
 onMounted(loadWorkspace)
 
@@ -283,6 +342,58 @@ async function saveTask(task: DailyTask) {
   const updated = await updateTask(task.id, task)
   Object.assign(task, updated)
   status.value = 'Task saved inside the current Goal.'
+}
+
+function buildCalendarDays(tasks: DailyTask[]) {
+  const start = currentWeeklyPlan.value?.weekStart || tasks[0]?.taskDate || new Date().toISOString().slice(0, 10)
+  const startDate = parseDate(start)
+  const today = new Date().toISOString().slice(0, 10)
+  return Array.from({ length: 7 }, (_, offset) => {
+    const date = new Date(startDate)
+    date.setDate(startDate.getDate() + offset)
+    const isoDate = toIsoDate(date)
+    return {
+      date: isoDate,
+      weekday: weekdayLabel(date),
+      dayLabel: `${date.getMonth() + 1}/${date.getDate()}`,
+      isToday: isoDate === today,
+      tasks: tasks.filter((task) => task.taskDate === isoDate),
+    }
+  })
+}
+
+function parseDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function toIsoDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function weekdayLabel(date: Date) {
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]
+}
+
+function focusTask(taskId: string) {
+  const element = document.querySelector(`[data-task-id="${taskId}"]`)
+  element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function priorityLabel(priority: DailyTask['priority']) {
+  const labels: Record<DailyTask['priority'], string> = {
+    high: 'High',
+    medium: 'Medium',
+    low: 'Low',
+  }
+  return labels[priority] || 'Medium'
+}
+
+function priorityClass(priority: DailyTask['priority']) {
+  return `priority-${priority || 'medium'}`
 }
 
 async function saveYearPlan() {

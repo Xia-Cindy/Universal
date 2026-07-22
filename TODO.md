@@ -146,6 +146,17 @@
 - [x] Add project-local RAGFlow Docker Compose stack.
 - [x] Add RAGFlow installation and Universe connection documentation.
 
+## Milestone 7.9 Study Goal and Plan Productization
+
+- [x] Move Create Goal into a drilled `/study/goals/new` flow.
+- [x] Add Goal type selection before the detailed Goal form.
+- [x] Show Goal-type Knowledge Space preview for exam, reading, learning and growth goals.
+- [x] Route empty Study Home / Workspace primary action to the drilled Goal creation page.
+- [x] Add Daily Task priority with migration `010_study_plan_calendar_priority.sql`.
+- [x] Add Study Plan Calendar to visualize current Goal tasks by day.
+- [x] Allow task priority editing from Plan.
+- [x] Keep AI Core, RAGFlow provider, Retrieval, Memory and Work Planet untouched in this slice.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
@@ -155,5 +166,8 @@
 - [ ] Add provider-backed citation formatting for Tutor answers.
 - [ ] Backfill existing local documents into RAGFlow when original content is available.
 - [ ] Productize Plan Builder with editable long-term, monthly and weekly plan layers.
+- [ ] Implement Goal-aware Knowledge Spaces: exam isolation, reading bookshelf and knowledge cards.
+- [ ] Implement Work Planet foundation after explicit milestone approval.
+- [ ] Implement Dynamic Resume after Work Planet evidence model exists.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
 - [ ] Implement Wrong Questions and Review.

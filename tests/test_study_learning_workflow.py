@@ -80,6 +80,7 @@ class StudyLearningWorkflowTests(unittest.TestCase):
                 "subject": "math",
                 "topic": "permutation",
                 "estimatedMinutes": 60,
+                "priority": "high",
             },
         )
         completed = self.api.complete_task(task_id)
@@ -87,6 +88,7 @@ class StudyLearningWorkflowTests(unittest.TestCase):
 
         self.assertEqual(updated["topic"], "permutation")
         self.assertEqual(updated["estimatedMinutes"], 60)
+        self.assertEqual(updated["priority"], "high")
         self.assertEqual(completed["status"], "completed")
         self.assertEqual(completed["completedAt"], completed_again["completedAt"])
 

@@ -20,7 +20,7 @@
       <div v-if="!workspace.currentGoal" class="knowledge-state">
         <strong>Study Planet needs a Goal.</strong>
         <span>Create a learning direction before plans, tasks, and Knowledge start to connect.</span>
-        <RouterLink class="primary-action" to="/study/goals">Create Goal</RouterLink>
+        <RouterLink class="primary-action" to="/study/goals/new">Create Goal</RouterLink>
       </div>
 
       <template v-else>
@@ -144,7 +144,7 @@ const emptyWorkspace: StudyWorkspacePayload = {
   primaryAction: {
     type: 'create_goal',
     label: 'Create Goal',
-    route: '/study/goals',
+    route: '/study/goals/new',
     description: 'Start by choosing the learning direction for this Study Workspace.',
   },
   knowledgeSummary: {

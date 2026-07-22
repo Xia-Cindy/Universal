@@ -68,14 +68,25 @@ class StudyWorkspaceIATests(unittest.TestCase):
 
     def test_navigation_keeps_goals_as_management_entry_not_primary_nav(self):
         source = (PROJECT_ROOT / "frontend/src/planets/study/layout/StudyWorkspace.vue").read_text()
+        router_source = (PROJECT_ROOT / "frontend/src/router/index.ts").read_text()
+        goals_source = (PROJECT_ROOT / "frontend/src/planets/study/goals/StudyGoals.vue").read_text()
 
         self.assertIn("Universe Home", source)
         self.assertIn("Current Goal", source)
         self.assertIn("/study/goals", source)
+        self.assertIn("goals/new", router_source)
+        self.assertIn('to="/study/goals/new"', goals_source)
         self.assertIn("{ label: 'Home', route: '/study' }", source)
         self.assertIn("{ label: 'Plan', route: '/study/plan' }", source)
         self.assertNotIn("{ label: 'Goals', route: '/study/goals' }", source)
         self.assertIn("Universe > Study Planet", source)
+
+    def test_plan_calendar_and_priority_are_user_visible(self):
+        source = (PROJECT_ROOT / "frontend/src/planets/study/plan/StudyPlan.vue").read_text()
+
+        self.assertIn("本周任务日历", source)
+        self.assertIn("priorityLabel", source)
+        self.assertIn("v-model=\"task.priority\"", source)
 
     def test_existing_study_contracts_remain_compatible(self):
         self.api.create_goal(self._goal_payload("Learn APIs"))

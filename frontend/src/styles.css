@@ -1371,6 +1371,125 @@ textarea {
   margin-bottom: 10px;
 }
 
+.goal-create-flow {
+  max-width: 980px;
+}
+
+.goal-wizard-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.goal-wizard-steps span {
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #5b6877;
+  padding: 12px 14px;
+}
+
+.goal-wizard-steps span.active {
+  background: #131923;
+  border-color: #131923;
+  color: #fff;
+}
+
+.knowledge-mode-preview {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 16px 0;
+}
+
+.plan-calendar-section {
+  overflow: hidden;
+}
+
+.plan-calendar {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(7, minmax(112px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.calendar-day {
+  background: #fff;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  min-height: 170px;
+  min-width: 112px;
+  padding: 12px;
+}
+
+.calendar-day.today {
+  border-color: #131923;
+  box-shadow: inset 0 0 0 1px #131923;
+}
+
+.calendar-day.empty {
+  background: #f8fbfc;
+}
+
+.calendar-day-heading {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-day-heading span {
+  color: #5b6877;
+  font-size: 0.78rem;
+}
+
+.calendar-task-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.calendar-task {
+  background: #fff;
+  border: 1px solid #d5dee4;
+  border-left-width: 4px;
+  border-radius: 8px;
+  color: #131923;
+  cursor: pointer;
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  text-align: left;
+  white-space: normal;
+}
+
+.calendar-task.completed {
+  opacity: 0.62;
+}
+
+.calendar-task.priority-high {
+  border-left-color: #c83349;
+}
+
+.calendar-task.priority-medium {
+  border-left-color: #d78c1f;
+}
+
+.calendar-task.priority-low {
+  border-left-color: #0b8a88;
+}
+
+.calendar-task small,
+.calendar-task em {
+  color: #5b6877;
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.priority-pill {
+  background: #f2f5f7;
+}
+
 @media (max-width: 980px) {
   .planet-field,
   .study-header,

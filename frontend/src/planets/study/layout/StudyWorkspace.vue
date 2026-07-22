@@ -78,8 +78,11 @@ const currentLocation = computed(() => {
   const match = [...navigation]
     .sort((left, right) => right.route.length - left.route.length)
     .find((item) => route.path === item.route || route.path.startsWith(`${item.route}/`))
+  if (route.path === '/study/goals/new') {
+    return 'Create Goal'
+  }
   if (route.path === '/study/goals') {
-    return 'Goals'
+    return 'Manage Goals'
   }
   return match?.label || 'Home'
 })

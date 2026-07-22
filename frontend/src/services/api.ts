@@ -32,6 +32,7 @@ export interface DailyTask {
   topic: string
   taskDate: string
   estimatedMinutes: number
+  priority: 'high' | 'medium' | 'low'
   status: string
 }
 

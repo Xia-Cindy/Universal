@@ -140,50 +140,12 @@
       <section class="home-section">
         <h3>Create Goal</h3>
         <p class="surface-copy">
-          A Goal can be exam preparation, reading, general learning, or long-term growth.
+          Create Goal uses a guided flow so each Goal can prepare the right Knowledge Space.
         </p>
-      <form class="study-form" @submit.prevent="submitGoal">
-        <div class="goal-type-picker wide-field" aria-label="Goal type">
-          <button
-            v-for="option in goalTypes"
-            :key="option.value"
-            type="button"
-            :class="{ selected: form.goalType === option.value }"
-            @click="form.goalType = option.value"
-          >
-            <strong>{{ option.label }}</strong>
-            <span>{{ option.description }}</span>
-          </button>
-        </div>
-        <label>
-          Goal title
-          <input v-model="form.goalName" required />
-        </label>
-        <label>
-          Deadline
-          <input v-model="form.deadline" type="date" />
-        </label>
-        <label>
-          Daily minutes
-          <input v-model.number="form.dailyAvailableMinutes" min="1" required type="number" />
-        </label>
-        <label>
-          Current level
-          <input v-model="form.currentLevel" required />
-        </label>
-        <label class="wide-field">
-          Subjects
-          <input v-model="subjectsText" required placeholder="systems, algorithms, English" />
-        </label>
-        <label class="wide-field">
-          Description
-          <textarea v-model="form.description" rows="3" />
-        </label>
         <div class="knowledge-actions">
-          <button type="submit">Create Goal</button>
+          <RouterLink class="primary-action" to="/study/goals/new">Create Goal</RouterLink>
           <span>{{ statusMessage }}</span>
         </div>
-      </form>
       </section>
     </template>
   </section>
@@ -192,7 +154,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
-  createGoal,
   fetchStudyWorkspace,
   switchStudyGoal,
   updateGoal,
@@ -213,16 +174,6 @@ const loadState = ref('loading')
 const statusMessage = ref('Create a Goal, then build Plans inside it.')
 const editingGoalId = ref('')
 const isSavingEdit = ref(false)
-const form = ref({
-  goalType: 'learning' as StudyGoalType,
-  goalName: '',
-  deadline: '',
-  description: '',
-  currentLevel: '',
-  dailyAvailableMinutes: 60,
-  priority: 'medium',
-})
-const subjectsText = ref('')
 const editForm = ref({
   goalType: 'learning' as StudyGoalType,
   goalName: '',
@@ -234,12 +185,6 @@ const editForm = ref({
 })
 const editSubjectsText = ref('')
 
-const subjects = computed(() =>
-  subjectsText.value
-    .split(',')
-    .map((subject) => subject.trim())
-    .filter(Boolean),
-)
 const editSubjects = computed(() =>
   editSubjectsText.value
     .split(',')
@@ -257,19 +202,6 @@ async function loadGoals() {
   goals.value = workspace.goals
   activeGoalId.value = workspace.currentGoal?.id || ''
   loadState.value = 'ready'
-}
-
-async function submitGoal() {
-  const goal = await createGoal({
-    ...form.value,
-    deadline: form.value.deadline || null,
-    examName: form.value.goalType === 'exam' ? form.value.goalName : null,
-    subjects: subjects.value,
-  })
-  statusMessage.value = 'Goal created and selected.'
-  await switchStudyGoal(goal.id)
-  resetForm()
-  await loadGoals()
 }
 
 async function switchGoal(goalId: string) {
@@ -316,19 +248,6 @@ async function submitGoalEdit() {
   } finally {
     isSavingEdit.value = false
   }
-}
-
-function resetForm() {
-  form.value = {
-    goalType: 'learning',
-    goalName: '',
-    deadline: '',
-    description: '',
-    currentLevel: '',
-    dailyAvailableMinutes: 60,
-    priority: 'medium',
-  }
-  subjectsText.value = ''
 }
 
 function goalTypeLabel(type: StudyGoalType) {

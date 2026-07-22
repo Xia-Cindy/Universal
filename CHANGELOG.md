@@ -22,3 +22,4 @@
 - Study Workspace smoke-test fixes: backend-owned `primaryAction`, completed-task action cleanup, PDF metadata status copy, Tutor empty-input validation, compact Goal switching, Goals IA grouping, human-readable Analytics language, and Review coming-later copy.
 - Milestone 8.1 RAGFlow Knowledge provider adapter: provider config, RAGFlow upload/parse/chunk/retrieval client, provider metadata migration, backend Knowledge/ Retrieval routing, frontend provider status display, and mocked adapter tests while preserving local fallback.
 - Local RAGFlow runtime stack: project-owned Docker Compose service under `docker/ragflow/`, local Universe env example, start/stop scripts, and installation guide.
+- Milestone 7.9 Study productization slice: drilled Create Goal flow, Goal-type Knowledge Space preview, Study Plan Calendar, Daily Task priority, migration `010_study_plan_calendar_priority.sql`, and IA regression tests.

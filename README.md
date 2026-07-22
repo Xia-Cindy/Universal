@@ -132,6 +132,13 @@ Milestone 8.1 connects Knowledge to RAGFlow through a backend provider adapter:
 - Universe keeps document ownership, Goal relation, subject/topic metadata, and frontend API contracts.
 - Frontend, Tutor, Study Planet, and AI Core do not call RAGFlow directly.
 
+Milestone 7.9 starts Study productization from the latest design document:
+
+- Create Goal now uses a drilled `/study/goals/new` flow with Goal type selection.
+- Goal creation previews the Knowledge Space mode for exam, reading, learning, and growth goals.
+- Study Plan adds a weekly Calendar view over Daily Tasks.
+- Daily Tasks now have editable priority for Calendar planning.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run
