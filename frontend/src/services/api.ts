@@ -64,6 +64,9 @@ export interface KnowledgeDocumentPayload {
   fileName: string
   fileType: KnowledgeDocumentType
   goalId?: string | null
+  planetType?: string
+  techStackId?: string | null
+  tags?: string[]
   subject: string
   topic: string
   content?: string
@@ -80,6 +83,9 @@ export interface KnowledgeDocument {
   fileType: KnowledgeDocumentType
   subject: string
   topic: string
+  planetType: string
+  techStackId?: string | null
+  tags: string[]
   storagePath?: string | null
   contentEncoding: string
   provider: string
@@ -553,7 +559,7 @@ export async function fetchKnowledgeOverview() {
 }
 
 export async function fetchKnowledgeDocuments(
-  filters: { subject?: string; topic?: string; goalId?: string } = {},
+  filters: { subject?: string; topic?: string; goalId?: string; planetType?: string; techStackId?: string } = {},
 ): Promise<KnowledgeDocument[]> {
   const params = new URLSearchParams()
   if (filters.subject) {
@@ -564,6 +570,12 @@ export async function fetchKnowledgeDocuments(
   }
   if (filters.goalId) {
     params.set('goalId', filters.goalId)
+  }
+  if (filters.planetType) {
+    params.set('planetType', filters.planetType)
+  }
+  if (filters.techStackId) {
+    params.set('techStackId', filters.techStackId)
   }
   const query = params.toString()
   const response = await fetch(`${API_BASE}/study/knowledge/documents${query ? `?${query}` : ''}`)
@@ -574,7 +586,7 @@ export async function fetchKnowledgeDocuments(
 }
 
 export async function fetchWorkKnowledgeDocuments(
-  filters: { subject?: string; topic?: string; goalId?: string } = {},
+  filters: { subject?: string; topic?: string; goalId?: string; planetType?: string; techStackId?: string } = {},
 ): Promise<KnowledgeDocument[]> {
   const params = new URLSearchParams()
   if (filters.subject) {
@@ -585,6 +597,12 @@ export async function fetchWorkKnowledgeDocuments(
   }
   if (filters.goalId) {
     params.set('goalId', filters.goalId)
+  }
+  if (filters.planetType) {
+    params.set('planetType', filters.planetType)
+  }
+  if (filters.techStackId) {
+    params.set('techStackId', filters.techStackId)
   }
   const query = params.toString()
   const response = await fetch(`${API_BASE}/work/knowledge/documents${query ? `?${query}` : ''}`)

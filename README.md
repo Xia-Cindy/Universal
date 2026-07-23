@@ -147,6 +147,8 @@ Milestone 10.0 activates the Work Planet foundation:
 - Dynamic Resume drafts are evidence-based and do not invent experience.
 - AI Core, Retrieval, RAGFlow, and Memory architecture remain unchanged.
 
+Current Work Knowledge refinement adds a first-class Work Knowledge module. Work documents bind to Tech Stack and tags through the shared Knowledge Service. RAGFlow-backed Study Knowledge uses separate provider datasets for different Study Goals.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run

@@ -24,6 +24,8 @@ class KnowledgeRepository:
         subject: str | None = None,
         topic: str | None = None,
         goal_id: str | None = None,
+        planet_type: str | None = None,
+        tech_stack_id: str | None = None,
     ) -> list[Document]:
         documents = [document for document in self.documents.values() if document.user_id == user_id]
         if subject:
@@ -32,6 +34,10 @@ class KnowledgeRepository:
             documents = [document for document in documents if document.topic == topic]
         if goal_id:
             documents = [document for document in documents if document.goal_id == goal_id]
+        if planet_type:
+            documents = [document for document in documents if document.planet_type == planet_type]
+        if tech_stack_id:
+            documents = [document for document in documents if document.tech_stack_id == tech_stack_id]
         return sorted(documents, key=lambda document: document.created_at, reverse=True)
 
     def replace_chunks(self, document_id: str, chunks: list[DocumentChunk]) -> list[DocumentChunk]:

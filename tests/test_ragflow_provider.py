@@ -67,11 +67,14 @@ class FakeKnowledgeProvider:
 class StubRAGFlowClient:
     def __init__(self):
         self.requests = []
+        self.dataset_counter = 0
 
     def request_json(self, method, path, payload=None, query=None):
         self.requests.append((method, path, payload, query))
         if path == "/api/v1/datasets":
-            return {"code": 0, "data": {"id": "dataset-created"}}
+            self.dataset_counter += 1
+            dataset_id = "dataset-created" if self.dataset_counter == 1 else f"dataset-created-{self.dataset_counter}"
+            return {"code": 0, "data": {"id": dataset_id}}
         if path.endswith("/chunks") and method == "POST":
             return {"code": 0, "data": {"run": "parsed"}}
         if path.endswith("/chunks") and method == "GET":
@@ -199,6 +202,46 @@ class RAGFlowProviderTests(unittest.TestCase):
         self.assertEqual(parse["status"], "parsed")
         self.assertEqual(chunks[0]["content"], "Normalized chunk")
         self.assertEqual(search["results"][0]["score"], 0.91)
+
+    def test_ragflow_adapter_uses_separate_dataset_per_study_goal(self):
+        client = StubRAGFlowClient()
+        provider = RAGFlowKnowledgeProvider(client=client)
+        first_goal_document = Document(
+            user_id="local-user",
+            file_name="goal-a.md",
+            file_type=DocumentType.MARKDOWN,
+            subject="math",
+            topic="algebra",
+            goal_id="goal-a",
+            content="content",
+        )
+        same_goal_document = Document(
+            user_id="local-user",
+            file_name="goal-a-2.md",
+            file_type=DocumentType.MARKDOWN,
+            subject="math",
+            topic="functions",
+            goal_id="goal-a",
+            content="content",
+        )
+        second_goal_document = Document(
+            user_id="local-user",
+            file_name="goal-b.md",
+            file_type=DocumentType.MARKDOWN,
+            subject="english",
+            topic="reading",
+            goal_id="goal-b",
+            content="content",
+        )
+
+        first_upload = provider.upload_document(user_id="local-user", document=first_goal_document)
+        same_goal_upload = provider.upload_document(user_id="local-user", document=same_goal_document)
+        second_upload = provider.upload_document(user_id="local-user", document=second_goal_document)
+
+        self.assertEqual(first_upload["datasetId"], same_goal_upload["datasetId"])
+        self.assertNotEqual(first_upload["datasetId"], second_upload["datasetId"])
+        dataset_creates = [request for request in client.requests if request[1] == "/api/v1/datasets"]
+        self.assertEqual(len(dataset_creates), 2)
 
 
 if __name__ == "__main__":

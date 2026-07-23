@@ -168,6 +168,8 @@
 - [x] Add Dynamic Resume draft creation based on confirmed Work evidence.
 - [x] Allow Work to reference shared Knowledge through Knowledge Service summaries only.
 - [x] Add Work Knowledge as a first-class workspace module without duplicating the shared Knowledge Service.
+- [x] Bind Work Knowledge documents to Tech Stack and tags.
+- [x] Separate RAGFlow datasets by Study Goal for provider-backed Study Knowledge.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 
@@ -180,7 +182,7 @@
 - [ ] Add provider-backed citation formatting for Tutor answers.
 - [ ] Backfill existing local documents into RAGFlow when original content is available.
 - [ ] Productize Plan Builder with editable long-term, monthly and weekly plan layers.
-- [ ] Implement Goal-aware Knowledge Spaces: exam isolation, reading bookshelf and knowledge cards.
+- [ ] Implement full Goal-aware Knowledge Space UI modes: exam isolation, reading bookshelf and knowledge cards.
 - [ ] Add Work Agent capability after explicit design approval.
 - [ ] Add richer Dynamic Resume editor, version comparison and user confirmation flow.
 - [ ] Implement autonomous Memory extraction after explicit design approval.

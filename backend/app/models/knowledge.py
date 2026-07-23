@@ -33,6 +33,9 @@ class Document:
     subject: str
     topic: str
     goal_id: str | None = None
+    planet_type: str = "study"
+    tech_stack_id: str | None = None
+    tags: tuple[str, ...] = ()
     content: str = ""
     content_encoding: str = "text"
     storage_path: str | None = None
@@ -55,6 +58,9 @@ class Document:
             "fileType": self.file_type.value,
             "subject": self.subject,
             "topic": self.topic,
+            "planetType": self.planet_type,
+            "techStackId": self.tech_stack_id,
+            "tags": list(self.tags),
             "storagePath": self.storage_path,
             "contentEncoding": self.content_encoding,
             "provider": self.provider,

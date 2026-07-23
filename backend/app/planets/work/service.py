@@ -139,12 +139,15 @@ class WorkService:
     def _is_related_to_tech_stack(self, tech_stack: dict[str, object], document: object) -> bool:
         if not isinstance(document, dict):
             return False
+        if document.get("techStackId") == tech_stack.get("id"):
+            return True
         haystack = " ".join(
             str(value)
             for value in (
                 document.get("fileName"),
                 document.get("subject"),
                 document.get("topic"),
+                " ".join(str(tag) for tag in document.get("tags", [])),
                 " ".join(str(tag) for tag in tech_stack.get("tags", [])),
             )
         ).lower()

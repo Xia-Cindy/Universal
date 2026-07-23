@@ -1543,4 +1543,30 @@ Not changed:
 
 ---
 
+## Knowledge Space Metadata Refinement
+
+Implemented after Work Planet foundation:
+
+- Extended shared Knowledge documents with:
+  - `planet_type`
+  - `tech_stack_id`
+  - `tags`
+- Added migration `012_knowledge_space_metadata.sql`.
+- Work Knowledge uploads can bind to a Work Tech Stack and user-defined tags.
+- `goal_id` remains supported and is also represented as a normalized `goal:<goal_id>` tag.
+- Tech Stack detail resolves related Knowledge by direct `tech_stack_id` before falling back to subject/topic/tag matching.
+- RAGFlow provider dataset selection is now scope-aware:
+  - each Study Goal gets a separate RAGFlow dataset;
+  - each Work Tech Stack can get a separate RAGFlow dataset;
+  - unscoped Work and global documents use their own provider dataset scope.
+
+Not changed:
+
+- Knowledge remains a shared system service.
+- Work Planet does not own a separate Knowledge implementation.
+- Study Planet and Work Planet do not call RAGFlow directly.
+- AI Core, ToolRouter, Retrieval and Memory architecture remain unchanged.
+
+---
+
 # End

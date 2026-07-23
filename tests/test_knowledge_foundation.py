@@ -27,8 +27,23 @@ class KnowledgeFoundationTests(unittest.TestCase):
 
         self.assertEqual(document["fileName"], "algebra-notes.md")
         self.assertEqual(document["fileType"], "markdown")
+        self.assertEqual(document["planetType"], "study")
+        self.assertEqual(document["tags"], [])
         self.assertEqual(document["processingStatus"], "uploaded")
         self.assertIsNone(document["errorMessage"])
+
+    def test_document_creation_supports_work_tech_stack_and_tags(self):
+        document = self.api.create_knowledge_document(
+            self._document_payload(
+                planetType="work",
+                techStackId="stack-1",
+                tags=["interview", "jd"],
+            )
+        )
+
+        self.assertEqual(document["planetType"], "work")
+        self.assertEqual(document["techStackId"], "stack-1")
+        self.assertEqual(document["tags"], ["interview", "jd"])
 
     def test_file_validation_rejects_unsupported_types(self):
         service = KnowledgeService(repository=KnowledgeRepository(), file_service=FileService())

@@ -22,13 +22,18 @@ class KnowledgeService:
     def create_document(self, user_id: str, payload: dict) -> Document:
         file_type = payload["fileType"]
         self._file_service.validate(file_type)
+        goal_id = payload.get("goalId")
+        tags = self._normalize_tags(payload.get("tags", []), goal_id=goal_id)
         document = Document(
             user_id=user_id,
             file_name=payload["fileName"],
             file_type=DocumentType(file_type),
             subject=payload["subject"],
             topic=payload["topic"],
-            goal_id=payload.get("goalId"),
+            goal_id=goal_id,
+            planet_type=payload.get("planetType", "study"),
+            tech_stack_id=payload.get("techStackId"),
+            tags=tuple(tags),
             content=payload.get("content", ""),
             content_encoding=payload.get("contentEncoding", "text"),
             storage_path=payload.get("storagePath"),
@@ -44,6 +49,13 @@ class KnowledgeService:
             document.topic = payload["topic"]
         if "goalId" in payload:
             document.goal_id = payload["goalId"]
+            document.tags = tuple(self._normalize_tags(document.tags, goal_id=document.goal_id))
+        if "planetType" in payload:
+            document.planet_type = payload["planetType"]
+        if "techStackId" in payload:
+            document.tech_stack_id = payload["techStackId"]
+        if "tags" in payload:
+            document.tags = tuple(self._normalize_tags(payload["tags"], goal_id=document.goal_id))
         document.updated_at = local_now()
         return self._repository.save_document(document)
 
@@ -77,6 +89,9 @@ class KnowledgeService:
                     metadata={
                         "fileName": document.file_name,
                         "goalId": document.goal_id,
+                        "planetType": document.planet_type,
+                        "techStackId": document.tech_stack_id,
+                        "tags": list(document.tags),
                         "subject": document.subject,
                         "topic": document.topic,
                     },
@@ -192,6 +207,9 @@ class KnowledgeService:
             **(metadata if isinstance(metadata, dict) else {}),
             "fileName": document.file_name,
             "goalId": document.goal_id,
+            "planetType": document.planet_type,
+            "techStackId": document.tech_stack_id,
+            "tags": list(document.tags),
             "subject": document.subject,
             "topic": document.topic,
             "providerChunkId": chunk.get("chunkId"),
@@ -205,6 +223,8 @@ class KnowledgeService:
         subject: str | None = None,
         topic: str | None = None,
         goal_id: str | None = None,
+        planet_type: str | None = None,
+        tech_stack_id: str | None = None,
     ) -> list[dict[str, object]]:
         return [
             document.to_dict()
@@ -213,6 +233,8 @@ class KnowledgeService:
                 subject=subject,
                 topic=topic,
                 goal_id=goal_id,
+                planet_type=planet_type,
+                tech_stack_id=tech_stack_id,
             )
         ]
 
@@ -241,3 +263,13 @@ class KnowledgeService:
                 for subject, topics in sorted(subject_map.items())
             ],
         }
+
+    def _normalize_tags(self, tags: object, *, goal_id: str | None = None) -> list[str]:
+        normalized = []
+        if isinstance(tags, (list, tuple)):
+            normalized = [str(tag).strip() for tag in tags if str(tag).strip()]
+        elif isinstance(tags, str):
+            normalized = [tag.strip() for tag in tags.split(",") if tag.strip()]
+        if goal_id:
+            normalized.append(f"goal:{goal_id}")
+        return list(dict.fromkeys(normalized))

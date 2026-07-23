@@ -31,12 +31,25 @@
         <input :value="form.fileType || 'Select a file'" disabled />
       </label>
       <label>
+        Tech Stack
+        <select v-model="selectedTechStackId" required>
+          <option value="">Select Tech Stack</option>
+          <option v-for="stack in techStacks" :key="stack.id" :value="stack.id">
+            {{ stack.name }}
+          </option>
+        </select>
+      </label>
+      <label>
         Work area
         <input v-model="form.subject" required placeholder="Backend / Frontend / AI Interview" />
       </label>
       <label>
         Topic
         <input v-model="form.topic" required placeholder="FastAPI auth / JD keywords" />
+      </label>
+      <label>
+        Tags
+        <input v-model="tagsText" placeholder="interview, jd, project evidence" />
       </label>
       <label class="wide-field">
         Notes
@@ -66,7 +79,9 @@
           <button type="button" class="document-main" @click="selectDocument(document.id)">
             <span>{{ document.fileName }}</span>
             <small>{{ document.subject }} / {{ document.topic }}</small>
-            <small>{{ document.goalId ? 'Study Knowledge reference' : 'Work Knowledge' }}</small>
+            <small>{{ document.techStackId ? techStackName(document.techStackId) : 'No Tech Stack bound' }}</small>
+            <small>{{ document.tags.join(' / ') || 'No tags' }}</small>
+            <small>{{ document.goalId ? 'Study Goal tag' : 'Work Knowledge' }}</small>
             <small>{{ providerLabel(document) }}</small>
           </button>
           <div class="document-meta">
@@ -127,10 +142,12 @@ import {
   createWorkKnowledgeDocument,
   fetchWorkKnowledgeDocument,
   fetchWorkKnowledgeDocuments,
+  fetchTechStacks,
   processWorkKnowledgeDocument,
   type KnowledgeDocument,
   type KnowledgeDocumentDetail,
   type KnowledgeDocumentPayload,
+  type TechStack,
 } from '../../../services/api'
 
 const views = [
@@ -149,14 +166,25 @@ const form = ref<KnowledgeDocumentPayload>({
   contentEncoding: 'text',
 })
 const selectedFileName = ref('')
+const selectedTechStackId = ref('')
+const tagsText = ref('')
+const techStacks = ref<TechStack[]>([])
 const documents = ref<KnowledgeDocument[]>([])
 const selectedDocument = ref<KnowledgeDocumentDetail | null>(null)
 const statusMessage = ref('Upload txt, markdown, or PDF metadata.')
 const isLoading = ref(false)
 const isUploading = ref(false)
 
-const workDocuments = computed(() => documents.value.filter((document) => !document.goalId))
-const studyReferences = computed(() => documents.value.filter((document) => document.goalId))
+const tagList = computed(() =>
+  tagsText.value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean),
+)
+const workDocuments = computed(() => documents.value.filter((document) => document.planetType === 'work'))
+const studyReferences = computed(() =>
+  documents.value.filter((document) => document.planetType === 'study' || Boolean(document.goalId)),
+)
 const visibleDocuments = computed(() => {
   if (activeView.value === 'study') {
     return studyReferences.value
@@ -170,6 +198,7 @@ const canUpload = computed(
   () =>
     !isUploading.value &&
     Boolean(selectedFileName.value) &&
+    Boolean(selectedTechStackId.value) &&
     Boolean(form.value.fileName) &&
     Boolean(form.value.subject.trim()) &&
     Boolean(form.value.topic.trim()),
@@ -181,7 +210,10 @@ const uploadHint = computed(() => {
   if (canUpload.value) {
     return statusMessage.value
   }
-  return 'Choose file + Work area + Topic to upload.'
+  if (!techStacks.value.length) {
+    return 'Create a Tech Stack before uploading Work Knowledge.'
+  }
+  return 'Choose file + Tech Stack + Work area + Topic to upload.'
 })
 const emptyTitle = computed(() =>
   activeView.value === 'study' ? 'No Study Knowledge references yet.' : 'No Work Knowledge yet.',
@@ -192,7 +224,10 @@ const emptyCopy = computed(() =>
     : 'Add technical notes, JD material, interview questions, or project evidence.',
 )
 
-onMounted(loadDocuments)
+onMounted(async () => {
+  await loadTechStacks()
+  await loadDocuments()
+})
 watch(activeView, () => {
   if (
     selectedDocument.value &&
@@ -220,14 +255,26 @@ async function loadDocuments() {
   }
 }
 
+async function loadTechStacks() {
+  techStacks.value = await fetchTechStacks()
+  selectedTechStackId.value = techStacks.value[0]?.id || ''
+}
+
 async function uploadDocument() {
   if (!canUpload.value) {
-    statusMessage.value = 'Choose a supported file and fill Work area and Topic first.'
+    statusMessage.value = 'Choose a supported file, Tech Stack, Work area and Topic first.'
     return
   }
   isUploading.value = true
   try {
-    const payload = { ...form.value, goalId: null, storagePath: selectedFileName.value }
+    const payload = {
+      ...form.value,
+      goalId: null,
+      planetType: 'work',
+      techStackId: selectedTechStackId.value,
+      tags: tagList.value,
+      storagePath: selectedFileName.value,
+    }
     const document = await createWorkKnowledgeDocument(payload)
     statusMessage.value = document.fileType === 'pdf' ? 'PDF metadata uploaded.' : 'Document uploaded.'
     if (document.fileType !== 'pdf') {
@@ -245,6 +292,10 @@ async function uploadDocument() {
   } finally {
     isUploading.value = false
   }
+}
+
+function techStackName(techStackId: string) {
+  return techStacks.value.find((stack) => stack.id === techStackId)?.name || 'Linked Tech Stack'
 }
 
 async function selectFile(event: Event) {

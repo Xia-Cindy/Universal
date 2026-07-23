@@ -82,8 +82,16 @@ def create_app():
         subject: str | None = None,
         topic: str | None = None,
         goalId: str | None = None,
+        planetType: str | None = None,
+        techStackId: str | None = None,
     ):
-        return api.list_knowledge_documents(subject=subject, topic=topic, goal_id=goalId)
+        return api.list_knowledge_documents(
+            subject=subject,
+            topic=topic,
+            goal_id=goalId,
+            planet_type=planetType,
+            tech_stack_id=techStackId,
+        )
 
     @app.get("/api/work/knowledge/documents/{document_id}")
     def get_work_knowledge_document(document_id: str):
@@ -194,8 +202,16 @@ def create_app():
         subject: str | None = None,
         topic: str | None = None,
         goalId: str | None = None,
+        planetType: str | None = None,
+        techStackId: str | None = None,
     ):
-        return api.list_knowledge_documents(subject=subject, topic=topic, goal_id=goalId)
+        return api.list_knowledge_documents(
+            subject=subject,
+            topic=topic,
+            goal_id=goalId,
+            planet_type=planetType,
+            tech_stack_id=techStackId,
+        )
 
     @app.get("/api/study/knowledge/documents/{document_id}")
     def get_knowledge_document(document_id: str):

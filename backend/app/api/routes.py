@@ -314,6 +314,8 @@ class ApiFacade:
         subject: str | None = None,
         topic: str | None = None,
         goal_id: str | None = None,
+        planet_type: str | None = None,
+        tech_stack_id: str | None = None,
     ) -> list[dict[str, object]]:
         user = self.users.current_user()
         if goal_id:
@@ -323,6 +325,8 @@ class ApiFacade:
             subject=subject,
             topic=topic,
             goal_id=goal_id,
+            planet_type=planet_type,
+            tech_stack_id=tech_stack_id,
         )
 
     def get_knowledge_document(self, document_id: str) -> dict[str, object]:

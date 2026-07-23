@@ -113,11 +113,12 @@ class RAGFlowKnowledgeProvider:
         dataset_name: str = "Universe OS Knowledge",
     ) -> None:
         self._client = client
-        self._dataset_id = dataset_id
+        self._default_dataset_id = dataset_id
         self._dataset_name = dataset_name
+        self._dataset_ids_by_scope: dict[str, str] = {}
 
     def upload_document(self, *, user_id: str, document: Document) -> dict[str, object]:
-        dataset_id = self._ensure_dataset()
+        dataset_id = self._ensure_dataset(document)
         response = self._client.upload_document(
             dataset_id=dataset_id,
             file_name=document.file_name,
@@ -230,19 +231,40 @@ class RAGFlowKnowledgeProvider:
         ]
         return {"query": query, "results": results}
 
-    def _ensure_dataset(self) -> str:
-        if self._dataset_id:
-            return self._dataset_id
+    def _ensure_dataset(self, document: Document | None = None) -> str:
+        scope_key, dataset_name = self._dataset_scope(document)
+        if scope_key == "global" and self._default_dataset_id:
+            return self._default_dataset_id
+        if scope_key in self._dataset_ids_by_scope:
+            return self._dataset_ids_by_scope[scope_key]
         response = self._client.request_json(
             "POST",
             "/api/v1/datasets",
-            {"name": self._dataset_name},
+            {"name": dataset_name},
         )
         data = response.get("data", {})
         if not isinstance(data, dict) or not data.get("id"):
             raise RAGFlowAPIError("RAGFlow did not return a dataset id")
-        self._dataset_id = str(data["id"])
-        return self._dataset_id
+        dataset_id = str(data["id"])
+        self._dataset_ids_by_scope[scope_key] = dataset_id
+        return dataset_id
+
+    def _dataset_scope(self, document: Document | None = None) -> tuple[str, str]:
+        if document and document.goal_id:
+            goal_id = str(document.goal_id)
+            return (
+                f"study-goal:{goal_id}",
+                f"{self._dataset_name} / Study Goal {goal_id[:8]}",
+            )
+        if document and document.planet_type == "work" and document.tech_stack_id:
+            tech_stack_id = str(document.tech_stack_id)
+            return (
+                f"work-tech-stack:{tech_stack_id}",
+                f"{self._dataset_name} / Work Tech Stack {tech_stack_id[:8]}",
+            )
+        if document and document.planet_type == "work":
+            return ("work", f"{self._dataset_name} / Work")
+        return ("global", self._dataset_name)
 
     def _first_item(self, value: object) -> dict[str, object]:
         if isinstance(value, list) and value:
