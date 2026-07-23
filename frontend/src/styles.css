@@ -1753,7 +1753,7 @@ textarea {
   align-items: stretch;
   display: grid;
   gap: 18px;
-  grid-template-columns: 220px minmax(0, 1fr) 150px;
+  grid-template-columns: 220px minmax(0, 1fr);
 }
 
 .article-outline-panel,
@@ -1823,6 +1823,15 @@ textarea {
   padding: 18px;
 }
 
+.article-inline-toolbar {
+  align-items: center;
+  border-bottom: 1px solid #d5dee4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 10px;
+}
+
 .article-title-input {
   border: 0;
   border-bottom: 1px solid #d5dee4;
@@ -1874,11 +1883,21 @@ textarea {
   padding: 0.28rem 0.42rem;
 }
 
-.compact-tool-button {
+.compact-tool-button,
+.icon-tool-button {
   border-radius: 6px;
   font-size: 0.76rem;
   min-height: 28px;
   padding: 0.3rem 0.48rem;
+}
+
+.icon-tool-button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d5dee4;
+  color: #5b6877;
+  justify-content: center;
+  min-width: 30px;
 }
 
 .article-table-block,
@@ -1898,6 +1917,18 @@ textarea {
   border: 1px solid #d5dee4;
   min-width: 96px;
   padding: 0;
+}
+
+.article-table-block td.align-left input {
+  text-align: left;
+}
+
+.article-table-block td.align-center input {
+  text-align: center;
+}
+
+.article-table-block td.align-right input {
+  text-align: right;
 }
 
 .article-table-block input {

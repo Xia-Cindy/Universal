@@ -85,6 +85,13 @@
 
           <input v-model="articleForm.title" class="article-title-input" required placeholder="输入文章标题" />
 
+          <div class="article-inline-toolbar" aria-label="写作工具栏">
+            <button class="icon-tool-button" title="文本" type="button" @click="addTextBlock">T</button>
+            <button class="icon-tool-button" title="图片" type="button" @click="addImageBlock()">Img</button>
+            <button class="icon-tool-button" title="表格" type="button" @click="addTableBlock()">Grid</button>
+            <button class="icon-tool-button" title="代码块" type="button" @click="addCodeBlock">Code</button>
+          </div>
+
           <div class="article-block-stack">
             <section v-for="block in articleForm.blocks" :key="block.id" class="article-block">
               <textarea
@@ -100,15 +107,28 @@
               <div v-else-if="block.kind === 'table'" class="article-table-block">
                 <div class="article-block-toolbar">
                   <strong>表格</strong>
-                  <button class="compact-tool-button" type="button" @click="addTableRow(block)">加行</button>
-                  <button class="compact-tool-button" type="button" @click="addTableColumn(block)">加列</button>
-                  <button class="compact-tool-button" type="button" @click="removeBlock(block.id)">删除</button>
+                  <button class="icon-tool-button" title="加行" type="button" @click="addTableRow(block)">+R</button>
+                  <button class="icon-tool-button" title="加列" type="button" @click="addTableColumn(block)">+C</button>
+                  <button class="icon-tool-button" title="左对齐" type="button" @click="alignSelectedCell(block, 'left')">L</button>
+                  <button class="icon-tool-button" title="居中" type="button" @click="alignSelectedCell(block, 'center')">C</button>
+                  <button class="icon-tool-button" title="右对齐" type="button" @click="alignSelectedCell(block, 'right')">R</button>
+                  <button class="icon-tool-button" title="向右合并" type="button" @click="mergeSelectedCellRight(block)">Merge</button>
+                  <button class="icon-tool-button" title="删除表格" type="button" @click="removeBlock(block.id)">Del</button>
                 </div>
                 <table>
                   <tbody>
                     <tr v-for="(row, rowIndex) in block.rows" :key="rowIndex">
-                      <td v-for="(cell, columnIndex) in row" :key="columnIndex">
-                        <input v-model="row[columnIndex]" />
+                      <td
+                        v-for="(cell, columnIndex) in row"
+                        v-show="!cell.hidden"
+                        :key="columnIndex"
+                        :class="`align-${cell.align}`"
+                        :colspan="cell.colspan"
+                      >
+                        <input
+                          v-model="cell.value"
+                          @focus="selectedTableCell = { blockId: block.id, rowIndex, columnIndex }"
+                        />
                       </td>
                     </tr>
                   </tbody>
@@ -119,7 +139,7 @@
                 <div class="article-block-toolbar">
                   <strong>代码块</strong>
                   <input v-model="block.language" placeholder="plain text" />
-                  <button class="compact-tool-button" type="button" @click="removeBlock(block.id)">删除</button>
+                  <button class="icon-tool-button" title="删除代码块" type="button" @click="removeBlock(block.id)">Del</button>
                 </div>
                 <textarea v-model="block.content" rows="8" placeholder="在这里写代码或 plain text。" />
               </div>
@@ -127,7 +147,7 @@
               <div v-else class="article-image-block">
                 <div class="article-block-toolbar">
                   <strong>图片</strong>
-                  <button class="compact-tool-button" type="button" @click="removeBlock(block.id)">删除</button>
+                  <button class="icon-tool-button" title="删除图片" type="button" @click="removeBlock(block.id)">Del</button>
                 </div>
                 <input v-model="block.alt" placeholder="图片说明" />
                 <input v-model="block.url" placeholder="图片地址，或直接粘贴图片到正文" />
@@ -136,16 +156,6 @@
             </section>
           </div>
         </main>
-
-        <aside class="article-tool-panel" aria-label="写作工具">
-          <p class="eyebrow">Tools</p>
-          <h3>写作工具</h3>
-          <button class="compact-tool-button" type="button" @click="addTextBlock">文本</button>
-          <button class="compact-tool-button" type="button" @click="addImageBlock()">图片</button>
-          <button class="compact-tool-button" type="button" @click="addTableBlock()">表格</button>
-          <button class="compact-tool-button" type="button" @click="addCodeBlock">代码块</button>
-          <p>粘贴图片会生成图片块；粘贴 Excel 单元格会生成表格块。</p>
-        </aside>
       </form>
     </div>
 
@@ -167,7 +177,14 @@ type TextBlock = {
 type TableBlock = {
   id: string
   kind: 'table'
-  rows: string[][]
+  rows: TableCell[][]
+}
+
+type TableCell = {
+  value: string
+  align: 'left' | 'center' | 'right'
+  colspan: number
+  hidden: boolean
 }
 
 type CodeBlock = {
@@ -195,6 +212,7 @@ const stackTagsText = ref('')
 const showStackEditor = ref(false)
 const selectedHeading = ref('')
 const activeBlockId = ref('')
+const selectedTableCell = ref<{ blockId: string; rowIndex: number; columnIndex: number } | null>(null)
 const articleForm = ref({
   title: '',
   blocks: [createTextBlock('')],
@@ -297,11 +315,11 @@ function addTableBlock(rows?: string[][]) {
   articleForm.value.blocks.push({
     id: createId('table'),
     kind: 'table',
-    rows: rows || [
+    rows: toTableCells(rows || [
       ['', '', ''],
       ['', '', ''],
       ['', '', ''],
-    ],
+    ]),
   })
 }
 
@@ -333,11 +351,36 @@ function removeBlock(blockId: string) {
 
 function addTableRow(block: TableBlock) {
   const columnCount = block.rows[0]?.length || 3
-  block.rows.push(Array(columnCount).fill(''))
+  block.rows.push(Array.from({ length: columnCount }, () => createTableCell()))
 }
 
 function addTableColumn(block: TableBlock) {
-  block.rows.forEach((row) => row.push(''))
+  block.rows.forEach((row) => row.push(createTableCell()))
+}
+
+function alignSelectedCell(block: TableBlock, align: TableCell['align']) {
+  const cell = getSelectedCell(block)
+  if (cell) {
+    cell.align = align
+  }
+}
+
+function mergeSelectedCellRight(block: TableBlock) {
+  const selection = selectedTableCell.value
+  if (!selection || selection.blockId !== block.id) {
+    return
+  }
+  const row = block.rows[selection.rowIndex]
+  const cell = row?.[selection.columnIndex]
+  if (!cell) {
+    return
+  }
+  const next = row?.[selection.columnIndex + cell.colspan]
+  if (!cell || !next || next.hidden) {
+    return
+  }
+  cell.colspan += next.colspan
+  next.hidden = true
 }
 
 async function handleEditorPaste(event: ClipboardEvent, blockId: string) {
@@ -413,7 +456,9 @@ function composeArticleContent() {
         return block.content.trim()
       }
       if (block.kind === 'table') {
-        return block.rows.map((row) => row.join('\t')).join('\n')
+        return block.rows
+          .map((row) => row.filter((cell) => !cell.hidden).map((cell) => cell.value).join('\t'))
+          .join('\n')
       }
       if (block.kind === 'code') {
         return `Code block${block.language ? ` (${block.language})` : ''}:\n${block.content}`
@@ -422,6 +467,27 @@ function composeArticleContent() {
     })
     .filter(Boolean)
     .join('\n\n')
+}
+
+function getSelectedCell(block: TableBlock) {
+  const selection = selectedTableCell.value
+  if (!selection || selection.blockId !== block.id) {
+    return null
+  }
+  return block.rows[selection.rowIndex]?.[selection.columnIndex] || null
+}
+
+function toTableCells(rows: string[][]) {
+  return rows.map((row) => row.map((value) => createTableCell(value)))
+}
+
+function createTableCell(value = ''): TableCell {
+  return {
+    value,
+    align: 'left',
+    colspan: 1,
+    hidden: false,
+  }
 }
 
 function firstParagraph(value: string) {
