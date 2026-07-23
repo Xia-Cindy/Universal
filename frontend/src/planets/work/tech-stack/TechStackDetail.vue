@@ -86,18 +86,37 @@
           <input v-model="articleForm.title" class="article-title-input" required placeholder="输入文章标题" />
 
           <div class="article-inline-toolbar" aria-label="写作工具栏">
-            <button class="icon-tool-button" title="正文段落" type="button" @mousedown.prevent="insertParagraph">P</button>
-            <button class="icon-tool-button" title="二级标题" type="button" @mousedown.prevent="insertHeading">H2</button>
-            <button class="icon-tool-button" title="图片" type="button" @mousedown.prevent="openImagePicker">Img</button>
-            <button class="icon-tool-button" title="表格" type="button" @mousedown.prevent="insertTable()">Grid</button>
-            <button class="icon-tool-button" title="代码块" type="button" @mousedown.prevent="insertCodeBlock">Code</button>
-            <span class="toolbar-divider" aria-hidden="true"></span>
-            <button class="icon-tool-button" title="左对齐" type="button" @mousedown.prevent="alignSelection('left')">L</button>
-            <button class="icon-tool-button" title="居中" type="button" @mousedown.prevent="alignSelection('center')">C</button>
-            <button class="icon-tool-button" title="右对齐" type="button" @mousedown.prevent="alignSelection('right')">R</button>
-            <button class="icon-tool-button wide-icon-tool" title="向右合并表格单元格" type="button" @mousedown.prevent="mergeTableCellRight">Merge</button>
+            <div class="toolbar-group" aria-label="段落">
+              <button class="icon-tool-button" aria-label="正文段落" title="正文段落" type="button" @mousedown.prevent="insertParagraph">¶</button>
+              <button class="icon-tool-button" aria-label="二级标题" title="二级标题" type="button" @mousedown.prevent="insertHeading">H2</button>
+            </div>
+            <div class="toolbar-group" aria-label="文字格式">
+              <button class="icon-tool-button strong-tool" aria-label="加粗" title="加粗" type="button" @mousedown.prevent="formatBold">B</button>
+              <button class="icon-tool-button color-tool" aria-label="文字颜色" title="文字颜色" type="button" @mousedown.prevent="openTextColorPicker">
+                <span class="color-tool-dot" :style="{ background: textColor }"></span>
+                A
+              </button>
+            </div>
+            <div class="toolbar-group" aria-label="插入内容">
+              <button class="icon-tool-button" aria-label="插入图片" title="插入图片" type="button" @mousedown.prevent="openImagePicker">▧</button>
+              <button class="icon-tool-button" aria-label="插入表格" title="插入表格" type="button" @mousedown.prevent="insertTable()">▦</button>
+              <button class="icon-tool-button" aria-label="插入代码块" title="插入代码块" type="button" @mousedown.prevent="insertCodeBlock">&lt;/&gt;</button>
+            </div>
+            <div class="toolbar-group" aria-label="对齐">
+              <button class="icon-tool-button" aria-label="左对齐" title="左对齐" type="button" @mousedown.prevent="alignSelection('left')">☰</button>
+              <button class="icon-tool-button" aria-label="居中" title="居中" type="button" @mousedown.prevent="alignSelection('center')">≡</button>
+              <button class="icon-tool-button" aria-label="右对齐" title="右对齐" type="button" @mousedown.prevent="alignSelection('right')">☷</button>
+            </div>
+            <div class="toolbar-group" aria-label="表格操作">
+              <button class="icon-tool-button" aria-label="向下增加行" title="向下增加行" type="button" @mousedown.prevent="addTableRowAfter">R+</button>
+              <button class="icon-tool-button" aria-label="删除当前行" title="删除当前行" type="button" @mousedown.prevent="deleteTableRow">R-</button>
+              <button class="icon-tool-button" aria-label="向右增加列" title="向右增加列" type="button" @mousedown.prevent="addTableColumnAfter">C+</button>
+              <button class="icon-tool-button" aria-label="删除当前列" title="删除当前列" type="button" @mousedown.prevent="deleteTableColumn">C-</button>
+              <button class="icon-tool-button wide-icon-tool" aria-label="向右合并表格单元格" title="向右合并表格单元格" type="button" @mousedown.prevent="mergeTableCellRight">⇥</button>
+            </div>
           </div>
           <input ref="imageInputRef" class="visually-hidden" type="file" accept="image/*" @change="insertSelectedImage" />
+          <input ref="colorInputRef" v-model="textColor" class="visually-hidden" type="color" @input="applyTextColor" />
 
           <div
             ref="editorRef"
@@ -134,7 +153,9 @@ const showStackEditor = ref(false)
 const selectedHeading = ref('')
 const editorRef = ref<HTMLElement | null>(null)
 const imageInputRef = ref<HTMLInputElement | null>(null)
+const colorInputRef = ref<HTMLInputElement | null>(null)
 const savedRange = ref<Range | null>(null)
+const textColor = ref('#1f2937')
 const articleForm = ref({
   title: '',
   contentHtml: '',
@@ -230,6 +251,23 @@ function openImagePicker() {
   imageInputRef.value?.click()
 }
 
+function openTextColorPicker() {
+  rememberSelection()
+  colorInputRef.value?.click()
+}
+
+function formatBold() {
+  restoreSelection()
+  document.execCommand('bold')
+  syncArticleContent()
+}
+
+function applyTextColor() {
+  restoreSelection()
+  document.execCommand('foreColor', false, textColor.value)
+  syncArticleContent()
+}
+
 async function insertSelectedImage(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -303,6 +341,87 @@ function mergeTableCellRight() {
   next.remove()
   syncArticleContent()
   articleStatus.value = 'Table cell merged.'
+}
+
+function addTableRowAfter() {
+  restoreSelection()
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  if (!cell || !row) {
+    articleStatus.value = 'Place cursor inside a table cell before adding a row.'
+    return
+  }
+  const newRow = document.createElement('tr')
+  const columnCount = tableColumnCount(row)
+  for (let index = 0; index < columnCount; index += 1) {
+    newRow.appendChild(createEditableCell())
+  }
+  row.after(newRow)
+  focusElement(newRow.querySelector('td'))
+  syncArticleContent()
+  articleStatus.value = 'Table row added.'
+}
+
+function deleteTableRow() {
+  restoreSelection()
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  const table = row?.closest('table')
+  if (!cell || !row || !table) {
+    articleStatus.value = 'Place cursor inside a table cell before deleting a row.'
+    return
+  }
+  const rows = Array.from(table.querySelectorAll('tr'))
+  if (rows.length <= 1) {
+    table.remove()
+  } else {
+    const nextFocus = (row.nextElementSibling || row.previousElementSibling)?.querySelector('td')
+    row.remove()
+    focusElement(nextFocus)
+  }
+  syncArticleContent()
+  articleStatus.value = 'Table row deleted.'
+}
+
+function addTableColumnAfter() {
+  restoreSelection()
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  const table = row?.closest('table')
+  if (!cell || !row || !table) {
+    articleStatus.value = 'Place cursor inside a table cell before adding a column.'
+    return
+  }
+  const columnIndex = Array.from(row.children).indexOf(cell)
+  Array.from(table.querySelectorAll('tr')).forEach((tableRow) => {
+    const referenceCell = tableRow.children[columnIndex]
+    referenceCell?.after(createEditableCell())
+  })
+  focusElement(row.children[columnIndex + 1])
+  syncArticleContent()
+  articleStatus.value = 'Table column added.'
+}
+
+function deleteTableColumn() {
+  restoreSelection()
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  const table = row?.closest('table')
+  if (!cell || !row || !table) {
+    articleStatus.value = 'Place cursor inside a table cell before deleting a column.'
+    return
+  }
+  const columnIndex = Array.from(row.children).indexOf(cell)
+  const rows = Array.from(table.querySelectorAll('tr'))
+  const shouldRemoveTable = rows.every((tableRow) => tableRow.children.length <= 1)
+  if (shouldRemoveTable) {
+    table.remove()
+  } else {
+    rows.forEach((tableRow) => tableRow.children[columnIndex]?.remove())
+    focusElement(row.children[Math.max(0, columnIndex - 1)] || row.children[0])
+  }
+  syncArticleContent()
+  articleStatus.value = 'Table column deleted.'
 }
 
 async function handleEditorPaste(event: ClipboardEvent) {
@@ -395,6 +514,35 @@ function closestSelectedElement(selector: string) {
   const element = node as Element | null
   const found = element?.closest(selector) || null
   return found && editorRef.value.contains(found) ? found : null
+}
+
+function currentTableCell() {
+  return closestSelectedElement('td') as HTMLTableCellElement | null
+}
+
+function createEditableCell() {
+  const cell = document.createElement('td')
+  cell.contentEditable = 'true'
+  cell.innerHTML = '<br>'
+  return cell
+}
+
+function tableColumnCount(row: HTMLTableRowElement) {
+  return Array.from(row.children).reduce((total, cell) => total + ((cell as HTMLTableCellElement).colSpan || 1), 0)
+}
+
+function focusElement(element: Element | null | undefined) {
+  if (!(element instanceof HTMLElement)) {
+    return
+  }
+  element.focus()
+  const range = document.createRange()
+  range.selectNodeContents(element)
+  range.collapse(false)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
+  savedRange.value = range.cloneRange()
 }
 
 function readImageAsDataUrl(file: File) {

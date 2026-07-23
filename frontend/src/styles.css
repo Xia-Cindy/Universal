@@ -1825,11 +1825,13 @@ textarea {
 
 .article-inline-toolbar {
   align-items: center;
-  border-bottom: 1px solid #d5dee4;
+  background: #f8fafb;
+  border: 1px solid #d8e0e6;
+  border-radius: 8px;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding-bottom: 10px;
+  gap: 8px;
+  padding: 6px;
 }
 
 .article-title-input {
@@ -1846,17 +1848,40 @@ textarea {
 .icon-tool-button {
   border-radius: 6px;
   font-size: 0.76rem;
-  min-height: 28px;
-  padding: 0.3rem 0.48rem;
+  min-height: 26px;
+  padding: 0.24rem 0.42rem;
 }
 
 .icon-tool-button {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #d5dee4;
-  color: #5b6877;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #3f4a58;
+  display: inline-flex;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
   justify-content: center;
-  min-width: 30px;
+  min-width: 28px;
+}
+
+.icon-tool-button:hover,
+.icon-tool-button:focus-visible {
+  background: #ffffff;
+  border-color: #cfd8df;
+  color: #0b6f70;
+}
+
+.toolbar-group {
+  align-items: center;
+  border-right: 1px solid #d8e0e6;
+  display: inline-flex;
+  gap: 2px;
+  padding-right: 8px;
+}
+
+.toolbar-group:last-child {
+  border-right: 0;
+  padding-right: 0;
 }
 
 .article-title-input:focus,
@@ -1864,15 +1889,23 @@ textarea {
   outline: 0;
 }
 
-.toolbar-divider {
-  background: #d5dee4;
-  height: 22px;
-  margin: 0 3px;
-  width: 1px;
+.wide-icon-tool {
+  min-width: 34px;
 }
 
-.wide-icon-tool {
-  min-width: 50px;
+.strong-tool {
+  font-size: 0.82rem;
+}
+
+.color-tool {
+  gap: 3px;
+}
+
+.color-tool-dot {
+  border: 1px solid rgba(17, 24, 39, 0.22);
+  border-radius: 999px;
+  height: 9px;
+  width: 9px;
 }
 
 .article-rich-editor {
