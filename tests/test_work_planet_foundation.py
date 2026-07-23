@@ -250,11 +250,13 @@ class WorkPlanetFoundationTests(unittest.TestCase):
 
         self.assertIn("Edit Stack", detail)
         self.assertIn("Archive Stack", detail)
-        self.assertIn("Create Article", detail)
-        self.assertIn("插入表格", detail)
-        self.assertIn("插入图片", detail)
-        self.assertIn("插入代码块", detail)
-        self.assertIn("articleForm.chapters", detail)
+        self.assertIn("article-writing-room", detail)
+        self.assertIn("article-outline-panel", detail)
+        self.assertIn("article-editor-canvas", detail)
+        self.assertIn("articleOutline", detail)
+        self.assertNotIn("学习记录", detail)
+        self.assertNotIn("文章与学习记录", detail)
+        self.assertNotIn("Work Knowledge</h3>", detail)
 
 
 if __name__ == "__main__":

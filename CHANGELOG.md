@@ -30,4 +30,4 @@
 - Work Tech Stack navigation refinement: stack tabs now use actual Tech Stack names, Community tab shows CSDN public articles, and Work articles are typed as Knowledge or Note.
 - Work Tech Stack directory workflow fix: Add Tech Stack now opens a modal, directory navigation uses a two-row category/stack structure, and the CSDN Community tab keeps 30 displayable discovery items when live fetch is unavailable.
 - Work Community reading fix: CSDN articles can now expand inline inside Work Planet through a backend article detail endpoint, and Community loading no longer blocks switching back to `全部` or other directories.
-- Work Tech Stack authoring fix: Tech Stack detail now supports editing/archiving stacks and a chapter-based Markdown article writer with outline, table, image, code block and section insertion.
+- Work Tech Stack authoring refinement: Tech Stack detail now supports editing/archiving stacks and a focused article editor with an auto-generated left outline instead of stacked management panels.

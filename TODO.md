@@ -179,7 +179,7 @@
 - [x] Add inline CSDN article reading inside Work Planet without requiring a jump to CSDN.
 - [x] Keep category switching usable while Community articles are loading.
 - [x] Add Tech Stack update and archive actions.
-- [x] Upgrade Tech Stack article writing with outline, chapters, tables, images, code blocks and section insertion.
+- [x] Refine Tech Stack article writing into a focused editor with an auto-generated left outline.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 

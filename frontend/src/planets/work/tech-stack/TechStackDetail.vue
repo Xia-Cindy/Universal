@@ -1,6 +1,7 @@
 <template>
   <section class="study-plan" aria-labelledby="tech-stack-detail-title">
     <RouterLink class="secondary-action" to="/work/tech-stack">Back to Tech Stack</RouterLink>
+
     <div v-if="detail" class="home-section">
       <div class="section-heading">
         <div>
@@ -52,182 +53,46 @@
         </form>
       </section>
 
-      <div class="progress-snapshot">
-        <article>
-          <strong>{{ detail.relatedKnowledge.length }}</strong>
-          <span>Work Knowledge</span>
-        </article>
-        <article>
-          <strong>{{ detail.projects.length }}</strong>
-          <span>Projects</span>
-        </article>
-        <article>
-          <strong>{{ detail.articles.length }}</strong>
-          <span>Articles</span>
-        </article>
-        <article>
-          <strong>{{ detail.learningRecords.length }}</strong>
-          <span>Learning Records</span>
-        </article>
-      </div>
-
-      <section class="home-section">
-        <div class="section-heading">
-          <div>
-            <h3>写文章</h3>
-            <span>按大纲和章节沉淀知识、笔记、代码与图表</span>
+      <form class="article-writing-room" @submit.prevent="submitArticle">
+        <aside class="article-outline-panel" aria-label="文章目录">
+          <div class="section-heading">
+            <h3>目录</h3>
+            <button class="secondary-action" type="button" @click="appendChapter">新增章节</button>
           </div>
-          <button class="secondary-action" type="button" @click="showArticleEditor = !showArticleEditor">
-            {{ showArticleEditor ? 'Close Writer' : 'Create Article' }}
+          <button
+            v-for="item in articleOutline"
+            :key="item.id"
+            type="button"
+            :class="{ selected: selectedHeading === item.id }"
+            @click="selectedHeading = item.id"
+          >
+            <span :style="{ paddingLeft: `${(item.level - 1) * 10}px` }">{{ item.title }}</span>
           </button>
-        </div>
-        <form v-if="showArticleEditor" class="study-form article-editor-form" @submit.prevent="submitArticle">
-          <label>
-            标题
-            <input v-model="articleForm.title" required placeholder="FastAPI 权限系统实践" />
-          </label>
-          <label>
-            标签
-            <input v-model="articleTagsText" placeholder="backend, auth, project" />
-          </label>
-          <label>
-            类型
-            <select v-model="articleForm.articleType">
-              <option value="knowledge">知识</option>
-              <option value="note">笔记</option>
-            </select>
-          </label>
-          <label class="wide-field">
-            摘要
-            <input v-model="articleForm.summary" placeholder="这篇文章解决什么问题" />
-          </label>
-          <label class="wide-field">
-            大纲
-            <textarea v-model="articleForm.outline" rows="4" placeholder="- 背景&#10;- 核心概念&#10;- 实战步骤&#10;- 常见问题" />
-          </label>
-          <div class="wide-field article-builder">
-            <div class="section-heading">
-              <h4>章节</h4>
-              <button class="secondary-action" type="button" @click="addChapter">Add Chapter</button>
-            </div>
-            <div class="markdown-toolbar" aria-label="Markdown insert toolbar">
-              <button type="button" @click="insertBlock('table')">插入表格</button>
-              <button type="button" @click="insertBlock('image')">插入图片</button>
-              <button type="button" @click="insertBlock('code')">插入代码块</button>
-              <button type="button" @click="insertBlock('section')">插入小节</button>
-            </div>
-            <article v-for="(chapter, index) in articleForm.chapters" :key="chapter.id" class="chapter-editor">
-              <div class="section-heading">
-                <label>
-                  章节标题
-                  <input v-model="chapter.title" @focus="selectedChapterIndex = index" />
-                </label>
-                <button class="secondary-action" type="button" @click="removeChapter(index)">Remove</button>
-              </div>
-              <textarea
-                v-model="chapter.body"
-                rows="8"
-                placeholder="写正文。可以用 Markdown 表格、图片、代码块。"
-                @focus="selectedChapterIndex = index"
-              />
-            </article>
-          </div>
-          <label class="wide-field">
-            附加内容
-            <textarea v-model="articleForm.content" rows="5" placeholder="补充结论、参考链接或临时片段" />
-          </label>
-          <div class="wide-field article-preview">
-            <div class="section-heading">
-              <h4>文章预览</h4>
-              <span>Markdown source</span>
-            </div>
-            <pre>{{ composedArticle }}</pre>
-          </div>
-          <div class="knowledge-actions">
-            <button type="submit">Save Article</button>
-            <span>{{ articleStatus }}</span>
-          </div>
-        </form>
-      </section>
+          <p v-if="!articleOutline.length">在正文里输入 `#` 或 `##` 标题后，这里会自动生成目录。</p>
+        </aside>
 
-      <section class="home-section">
-        <div class="section-heading">
-          <h3>学习记录</h3>
-          <span>记录今天推进了什么</span>
-        </div>
-        <form class="study-form" @submit.prevent="submitLearningRecord">
-          <label>
-            记录标题
-            <input v-model="recordForm.title" required placeholder="阅读 FastAPI dependency 文档" />
-          </label>
-          <label>
-            分钟
-            <input v-model.number="recordForm.minutes" min="0" type="number" />
-          </label>
-          <label>
-            标签
-            <input v-model="recordTagsText" placeholder="reading, source-code, bugfix" />
-          </label>
-          <label class="wide-field">
-            笔记
-            <textarea v-model="recordForm.notes" rows="4" placeholder="记录学习过程、问题和下一步" />
-          </label>
-          <div class="knowledge-actions">
-            <button type="submit">Save Record</button>
-            <span>{{ recordStatus }}</span>
-          </div>
-        </form>
-      </section>
-
-      <section class="home-section">
-        <h3>文章与学习记录</h3>
-        <div v-if="detail.articles.length || detail.learningRecords.length" class="tech-feed">
-          <article v-for="article in detail.articles" :key="article.id" class="tech-feed-item content-feed-item">
+        <main class="article-editor-canvas">
+          <div class="section-heading">
             <div>
-              <span class="status-pill">{{ article.articleType === 'note' ? '笔记' : '知识' }}</span>
-              <h3>{{ article.title }}</h3>
-              <p>{{ article.summary || article.content }}</p>
-              <pre class="article-content-preview">{{ article.content }}</pre>
-              <div class="tech-tag-row">
-                <span v-for="tag in article.tags || []" :key="tag">{{ tag }}</span>
-                <span v-if="!(article.tags || []).length">No tags yet</span>
-              </div>
+              <p class="eyebrow">Writer</p>
+              <h3>写文章</h3>
             </div>
-          </article>
-          <article v-for="record in detail.learningRecords" :key="record.id" class="tech-feed-item content-feed-item">
-            <div>
-              <span class="status-pill">Learning Record</span>
-              <h3>{{ record.title }}</h3>
-              <p>{{ record.notes }}</p>
-              <div class="tech-meta-row">
-                <span>{{ record.minutes }} min</span>
-                <span>{{ record.status }}</span>
-              </div>
-              <div class="tech-tag-row">
-                <span v-for="tag in record.tags || []" :key="tag">{{ tag }}</span>
-                <span v-if="!(record.tags || []).length">No tags yet</span>
-              </div>
+            <div class="knowledge-actions">
+              <span>{{ articleStatus }}</span>
+              <button type="submit">Save Article</button>
             </div>
-          </article>
-        </div>
-        <div v-else class="knowledge-state">还没有文章或学习记录。先写一篇短文章，或记录今天的一次推进。</div>
-      </section>
-
-      <section class="home-section">
-        <h3>Work Knowledge</h3>
-        <div v-if="detail.relatedKnowledge.length" class="goal-list">
-          <article v-for="document in detail.relatedKnowledge" :key="document.id" class="knowledge-document">
-            <span class="status-pill">{{ document.goalId ? 'Study reference' : 'Work Knowledge' }}</span>
-            <h3>{{ document.fileName }}</h3>
-            <p class="surface-copy">{{ document.subject }} / {{ document.topic }}</p>
-          </article>
-        </div>
-        <div v-else class="knowledge-state">
-          No related Work Knowledge yet. Add Work Knowledge or reference matching Study Knowledge by subject, topic, or tags.
-        </div>
-        <RouterLink class="secondary-action" to="/work/knowledge">Open Work Knowledge</RouterLink>
-      </section>
+          </div>
+          <input v-model="articleForm.title" class="article-title-input" required placeholder="输入文章标题" />
+          <textarea
+            v-model="articleForm.content"
+            class="article-body-editor"
+            rows="28"
+            placeholder="# 第一章&#10;&#10;像写小说一样写文章。用 # / ## 标题自然形成左侧目录。"
+          />
+        </main>
+      </form>
     </div>
+
     <div v-else class="knowledge-state">Loading Tech Stack detail...</div>
   </section>
 </template>
@@ -235,38 +100,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  createWorkArticle,
-  createWorkLearningRecord,
-  deleteTechStack,
-  fetchTechStackDetail,
-  updateTechStack,
-} from '../../../services/api'
+import { createWorkArticle, deleteTechStack, fetchTechStackDetail, updateTechStack } from '../../../services/api'
 
 const route = useRoute()
 const router = useRouter()
 const detail = ref<any | null>(null)
-const articleStatus = ref('Draft an article under this Tech Stack.')
-const recordStatus = ref('Record learning progress under this Tech Stack.')
+const articleStatus = ref('Draft is local until saved.')
 const stackStatus = ref('Update name, category, proficiency, tags or description.')
-const articleTagsText = ref('')
-const recordTagsText = ref('')
 const stackTagsText = ref('')
-const showArticleEditor = ref(true)
 const showStackEditor = ref(false)
-const selectedChapterIndex = ref(0)
+const selectedHeading = ref('')
 const articleForm = ref({
   title: '',
-  articleType: 'knowledge',
-  summary: '',
-  outline: '',
-  chapters: [{ id: 'chapter-1', title: '第一章', body: '' }],
   content: '',
-})
-const recordForm = ref({
-  title: '',
-  minutes: 30,
-  notes: '',
 })
 const stackForm = ref({
   name: '',
@@ -274,10 +120,23 @@ const stackForm = ref({
   proficiency: 'learning',
   description: '',
 })
-const articleTags = computed(() => splitTags(articleTagsText.value))
-const recordTags = computed(() => splitTags(recordTagsText.value))
 const stackTags = computed(() => splitTags(stackTagsText.value))
-const composedArticle = computed(() => composeArticleContent())
+const articleOutline = computed(() =>
+  articleForm.value.content
+    .split('\n')
+    .map((line, index) => {
+      const match = line.match(/^(#{1,3})\s+(.+)$/)
+      if (!match) {
+        return null
+      }
+      return {
+        id: `heading-${index}`,
+        level: match[1].length,
+        title: match[2].trim(),
+      }
+    })
+    .filter(Boolean) as Array<{ id: string; level: number; title: string }>,
+)
 
 onMounted(async () => {
   await loadDetail()
@@ -312,7 +171,7 @@ async function submitStackUpdate() {
 }
 
 async function archiveStack() {
-  if (!window.confirm('Archive this Tech Stack? Articles and records remain as history, but the stack will leave the active directory.')) {
+  if (!window.confirm('Archive this Tech Stack? Articles remain as history, but the stack will leave the active directory.')) {
     return
   }
   await deleteTechStack(String(route.params.techStackId))
@@ -321,32 +180,30 @@ async function archiveStack() {
 
 async function submitArticle() {
   await createWorkArticle(String(route.params.techStackId), {
-    ...articleForm.value,
-    tags: articleTags.value,
-    content: composedArticle.value,
+    title: articleForm.value.title,
+    articleType: 'knowledge',
+    summary: firstParagraph(articleForm.value.content),
+    content: `# ${articleForm.value.title}\n\n${articleForm.value.content}`.trim(),
+    tags: stackTags.value,
   })
   articleStatus.value = 'Article saved.'
-  articleForm.value = {
-    title: '',
-    articleType: 'knowledge',
-    summary: '',
-    outline: '',
-    chapters: [{ id: `chapter-${Date.now()}`, title: '第一章', body: '' }],
-    content: '',
-  }
-  articleTagsText.value = ''
+  articleForm.value = { title: '', content: '' }
+  selectedHeading.value = ''
   await loadDetail()
 }
 
-async function submitLearningRecord() {
-  await createWorkLearningRecord(String(route.params.techStackId), {
-    ...recordForm.value,
-    tags: recordTags.value,
-  })
-  recordStatus.value = 'Learning record saved.'
-  recordForm.value = { title: '', minutes: 30, notes: '' }
-  recordTagsText.value = ''
-  await loadDetail()
+function appendChapter() {
+  const chapterNumber = articleOutline.value.length + 1
+  articleForm.value.content = `${articleForm.value.content.trim()}\n\n## 第 ${chapterNumber} 章\n\n`.trimStart()
+}
+
+function firstParagraph(value: string) {
+  return (
+    value
+      .split('\n')
+      .map((line) => line.replace(/^#{1,6}\s+/, '').trim())
+      .find(Boolean) || ''
+  )
 }
 
 function splitTags(value: string) {
@@ -354,50 +211,5 @@ function splitTags(value: string) {
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean)
-}
-
-function addChapter() {
-  articleForm.value.chapters.push({
-    id: `chapter-${Date.now()}`,
-    title: `第 ${articleForm.value.chapters.length + 1} 章`,
-    body: '',
-  })
-  selectedChapterIndex.value = articleForm.value.chapters.length - 1
-}
-
-function removeChapter(index: number) {
-  if (articleForm.value.chapters.length === 1) {
-    articleForm.value.chapters[0].body = ''
-    articleForm.value.chapters[0].title = '第一章'
-    return
-  }
-  articleForm.value.chapters.splice(index, 1)
-  selectedChapterIndex.value = Math.max(0, selectedChapterIndex.value - 1)
-}
-
-function insertBlock(kind: 'table' | 'image' | 'code' | 'section') {
-  const snippets = {
-    table: '\n\n| 字段 | 说明 | 示例 |\n| --- | --- | --- |\n| name | 技术点 | Java Stream |\n',
-    image: '\n\n![图片说明](https://example.com/image.png)\n',
-    code: '\n\n```ts\n// 在这里写代码\nfunction example() {\n  return true\n}\n```\n',
-    section: '\n\n### 小节标题\n\n这里写这个小节的核心内容。\n',
-  }
-  const chapter = articleForm.value.chapters[selectedChapterIndex.value] || articleForm.value.chapters[0]
-  chapter.body = `${chapter.body}${snippets[kind]}`
-}
-
-function composeArticleContent() {
-  const blocks = []
-  if (articleForm.value.outline.trim()) {
-    blocks.push(`## 大纲\n\n${articleForm.value.outline.trim()}`)
-  }
-  articleForm.value.chapters.forEach((chapter, index) => {
-    const title = chapter.title.trim() || `章节 ${index + 1}`
-    blocks.push(`## ${title}\n\n${chapter.body.trim()}`)
-  })
-  if (articleForm.value.content.trim()) {
-    blocks.push(articleForm.value.content.trim())
-  }
-  return blocks.filter(Boolean).join('\n\n')
 }
 </script>
