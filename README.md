@@ -151,6 +151,32 @@ The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run
 
+For the normal local development loop, use the background startup script:
+
+```bash
+cd /Users/xiaxin/Documents/Codex/Universal
+./startup.sh
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+Stop both frontend and backend:
+
+```bash
+cd /Users/xiaxin/Documents/Codex/Universal
+./shutdown.sh
+```
+
+Runtime logs are written under `.universe-os/logs/`.
+
+If `docker/ragflow/universe.env` exists, `startup.sh` loads it and starts the backend in the configured Knowledge provider mode. If it does not exist, the backend defaults to local Knowledge mode.
+
+Manual startup is also supported.
+
 Run the backend API in one terminal:
 
 ```bash

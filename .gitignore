@@ -10,3 +10,4 @@ docker/ragflow/.env
 docker/ragflow/universe.env
 docker/ragflow/ragflow-logs/
 docker/ragflow/data/
+.universe-os/
