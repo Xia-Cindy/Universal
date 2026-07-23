@@ -22,11 +22,11 @@
       </article>
       <article>
         <strong>{{ home.summary.resumeCount }}</strong>
-        <span>Resume Drafts</span>
+        <span>Resume versions</span>
       </article>
       <article>
         <strong>{{ home.summary.knowledgeDocumentCount }}</strong>
-        <span>Study Knowledge refs</span>
+        <span>Work Knowledge docs</span>
       </article>
     </div>
 
@@ -43,6 +43,17 @@
         </article>
       </div>
       <div v-else class="knowledge-state">Create your first Tech Stack to start building evidence.</div>
+    </section>
+
+    <section class="home-section">
+      <div class="section-heading">
+        <h3>Work Knowledge</h3>
+        <RouterLink class="secondary-action" to="/work/knowledge">Open Knowledge</RouterLink>
+      </div>
+      <p class="surface-copy">
+        Work has its own Knowledge Space for tech notes, JD material, interview questions, project evidence, and resume material.
+        Study Knowledge can still be referenced when it supports a capability.
+      </p>
     </section>
 
     <section class="home-section">

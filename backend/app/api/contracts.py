@@ -126,6 +126,21 @@ MILESTONE_7_6_CONTRACTS: tuple[ApiContract, ...] = (
 
 MILESTONE_10_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/work/home", "work_home", "milestone_10"),
+    ApiContract("POST", "/api/work/knowledge/documents", "create_work_knowledge_document", "milestone_10"),
+    ApiContract("GET", "/api/work/knowledge", "work_knowledge_overview", "milestone_10"),
+    ApiContract("GET", "/api/work/knowledge/documents", "list_work_knowledge_documents", "milestone_10"),
+    ApiContract(
+        "GET",
+        "/api/work/knowledge/documents/{document_id}",
+        "get_work_knowledge_document",
+        "milestone_10",
+    ),
+    ApiContract(
+        "POST",
+        "/api/work/knowledge/documents/{document_id}/process",
+        "process_work_knowledge_document",
+        "milestone_10",
+    ),
     ApiContract("GET", "/api/work/tech-stacks", "list_work_tech_stacks", "milestone_10"),
     ApiContract("POST", "/api/work/tech-stacks", "create_work_tech_stack", "milestone_10"),
     ApiContract("GET", "/api/work/tech-stacks/{tech_stack_id}", "work_tech_stack_detail", "milestone_10"),

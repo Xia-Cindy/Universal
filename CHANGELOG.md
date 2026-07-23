@@ -24,3 +24,4 @@
 - Local RAGFlow runtime stack: project-owned Docker Compose service under `docker/ragflow/`, local Universe env example, start/stop scripts, and installation guide.
 - Milestone 7.9 Study productization slice: drilled Create Goal flow, Goal-type Knowledge Space preview, Study Plan Calendar, Daily Task priority, migration `010_study_plan_calendar_priority.sql`, and IA regression tests.
 - Milestone 10.0 Work Planet foundation: active Work Planet entry, Work Workspace, Tech Stack directory/detail, project evidence records, Dynamic Resume drafts, Work APIs, migration `011_work_planet_foundation.sql`, and tests without a new AI system or Work Agent.
+- Work Planet IA refinement: Work Knowledge is now a first-class workspace module, while Study Knowledge is treated as reference material through the shared Knowledge Service.

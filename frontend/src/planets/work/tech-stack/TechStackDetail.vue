@@ -9,7 +9,7 @@
       <div class="progress-snapshot">
         <article>
           <strong>{{ detail.relatedKnowledge.length }}</strong>
-          <span>Knowledge refs</span>
+          <span>Work Knowledge</span>
         </article>
         <article>
           <strong>{{ detail.projects.length }}</strong>
@@ -17,20 +17,23 @@
         </article>
         <article>
           <strong>{{ detail.resumeSnippets.length }}</strong>
-          <span>Resume snippets</span>
+          <span>Resume Snippets</span>
         </article>
       </div>
 
       <section class="home-section">
-        <h3>Related Knowledge</h3>
+        <h3>Work Knowledge</h3>
         <div v-if="detail.relatedKnowledge.length" class="goal-list">
           <article v-for="document in detail.relatedKnowledge" :key="document.id" class="knowledge-document">
-            <span class="status-pill">{{ document.provider || 'knowledge' }}</span>
+            <span class="status-pill">{{ document.goalId ? 'Study reference' : 'Work Knowledge' }}</span>
             <h3>{{ document.fileName }}</h3>
             <p class="surface-copy">{{ document.subject }} / {{ document.topic }}</p>
           </article>
         </div>
-        <div v-else class="knowledge-state">No related Knowledge yet. Add Study Knowledge with matching subject, topic, or tags.</div>
+        <div v-else class="knowledge-state">
+          No related Work Knowledge yet. Add Work Knowledge or reference matching Study Knowledge by subject, topic, or tags.
+        </div>
+        <RouterLink class="secondary-action" to="/work/knowledge">Open Work Knowledge</RouterLink>
       </section>
     </div>
     <div v-else class="knowledge-state">Loading Tech Stack detail...</div>

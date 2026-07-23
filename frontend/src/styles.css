@@ -821,6 +821,8 @@ button:disabled {
 .planet-object.active {
   background: rgba(22, 140, 147, 0.78);
   border-color: rgba(125, 230, 219, 0.48);
+  height: 168px;
+  width: 168px;
 }
 
 .planet-object:hover,
@@ -908,7 +910,7 @@ button:disabled {
 }
 
 .planet-object.active h2 {
-  max-width: 120px;
+  max-width: 136px;
 }
 
 .portal-status {
@@ -1599,6 +1601,17 @@ textarea {
   color: #0b6f70;
 }
 
+.work-workspace .tech-channel-tabs button.selected {
+  background: #131923;
+  color: #ffffff;
+}
+
+.work-workspace .tech-topic-tabs button.selected,
+.work-workspace .tech-directory-panel button.selected {
+  background: #e4f5f4;
+  color: #0b6f70;
+}
+
 .tech-nav-layout {
   display: grid;
   gap: 18px;
@@ -1760,6 +1773,11 @@ textarea {
   .planet-object {
     height: 132px;
     width: 132px;
+  }
+
+  .planet-object.active {
+    height: 146px;
+    width: 146px;
   }
 
   .tech-nav-hero,

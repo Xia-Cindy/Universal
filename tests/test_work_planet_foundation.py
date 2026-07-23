@@ -58,6 +58,8 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         contracts = {(contract["method"], contract["path"]) for contract in list_contracts()}
 
         self.assertIn(("GET", "/api/work/home"), contracts)
+        self.assertIn(("GET", "/api/work/knowledge/documents"), contracts)
+        self.assertIn(("POST", "/api/work/knowledge/documents"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks"), contracts)
         self.assertIn(("GET", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
         self.assertIn(("POST", "/api/work/resumes/draft"), contracts)
@@ -68,6 +70,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
 
         self.assertIn("path: '/work'", router)
         self.assertIn("TechStackDirectory", router)
+        self.assertIn("WorkKnowledge", router)
         self.assertIn("DynamicResume", router)
         self.assertIn("Enter Work Planet", portal)
         self.assertNotIn("/:futurePlanet(work|novel|life|creator)", router)

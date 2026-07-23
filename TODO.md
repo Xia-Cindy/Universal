@@ -167,6 +167,7 @@
 - [x] Add project evidence creation.
 - [x] Add Dynamic Resume draft creation based on confirmed Work evidence.
 - [x] Allow Work to reference shared Knowledge through Knowledge Service summaries only.
+- [x] Add Work Knowledge as a first-class workspace module without duplicating the shared Knowledge Service.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 

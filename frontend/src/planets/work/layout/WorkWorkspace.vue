@@ -12,7 +12,7 @@
           <span class="eyebrow">Career Focus</span>
           <strong>Tech Stack → Evidence → Resume</strong>
         </div>
-        <RouterLink class="secondary-action" to="/study/knowledge">Reference Study Knowledge</RouterLink>
+        <RouterLink class="secondary-action" to="/work/knowledge">Open Work Knowledge</RouterLink>
       </div>
     </header>
 
@@ -28,9 +28,9 @@
         <strong>Evidence first</strong>
         <p>Dynamic Resume only uses user-confirmed tech stacks, projects, and Knowledge evidence.</p>
         <div class="context-stack">
-          <span>Shared Knowledge available</span>
+          <span>Work Knowledge first</span>
+          <span>Study Knowledge can be referenced</span>
           <span>No fake experience</span>
-          <span>AI Core unchanged</span>
         </div>
       </aside>
     </section>
@@ -44,6 +44,7 @@ import { useRoute } from 'vue-router'
 const navigation = [
   { label: 'Home', route: '/work' },
   { label: 'Tech Stack', route: '/work/tech-stack' },
+  { label: 'Knowledge', route: '/work/knowledge' },
   { label: 'Projects', route: '/work/projects' },
   { label: 'Resume', route: '/work/resume' },
 ]

@@ -532,6 +532,18 @@ export async function createKnowledgeDocument(payload: KnowledgeDocumentPayload)
   return response.json()
 }
 
+export async function createWorkKnowledgeDocument(payload: KnowledgeDocumentPayload) {
+  const response = await fetch(`${API_BASE}/work/knowledge/documents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Work Knowledge document')
+  }
+  return response.json()
+}
+
 export async function fetchKnowledgeOverview() {
   const response = await fetch(`${API_BASE}/study/knowledge`)
   if (!response.ok) {
@@ -561,10 +573,39 @@ export async function fetchKnowledgeDocuments(
   return response.json()
 }
 
+export async function fetchWorkKnowledgeDocuments(
+  filters: { subject?: string; topic?: string; goalId?: string } = {},
+): Promise<KnowledgeDocument[]> {
+  const params = new URLSearchParams()
+  if (filters.subject) {
+    params.set('subject', filters.subject)
+  }
+  if (filters.topic) {
+    params.set('topic', filters.topic)
+  }
+  if (filters.goalId) {
+    params.set('goalId', filters.goalId)
+  }
+  const query = params.toString()
+  const response = await fetch(`${API_BASE}/work/knowledge/documents${query ? `?${query}` : ''}`)
+  if (!response.ok) {
+    throw new Error('Unable to load Work Knowledge documents')
+  }
+  return response.json()
+}
+
 export async function fetchKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
   const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}`)
   if (!response.ok) {
     throw new Error('Unable to load Knowledge document')
+  }
+  return response.json()
+}
+
+export async function fetchWorkKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
+  const response = await fetch(`${API_BASE}/work/knowledge/documents/${documentId}`)
+  if (!response.ok) {
+    throw new Error('Unable to load Work Knowledge document')
   }
   return response.json()
 }
@@ -575,6 +616,16 @@ export async function processKnowledgeDocument(documentId: string): Promise<Know
   })
   if (!response.ok) {
     throw new Error('Unable to process Knowledge document')
+  }
+  return response.json()
+}
+
+export async function processWorkKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
+  const response = await fetch(`${API_BASE}/work/knowledge/documents/${documentId}/process`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error('Unable to process Work Knowledge document')
   }
   return response.json()
 }

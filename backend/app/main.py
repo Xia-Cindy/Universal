@@ -69,6 +69,30 @@ def create_app():
     def create_work_resume_draft(payload: dict):
         return api.create_work_resume_draft(payload)
 
+    @app.post("/api/work/knowledge/documents")
+    def create_work_knowledge_document(payload: dict):
+        return api.create_knowledge_document(payload)
+
+    @app.get("/api/work/knowledge")
+    def work_knowledge_overview():
+        return api.knowledge_overview()
+
+    @app.get("/api/work/knowledge/documents")
+    def list_work_knowledge_documents(
+        subject: str | None = None,
+        topic: str | None = None,
+        goalId: str | None = None,
+    ):
+        return api.list_knowledge_documents(subject=subject, topic=topic, goal_id=goalId)
+
+    @app.get("/api/work/knowledge/documents/{document_id}")
+    def get_work_knowledge_document(document_id: str):
+        return api.get_knowledge_document(document_id)
+
+    @app.post("/api/work/knowledge/documents/{document_id}/process")
+    def process_work_knowledge_document(document_id: str):
+        return api.process_knowledge_document(document_id)
+
     @app.get("/api/study/workspace")
     def get_study_workspace():
         return api.get_study_workspace()
