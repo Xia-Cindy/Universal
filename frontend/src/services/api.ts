@@ -187,6 +187,32 @@ export interface WorkProject {
   status: string
 }
 
+export interface WorkArticle {
+  id: string
+  userId: string
+  techStackId: string
+  title: string
+  summary: string
+  content: string
+  tags: string[]
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WorkLearningRecord {
+  id: string
+  userId: string
+  techStackId: string
+  title: string
+  notes: string
+  minutes: number
+  tags: string[]
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ResumeVersion {
   id: string
   userId: string
@@ -208,11 +234,15 @@ export interface WorkHomePayload {
   summary: {
     techStackCount: number
     projectCount: number
+    articleCount: number
+    learningRecordCount: number
     resumeCount: number
     knowledgeDocumentCount: number
   }
   techStacks: TechStack[]
   projects: WorkProject[]
+  articles: WorkArticle[]
+  learningRecords: WorkLearningRecord[]
   resumes: ResumeVersion[]
 }
 
@@ -266,6 +296,33 @@ export async function fetchTechStackDetail(techStackId: string) {
   const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`)
   if (!response.ok) {
     throw new Error('Unable to load Tech Stack')
+  }
+  return response.json()
+}
+
+export async function createWorkArticle(techStackId: string, payload: Record<string, unknown>): Promise<WorkArticle> {
+  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}/articles`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Work Article')
+  }
+  return response.json()
+}
+
+export async function createWorkLearningRecord(
+  techStackId: string,
+  payload: Record<string, unknown>,
+): Promise<WorkLearningRecord> {
+  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}/learning-records`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Work Learning Record')
   }
   return response.json()
 }

@@ -54,6 +54,44 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn(f"project:{project['id']}", resume["evidenceRefs"])
         self.assertEqual(home["primaryAction"]["type"], "review_resume")
 
+    def test_tech_stack_supports_articles_and_learning_records(self):
+        stack = self.api.create_work_tech_stack(
+            {
+                "name": "FastAPI",
+                "category": "Backend",
+                "proficiency": "practicing",
+                "tags": ["python", "api"],
+            }
+        )
+        article = self.api.create_work_article(
+            stack["id"],
+            {
+                "title": "FastAPI Dependency Notes",
+                "summary": "Dependency injection patterns.",
+                "content": "Use dependencies to express request-scoped capabilities.",
+                "tags": ["backend", "auth"],
+            },
+        )
+        record = self.api.create_work_learning_record(
+            stack["id"],
+            {
+                "title": "Read dependency docs",
+                "notes": "Mapped dependency injection to auth middleware.",
+                "minutes": 45,
+                "tags": ["reading"],
+            },
+        )
+        detail = self.api.get_work_tech_stack(stack["id"])
+        home = self.api.get_work_home()
+        resume = self.api.create_work_resume_draft({"roleTarget": "Backend Engineer"})
+
+        self.assertEqual(detail["articles"][0]["id"], article["id"])
+        self.assertEqual(detail["learningRecords"][0]["id"], record["id"])
+        self.assertEqual(home["summary"]["articleCount"], 1)
+        self.assertEqual(home["summary"]["learningRecordCount"], 1)
+        self.assertIn(f"article:{article['id']}", resume["evidenceRefs"])
+        self.assertIn(f"learning_record:{record['id']}", resume["evidenceRefs"])
+
     def test_work_contracts_are_declared(self):
         contracts = {(contract["method"], contract["path"]) for contract in list_contracts()}
 
@@ -62,6 +100,8 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn(("POST", "/api/work/knowledge/documents"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks"), contracts)
         self.assertIn(("GET", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
+        self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/articles"), contracts)
+        self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/learning-records"), contracts)
         self.assertIn(("POST", "/api/work/resumes/draft"), contracts)
 
     def test_work_frontend_routes_exist(self):

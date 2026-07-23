@@ -26,3 +26,4 @@
 - Milestone 10.0 Work Planet foundation: active Work Planet entry, Work Workspace, Tech Stack directory/detail, project evidence records, Dynamic Resume drafts, Work APIs, migration `011_work_planet_foundation.sql`, and tests without a new AI system or Work Agent.
 - Work Planet IA refinement: Work Knowledge is now a first-class workspace module, while Study Knowledge is treated as reference material through the shared Knowledge Service.
 - Knowledge Space metadata refinement: documents now support Planet scope, Work Tech Stack binding and tags, while RAGFlow uses separate datasets for different Study Goals.
+- Work Tech Stack content refinement: Tech Stacks now support owned articles and learning records, with directory-level content feed and resume evidence refs.

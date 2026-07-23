@@ -16,7 +16,7 @@ from backend.app.models.study import (
     WeekPlan,
     YearPlan,
 )
-from backend.app.models.work import ResumeVersion, TechStack, WorkProject
+from backend.app.models.work import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
 
 __all__ = [
     "DailyTask",
@@ -44,6 +44,8 @@ __all__ = [
     "TaskStatus",
     "TechStack",
     "WeekPlan",
+    "WorkArticle",
+    "WorkLearningRecord",
     "WorkProject",
     "YearPlan",
 ]

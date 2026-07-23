@@ -1,4 +1,4 @@
-from backend.app.models import ResumeVersion, TechStack, WorkProject
+from backend.app.models import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
 from backend.app.planets.work.repository import WorkRepository
 
 
@@ -9,6 +9,8 @@ class WorkService:
     def home(self, user_id: str, knowledge_summary: dict[str, object]) -> dict[str, object]:
         tech_stacks = self.list_tech_stacks(user_id)
         projects = self.list_projects(user_id)
+        articles = self.list_articles(user_id)
+        learning_records = self.list_learning_records(user_id)
         resumes = self.list_resumes(user_id)
         primary_action = (
             {
@@ -31,11 +33,15 @@ class WorkService:
             "summary": {
                 "techStackCount": len(tech_stacks),
                 "projectCount": len(projects),
+                "articleCount": len(articles),
+                "learningRecordCount": len(learning_records),
                 "resumeCount": len(resumes),
                 "knowledgeDocumentCount": len(knowledge_summary.get("documents", [])),
             },
             "techStacks": tech_stacks,
             "projects": projects,
+            "articles": articles,
+            "learningRecords": learning_records,
             "resumes": resumes,
         }
 
@@ -70,8 +76,46 @@ class WorkService:
             "techStack": tech_stack.to_dict(),
             "relatedKnowledge": related_documents,
             "projects": related_projects,
+            "articles": self.list_articles(user_id, tech_stack_id=tech_stack.id),
+            "learningRecords": self.list_learning_records(user_id, tech_stack_id=tech_stack.id),
             "resumeSnippets": self._resume_snippets(user_id, tech_stack.name),
         }
+
+    def create_article(self, user_id: str, tech_stack_id: str, payload: dict) -> dict[str, object]:
+        self._repository.get_tech_stack(tech_stack_id, user_id)
+        article = WorkArticle(
+            user_id=user_id,
+            tech_stack_id=tech_stack_id,
+            title=payload["title"],
+            summary=payload.get("summary", ""),
+            content=payload.get("content", ""),
+            tags=tuple(payload.get("tags", [])),
+            status=payload.get("status", "draft"),
+        )
+        return self._repository.save_article(article).to_dict()
+
+    def list_articles(self, user_id: str, tech_stack_id: str | None = None) -> list[dict[str, object]]:
+        return [item.to_dict() for item in self._repository.list_articles(user_id, tech_stack_id)]
+
+    def create_learning_record(self, user_id: str, tech_stack_id: str, payload: dict) -> dict[str, object]:
+        self._repository.get_tech_stack(tech_stack_id, user_id)
+        record = WorkLearningRecord(
+            user_id=user_id,
+            tech_stack_id=tech_stack_id,
+            title=payload["title"],
+            notes=payload.get("notes", ""),
+            minutes=int(payload.get("minutes", 0)),
+            tags=tuple(payload.get("tags", [])),
+            status=payload.get("status", "recorded"),
+        )
+        return self._repository.save_learning_record(record).to_dict()
+
+    def list_learning_records(
+        self,
+        user_id: str,
+        tech_stack_id: str | None = None,
+    ) -> list[dict[str, object]]:
+        return [item.to_dict() for item in self._repository.list_learning_records(user_id, tech_stack_id)]
 
     def create_project(self, user_id: str, payload: dict) -> dict[str, object]:
         for tech_stack_id in payload.get("techStackIds", []):
@@ -93,8 +137,12 @@ class WorkService:
         role_target = payload.get("roleTarget", "AI Engineer")
         tech_stacks = self.list_tech_stacks(user_id)
         projects = self.list_projects(user_id)
+        articles = self.list_articles(user_id)
+        learning_records = self.list_learning_records(user_id)
         evidence_refs = [f"tech_stack:{item['id']}" for item in tech_stacks]
         evidence_refs.extend(f"project:{item['id']}" for item in projects)
+        evidence_refs.extend(f"article:{item['id']}" for item in articles)
+        evidence_refs.extend(f"learning_record:{item['id']}" for item in learning_records)
         content = self._resume_content(role_target=role_target, tech_stacks=tech_stacks, projects=projects)
         resume = ResumeVersion(
             user_id=user_id,

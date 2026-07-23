@@ -156,6 +156,22 @@ class ApiFacade:
             knowledge_summary=self.knowledge.overview(user.id),
         )
 
+    def list_work_articles(self, tech_stack_id: str | None = None) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.work.list_articles(user.id, tech_stack_id=tech_stack_id)
+
+    def create_work_article(self, tech_stack_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.create_article(user.id, tech_stack_id, payload)
+
+    def list_work_learning_records(self, tech_stack_id: str | None = None) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.work.list_learning_records(user.id, tech_stack_id=tech_stack_id)
+
+    def create_work_learning_record(self, tech_stack_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.create_learning_record(user.id, tech_stack_id, payload)
+
     def list_work_projects(self) -> list[dict[str, object]]:
         user = self.users.current_user()
         return self.work.list_projects(user.id)

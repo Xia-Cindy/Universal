@@ -1559,6 +1559,11 @@ Implemented after Work Planet foundation:
   - each Study Goal gets a separate RAGFlow dataset;
   - each Work Tech Stack can get a separate RAGFlow dataset;
   - unscoped Work and global documents use their own provider dataset scope.
+- Work Tech Stack now also owns:
+  - `WorkArticle`
+  - `WorkLearningRecord`
+- Tech Stack detail can create and list articles and learning records.
+- Dynamic Resume evidence refs can include articles and learning records.
 
 Not changed:
 

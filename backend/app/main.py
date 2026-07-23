@@ -53,6 +53,22 @@ def create_app():
     def get_work_tech_stack(tech_stack_id: str):
         return api.get_work_tech_stack(tech_stack_id)
 
+    @app.get("/api/work/tech-stacks/{tech_stack_id}/articles")
+    def list_work_articles(tech_stack_id: str):
+        return api.list_work_articles(tech_stack_id)
+
+    @app.post("/api/work/tech-stacks/{tech_stack_id}/articles")
+    def create_work_article(tech_stack_id: str, payload: dict):
+        return api.create_work_article(tech_stack_id, payload)
+
+    @app.get("/api/work/tech-stacks/{tech_stack_id}/learning-records")
+    def list_work_learning_records(tech_stack_id: str):
+        return api.list_work_learning_records(tech_stack_id)
+
+    @app.post("/api/work/tech-stacks/{tech_stack_id}/learning-records")
+    def create_work_learning_record(tech_stack_id: str, payload: dict):
+        return api.create_work_learning_record(tech_stack_id, payload)
+
     @app.get("/api/work/projects")
     def list_work_projects():
         return api.list_work_projects()

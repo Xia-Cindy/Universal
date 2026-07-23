@@ -149,6 +149,8 @@ Milestone 10.0 activates the Work Planet foundation:
 
 Current Work Knowledge refinement adds a first-class Work Knowledge module. Work documents bind to Tech Stack and tags through the shared Knowledge Service. RAGFlow-backed Study Knowledge uses separate provider datasets for different Study Goals.
 
+Work Tech Stack directories now support article writing and learning records, so each stack can collect knowledge, practice notes, project evidence and resume-ready proof in one place.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run

@@ -21,12 +21,12 @@
         <span>Projects</span>
       </article>
       <article>
-        <strong>{{ home.summary.resumeCount }}</strong>
-        <span>Resume versions</span>
+        <strong>{{ home.summary.articleCount }}</strong>
+        <span>Articles</span>
       </article>
       <article>
-        <strong>{{ home.summary.knowledgeDocumentCount }}</strong>
-        <span>Work Knowledge docs</span>
+        <strong>{{ home.summary.learningRecordCount }}</strong>
+        <span>Learning Records</span>
       </article>
     </div>
 
@@ -84,10 +84,14 @@ const home = ref<WorkHomePayload>({
     techStackCount: 0,
     projectCount: 0,
     resumeCount: 0,
+    articleCount: 0,
+    learningRecordCount: 0,
     knowledgeDocumentCount: 0,
   },
   techStacks: [],
   projects: [],
+  articles: [],
+  learningRecords: [],
   resumes: [],
 })
 

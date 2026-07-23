@@ -170,6 +170,7 @@
 - [x] Add Work Knowledge as a first-class workspace module without duplicating the shared Knowledge Service.
 - [x] Bind Work Knowledge documents to Tech Stack and tags.
 - [x] Separate RAGFlow datasets by Study Goal for provider-backed Study Knowledge.
+- [x] Add Tech Stack-owned article writing and learning record capture.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 

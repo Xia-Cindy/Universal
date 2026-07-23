@@ -99,6 +99,33 @@
           </div>
           <RouterLink class="secondary-action" :to="`/work/tech-stack/${stack.id}`">Open Stack</RouterLink>
         </article>
+
+        <section class="tech-content-stream" aria-labelledby="tech-content-title">
+          <div class="section-heading">
+            <h3 id="tech-content-title">技术内容流</h3>
+            <span>{{ visibleContent.length }} items</span>
+          </div>
+          <article v-for="item in visibleContent" :key="item.id" class="tech-feed-item content-feed-item">
+            <div>
+              <span class="status-pill">{{ item.kind }}</span>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.summary }}</p>
+              <div class="tech-meta-row">
+                <span>{{ techStackName(item.techStackId) }}</span>
+                <span v-if="item.minutes">{{ item.minutes }} min</span>
+                <span>{{ item.status }}</span>
+              </div>
+              <div class="tech-tag-row">
+                <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
+                <span v-if="!item.tags.length">No tags yet</span>
+              </div>
+            </div>
+            <RouterLink class="secondary-action" :to="`/work/tech-stack/${item.techStackId}`">Open</RouterLink>
+          </article>
+          <div v-if="!visibleContent.length" class="knowledge-state">
+            技术栈目录下还没有文章或学习记录。进入一个技术栈后可以开始写。
+          </div>
+        </section>
       </div>
 
       <aside class="tech-evidence-panel">
@@ -122,9 +149,17 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { createTechStack, fetchTechStacks, type TechStack } from '../../../services/api'
+import {
+  createTechStack,
+  fetchWorkHome,
+  type TechStack,
+  type WorkArticle,
+  type WorkLearningRecord,
+} from '../../../services/api'
 
 const techStacks = ref<TechStack[]>([])
+const articles = ref<WorkArticle[]>([])
+const learningRecords = ref<WorkLearningRecord[]>([])
 const status = ref('Create a capability directory first.')
 const tagsText = ref('')
 const showCreate = ref(false)
@@ -164,6 +199,31 @@ const selectedStack = computed(
     filteredTechStacks.value[0] ||
     null,
 )
+const contentItems = computed(() => [
+  ...articles.value.map((article) => ({
+    id: article.id,
+    kind: 'Article',
+    techStackId: article.techStackId,
+    title: article.title,
+    summary: article.summary || article.content.slice(0, 120) || 'No article summary yet.',
+    tags: article.tags,
+    status: article.status,
+    minutes: 0,
+  })),
+  ...learningRecords.value.map((record) => ({
+    id: record.id,
+    kind: 'Learning Record',
+    techStackId: record.techStackId,
+    title: record.title,
+    summary: record.notes || 'No record notes yet.',
+    tags: record.tags,
+    status: record.status,
+    minutes: record.minutes,
+  })),
+])
+const visibleContent = computed(() =>
+  contentItems.value.filter((item) => filteredTechStacks.value.some((stack) => stack.id === item.techStackId)),
+)
 
 onMounted(loadTechStacks)
 watch(filteredTechStacks, (stacks) => {
@@ -173,7 +233,10 @@ watch(filteredTechStacks, (stacks) => {
 })
 
 async function loadTechStacks() {
-  techStacks.value = await fetchTechStacks()
+  const home = await fetchWorkHome()
+  techStacks.value = home.techStacks
+  articles.value = home.articles
+  learningRecords.value = home.learningRecords
   selectedStackId.value = techStacks.value[0]?.id || ''
 }
 
@@ -189,5 +252,9 @@ async function submitTechStack() {
   tagsText.value = ''
   showCreate.value = false
   await loadTechStacks()
+}
+
+function techStackName(techStackId: string) {
+  return techStacks.value.find((stack) => stack.id === techStackId)?.name || 'Linked Tech Stack'
 }
 </script>

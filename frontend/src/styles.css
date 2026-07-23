@@ -1648,6 +1648,14 @@ textarea {
   gap: 12px;
 }
 
+.tech-content-stream {
+  border-top: 1px solid #d5dee4;
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 18px;
+}
+
 .tech-feed-item {
   align-items: center;
   border-bottom: 1px solid #d5dee4;
@@ -1655,6 +1663,10 @@ textarea {
   gap: 18px;
   grid-template-columns: minmax(0, 1fr) auto;
   padding: 10px 0 16px;
+}
+
+.content-feed-item {
+  background: #fff;
 }
 
 .tech-feed-item h3 {
