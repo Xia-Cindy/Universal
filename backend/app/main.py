@@ -49,6 +49,14 @@ def create_app():
     def create_work_tech_stack(payload: dict):
         return api.create_work_tech_stack(payload)
 
+    @app.patch("/api/work/tech-stacks/{tech_stack_id}")
+    def update_work_tech_stack(tech_stack_id: str, payload: dict):
+        return api.update_work_tech_stack(tech_stack_id, payload)
+
+    @app.delete("/api/work/tech-stacks/{tech_stack_id}")
+    def delete_work_tech_stack(tech_stack_id: str):
+        return api.delete_work_tech_stack(tech_stack_id)
+
     @app.get("/api/work/tech-stacks/{tech_stack_id}")
     def get_work_tech_stack(tech_stack_id: str):
         return api.get_work_tech_stack(tech_stack_id)

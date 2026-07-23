@@ -33,6 +33,17 @@ button,
   color: #8fd5cf;
 }
 
+.danger-action {
+  background: #fff4f0;
+  border: 1px solid rgba(196, 70, 34, 0.28);
+  color: #a53a1d;
+}
+
+.work-workspace .danger-action {
+  background: #fff4f0;
+  color: #a53a1d;
+}
+
 button:disabled {
   background: rgba(238, 247, 248, 0.18);
   color: rgba(238, 247, 248, 0.62);
@@ -1728,6 +1739,63 @@ textarea {
   max-height: 360px;
   overflow: auto;
   white-space: pre-line;
+}
+
+.stack-editor-panel {
+  background: #f8fbfc;
+}
+
+.article-editor-form {
+  align-items: start;
+}
+
+.article-builder {
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.markdown-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.markdown-toolbar button {
+  min-height: 34px;
+}
+
+.chapter-editor {
+  border-top: 1px solid #d5dee4;
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.chapter-editor label {
+  min-width: min(100%, 320px);
+}
+
+.article-preview,
+.article-content-preview {
+  background: #f8fbfc;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.article-preview pre,
+.article-content-preview {
+  color: #243447;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  margin: 0;
+  max-height: 420px;
+  padding: 12px;
+  white-space: pre-wrap;
 }
 
 .tech-feed-item h3 {

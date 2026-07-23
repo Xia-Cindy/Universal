@@ -1573,6 +1573,8 @@ Implemented after Work Planet foundation:
 - If live CSDN fetching is unavailable, the backend returns 30 CSDN discovery fallback items instead of exposing an unavailable state to the user.
 - Work Community article detail reading is exposed through `GET /api/work/community/csdn/article` and rendered inline in the Work frontend.
 - Community loading is non-blocking so users can return to `全部` or another category without waiting for CSDN.
+- Tech Stack management now supports update and soft archive through Work Service.
+- Tech Stack article authoring uses the existing `WorkArticle.content` field as Markdown with outline and chapter composition; no new Knowledge, Retrieval, AI Core or RAG behavior is introduced.
 - Dynamic Resume evidence refs can include articles and learning records.
 
 Not changed:

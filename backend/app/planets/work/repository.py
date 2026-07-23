@@ -13,6 +13,11 @@ class WorkRepository:
         self.tech_stacks[tech_stack.id] = tech_stack
         return tech_stack
 
+    def delete_tech_stack(self, tech_stack_id: str, user_id: str) -> TechStack:
+        tech_stack = self.get_tech_stack(tech_stack_id, user_id)
+        tech_stack.status = "archived"
+        return self.save_tech_stack(tech_stack)
+
     def get_tech_stack(self, tech_stack_id: str, user_id: str) -> TechStack:
         tech_stack = self.tech_stacks[tech_stack_id]
         if tech_stack.user_id != user_id:
@@ -21,7 +26,7 @@ class WorkRepository:
 
     def list_tech_stacks(self, user_id: str) -> list[TechStack]:
         return sorted(
-            [item for item in self.tech_stacks.values() if item.user_id == user_id],
+            [item for item in self.tech_stacks.values() if item.user_id == user_id and item.status != "archived"],
             key=lambda item: item.created_at,
         )
 

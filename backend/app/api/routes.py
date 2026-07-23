@@ -149,6 +149,14 @@ class ApiFacade:
         user = self.users.current_user()
         return self.work.create_tech_stack(user.id, payload)
 
+    def update_work_tech_stack(self, tech_stack_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.update_tech_stack(user.id, tech_stack_id, payload)
+
+    def delete_work_tech_stack(self, tech_stack_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.archive_tech_stack(user.id, tech_stack_id)
+
     def get_work_tech_stack(self, tech_stack_id: str) -> dict[str, object]:
         user = self.users.current_user()
         return self.work.tech_stack_detail(

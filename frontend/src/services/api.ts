@@ -317,6 +317,28 @@ export async function createTechStack(payload: Record<string, unknown>): Promise
   return response.json()
 }
 
+export async function updateTechStack(techStackId: string, payload: Record<string, unknown>): Promise<TechStack> {
+  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to update Tech Stack')
+  }
+  return response.json()
+}
+
+export async function deleteTechStack(techStackId: string): Promise<TechStack> {
+  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) {
+    throw new Error('Unable to delete Tech Stack')
+  }
+  return response.json()
+}
+
 export async function fetchTechStackDetail(techStackId: string) {
   const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`)
   if (!response.ok) {

@@ -1,5 +1,6 @@
 from backend.app.models import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
 from backend.app.planets.work.repository import WorkRepository
+from backend.app.core.dates import local_now
 
 
 class WorkService:
@@ -60,8 +61,32 @@ class WorkService:
     def list_tech_stacks(self, user_id: str) -> list[dict[str, object]]:
         return [item.to_dict() for item in self._repository.list_tech_stacks(user_id)]
 
+    def update_tech_stack(self, user_id: str, tech_stack_id: str, payload: dict) -> dict[str, object]:
+        tech_stack = self._repository.get_tech_stack(tech_stack_id, user_id)
+        if "name" in payload:
+            tech_stack.name = str(payload["name"]).strip() or tech_stack.name
+        if "category" in payload:
+            tech_stack.category = str(payload["category"]).strip() or tech_stack.category
+        if "proficiency" in payload:
+            tech_stack.proficiency = str(payload["proficiency"]).strip() or tech_stack.proficiency
+        if "description" in payload:
+            tech_stack.description = str(payload.get("description", ""))
+        if "tags" in payload:
+            tech_stack.tags = tuple(str(tag).strip() for tag in payload.get("tags", []) if str(tag).strip())
+        if "status" in payload:
+            tech_stack.status = str(payload["status"]).strip() or tech_stack.status
+        tech_stack.updated_at = local_now()
+        return self._repository.save_tech_stack(tech_stack).to_dict()
+
+    def archive_tech_stack(self, user_id: str, tech_stack_id: str) -> dict[str, object]:
+        tech_stack = self._repository.delete_tech_stack(tech_stack_id, user_id)
+        tech_stack.updated_at = local_now()
+        return tech_stack.to_dict()
+
     def tech_stack_detail(self, user_id: str, tech_stack_id: str, knowledge_summary: dict[str, object]) -> dict[str, object]:
         tech_stack = self._repository.get_tech_stack(tech_stack_id, user_id)
+        if tech_stack.status == "archived":
+            raise ValueError("Tech Stack is archived")
         related_documents = [
             document
             for document in knowledge_summary.get("documents", [])
@@ -83,13 +108,18 @@ class WorkService:
 
     def create_article(self, user_id: str, tech_stack_id: str, payload: dict) -> dict[str, object]:
         self._repository.get_tech_stack(tech_stack_id, user_id)
+        content = payload.get("content", "")
+        outline = payload.get("outline", "")
+        chapters = payload.get("chapters", [])
+        if chapters:
+            content = self._compose_article_content(content=content, outline=outline, chapters=chapters)
         article = WorkArticle(
             user_id=user_id,
             tech_stack_id=tech_stack_id,
             title=payload["title"],
             article_type=payload.get("articleType", "knowledge"),
             summary=payload.get("summary", ""),
-            content=payload.get("content", ""),
+            content=content,
             tags=tuple(payload.get("tags", [])),
             status=payload.get("status", "draft"),
         )
@@ -177,6 +207,20 @@ class WorkService:
             f"Evidence projects: {project_names}\n"
             "Draft rule: only use user-confirmed Work Planet evidence."
         )
+
+    def _compose_article_content(self, *, content: str, outline: str, chapters: list[object]) -> str:
+        blocks = []
+        if outline.strip():
+            blocks.append(f"## 大纲\n\n{outline.strip()}")
+        for index, chapter in enumerate(chapters, start=1):
+            if not isinstance(chapter, dict):
+                continue
+            title = str(chapter.get("title", "")).strip() or f"章节 {index}"
+            body = str(chapter.get("body", "")).strip()
+            blocks.append(f"## {title}\n\n{body}".strip())
+        if content.strip():
+            blocks.append(content.strip())
+        return "\n\n".join(block for block in blocks if block)
 
     def _resume_snippets(self, user_id: str, tech_stack_name: str) -> list[dict[str, object]]:
         snippets = []

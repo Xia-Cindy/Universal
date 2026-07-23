@@ -107,6 +107,62 @@ class WorkPlanetFoundationTests(unittest.TestCase):
 
         self.assertEqual([stack["id"] for stack in stacks], [java["id"], vue["id"]])
 
+    def test_tech_stack_can_be_updated_and_archived(self):
+        stack = self.api.create_work_tech_stack(
+            {"name": "Java", "category": "Backend", "proficiency": "learning"}
+        )
+
+        updated = self.api.update_work_tech_stack(
+            stack["id"],
+            {
+                "name": "Java Platform",
+                "category": "Backend Engineering",
+                "proficiency": "practicing",
+                "description": "JVM, Spring and production backend systems.",
+                "tags": ["jvm", "spring"],
+            },
+        )
+        archived = self.api.delete_work_tech_stack(stack["id"])
+        stacks = self.api.list_work_tech_stacks()
+
+        self.assertEqual(updated["name"], "Java Platform")
+        self.assertEqual(updated["category"], "Backend Engineering")
+        self.assertEqual(updated["tags"], ["jvm", "spring"])
+        self.assertEqual(archived["status"], "archived")
+        self.assertEqual(stacks, [])
+
+    def test_work_article_supports_outline_chapters_and_markdown_blocks(self):
+        stack = self.api.create_work_tech_stack(
+            {"name": "Java", "category": "Backend", "proficiency": "learning"}
+        )
+
+        article = self.api.create_work_article(
+            stack["id"],
+            {
+                "title": "Java Collection Notes",
+                "articleType": "knowledge",
+                "summary": "Collection usage notes.",
+                "outline": "- ArrayList\n- HashMap",
+                "chapters": [
+                    {
+                        "title": "List",
+                        "body": "| Type | Use |\n| --- | --- |\n| ArrayList | Read-heavy |\n\n```java\nList<String> names = new ArrayList<>();\n```",
+                    },
+                    {
+                        "title": "Map",
+                        "body": "![HashMap structure](https://example.com/hashmap.png)",
+                    },
+                ],
+                "tags": ["collection"],
+            },
+        )
+
+        self.assertIn("## 大纲", article["content"])
+        self.assertIn("## List", article["content"])
+        self.assertIn("| Type | Use |", article["content"])
+        self.assertIn("```java", article["content"])
+        self.assertIn("![HashMap structure]", article["content"])
+
     def test_csdn_community_parser_limits_to_30_articles(self):
         service = CSDNCommunityService()
         html = "".join(
@@ -159,6 +215,8 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn(("GET", "/api/work/knowledge/documents"), contracts)
         self.assertIn(("POST", "/api/work/knowledge/documents"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks"), contracts)
+        self.assertIn(("PATCH", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
+        self.assertIn(("DELETE", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
         self.assertIn(("GET", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/articles"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/learning-records"), contracts)
@@ -186,6 +244,17 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn("CSDN 社区热文", directory)
         self.assertIn("查看内容", directory)
         self.assertIn("fetchCSDNCommunityArticleDetail", directory)
+
+    def test_work_tech_stack_detail_has_management_and_article_builder(self):
+        detail = (PROJECT_ROOT / "frontend/src/planets/work/tech-stack/TechStackDetail.vue").read_text()
+
+        self.assertIn("Edit Stack", detail)
+        self.assertIn("Archive Stack", detail)
+        self.assertIn("Create Article", detail)
+        self.assertIn("插入表格", detail)
+        self.assertIn("插入图片", detail)
+        self.assertIn("插入代码块", detail)
+        self.assertIn("articleForm.chapters", detail)
 
 
 if __name__ == "__main__":
