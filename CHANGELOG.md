@@ -28,3 +28,4 @@
 - Knowledge Space metadata refinement: documents now support Planet scope, Work Tech Stack binding and tags, while RAGFlow uses separate datasets for different Study Goals.
 - Work Tech Stack content refinement: Tech Stacks now support owned articles and learning records, with directory-level content feed and resume evidence refs.
 - Work Tech Stack navigation refinement: stack tabs now use actual Tech Stack names, Community tab shows CSDN public articles, and Work articles are typed as Knowledge or Note.
+- Work Tech Stack directory workflow fix: Add Tech Stack now opens a modal, directory navigation uses a two-row category/stack structure, and the CSDN Community tab keeps 30 displayable discovery items when live fetch is unavailable.

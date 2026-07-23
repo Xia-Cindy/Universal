@@ -173,6 +173,9 @@
 - [x] Add Tech Stack-owned article writing and learning record capture.
 - [x] Add CSDN Community tab for public technology article discovery without auto-ingesting it into Knowledge.
 - [x] Keep Tech Stack tabs ordered by creation time and type Work articles as Knowledge or Note.
+- [x] Move Add Tech Stack into a modal form with only name and category required.
+- [x] Refine Tech Stack directory into category row plus stack row, with Community isolated from stack tabs.
+- [x] Keep CSDN Community display usable with 30 discovery items when live fetch is unavailable.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 

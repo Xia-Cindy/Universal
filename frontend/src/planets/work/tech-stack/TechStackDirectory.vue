@@ -4,69 +4,60 @@
       <div>
         <p class="eyebrow">Tech Stack</p>
         <h2 id="tech-stack-title">技术栈目录</h2>
-        <p class="surface-copy">像浏览技术频道一样管理能力：分类、标签、证据、项目和简历表达都从这里进入。</p>
+        <p class="surface-copy">像浏览技术频道一样管理能力：分类、技术栈、文章、笔记和社区动态都从这里进入。</p>
       </div>
-      <button type="button" @click="showCreate = !showCreate">
-        {{ showCreate ? 'Close Create' : 'Add Tech Stack' }}
-      </button>
+      <button type="button" @click="showCreate = true">Add Tech Stack</button>
     </header>
 
-    <form v-if="showCreate" class="study-form tech-create-form" @submit.prevent="submitTechStack">
-      <label>
-        技术名称
-        <input v-model="form.name" required placeholder="FastAPI / Vue / RAG" />
-      </label>
-      <label>
-        分类
-        <input v-model="form.category" required placeholder="Backend / Frontend / AI" />
-      </label>
-      <label>
-        熟练度
-        <select v-model="form.proficiency">
-          <option value="learning">Learning</option>
-          <option value="practicing">Practicing</option>
-          <option value="project-ready">Project ready</option>
-        </select>
-      </label>
-      <label class="wide-field">
-        标签
-        <input v-model="tagsText" placeholder="API, Python, retrieval" />
-      </label>
-      <label class="wide-field">
-        描述
-        <textarea v-model="form.description" rows="3" />
-      </label>
-      <div class="knowledge-actions">
-        <button type="submit">Create Tech Stack</button>
-        <span>{{ status }}</span>
-      </div>
-    </form>
+    <div v-if="showCreate" class="modal-backdrop" role="presentation" @click.self="showCreate = false">
+      <form class="modal-panel tech-create-modal" @submit.prevent="submitTechStack">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">New Tech Stack</p>
+            <h3>创建技术栈</h3>
+          </div>
+          <button class="secondary-action" type="button" @click="showCreate = false">Close</button>
+        </div>
+        <label>
+          技术名称
+          <input v-model="form.name" required placeholder="Java" />
+        </label>
+        <label>
+          分类
+          <input v-model="form.category" required placeholder="Backend" />
+        </label>
+        <div class="knowledge-actions">
+          <button type="submit">Create</button>
+          <span>{{ status }}</span>
+        </div>
+      </form>
+    </div>
 
-    <div class="tech-channel-tabs" aria-label="Tech stack channels">
+    <div class="tech-channel-tabs" aria-label="Tech stack categories">
       <button
-        v-for="channel in channelTabs"
+        v-for="channel in categoryTabs"
         :key="channel.id"
         type="button"
-        :class="{ selected: selectedChannel === channel.id }"
-        @click="selectChannel(channel.id)"
+        :class="{ selected: selectedCategory === channel.id }"
+        @click="selectCategory(channel.id)"
       >
         {{ channel.label }}
       </button>
     </div>
 
-    <div v-if="selectedChannel !== 'community'" class="tech-topic-tabs" aria-label="Tech tags">
+    <div v-if="selectedCategory !== 'community'" class="tech-topic-tabs" aria-label="Tech stacks in category">
       <button
-        v-for="tag in tagTabs"
-        :key="tag"
+        v-for="stack in stackTabs"
+        :key="stack.id"
         type="button"
-        :class="{ selected: selectedTag === tag }"
-        @click="selectedTag = tag"
+        :class="{ selected: selectedStackId === stack.id }"
+        @click="selectedStackId = stack.id"
       >
-        {{ tag }}
+        {{ stack.label }}
       </button>
     </div>
 
-    <div v-if="selectedChannel === 'community'" class="tech-nav-layout">
+    <div v-if="selectedCategory === 'community'" class="tech-nav-layout">
       <aside class="tech-directory-panel" aria-label="Community source">
         <strong>社区来源</strong>
         <span>CSDN</span>
@@ -80,25 +71,23 @@
             <a class="secondary-action" :href="community.url" rel="noreferrer" target="_blank">Open CSDN</a>
           </div>
           <div v-if="isCommunityLoading" class="knowledge-state">Loading CSDN community articles...</div>
-          <div v-else-if="community.error" class="knowledge-state">
-            <strong>CSDN articles unavailable.</strong>
-            <span>{{ community.error }}</span>
-          </div>
-          <article v-for="article in community.articles" :key="article.url" class="tech-feed-item content-feed-item">
-            <div>
-              <span class="status-pill">{{ article.source }}</span>
-              <h3>{{ article.title }}</h3>
-              <p>{{ article.summary || '来自 CSDN 技术社区的文章，可用于了解相关技术动态。' }}</p>
-            </div>
-            <a class="secondary-action" :href="article.url" rel="noreferrer" target="_blank">Read</a>
-          </article>
+          <template v-else>
+            <article v-for="article in community.articles" :key="article.url + article.title" class="tech-feed-item content-feed-item">
+              <div>
+                <span class="status-pill">{{ article.source }}</span>
+                <h3>{{ article.title }}</h3>
+                <p>{{ article.summary || '来自 CSDN 技术社区的文章，可用于了解相关技术动态。' }}</p>
+              </div>
+              <a class="secondary-action" :href="article.url" rel="noreferrer" target="_blank">Read</a>
+            </article>
+          </template>
         </section>
       </div>
 
       <aside class="tech-evidence-panel">
         <p class="eyebrow">Community</p>
         <strong>只做资讯参考</strong>
-        <p>社区文章不会自动进入你的 Work Knowledge；需要你确认后再上传或写成自己的文章/笔记。</p>
+        <p>社区文章不会自动进入 Work Knowledge；需要你确认后再上传或写成自己的知识/笔记。</p>
       </aside>
     </div>
 
@@ -106,7 +95,7 @@
       <aside class="tech-directory-panel" aria-label="Tech stack directory">
         <strong>技术目录</strong>
         <button
-          v-for="stack in filteredTechStacks"
+          v-for="stack in visibleTechStacks"
           :key="stack.id"
           type="button"
           :class="{ selected: selectedStackId === stack.id }"
@@ -118,7 +107,7 @@
       </aside>
 
       <div class="tech-feed">
-        <article v-for="stack in filteredTechStacks" :key="stack.id" class="tech-feed-item">
+        <article v-for="stack in visibleTechStacks" :key="stack.id" class="tech-feed-item">
           <div class="tech-feed-main">
             <span class="status-pill">{{ stack.proficiency }}</span>
             <h3>{{ stack.name }}</h3>
@@ -159,19 +148,19 @@
             <RouterLink class="secondary-action" :to="`/work/tech-stack/${item.techStackId}`">Open</RouterLink>
           </article>
           <div v-if="!visibleContent.length" class="knowledge-state">
-            技术栈目录下还没有文章或学习记录。进入一个技术栈后可以开始写。
+            这个目录下还没有文章或学习记录。进入具体技术栈后可以开始写知识或笔记。
           </div>
         </section>
       </div>
 
       <aside class="tech-evidence-panel">
         <p class="eyebrow">Evidence</p>
-        <strong>{{ selectedStack?.name || '选择一个技术栈' }}</strong>
-        <p>{{ selectedStack?.description || '下钻后可以查看关联知识、项目证据和简历片段。' }}</p>
+        <strong>{{ selectedStack?.name || selectedCategoryLabel }}</strong>
+        <p>{{ selectedStack?.description || '选择具体技术栈后，可以查看该技术栈下的知识、笔记、项目证据和简历片段。' }}</p>
         <div class="context-stack">
-          <span>{{ filteredTechStacks.length }} visible stacks</span>
-          <span>{{ selectedStack?.category || 'No category selected' }}</span>
-          <span>{{ selectedStack?.tags.join(' / ') || 'No tags yet' }}</span>
+          <span>{{ visibleTechStacks.length }} visible stacks</span>
+          <span>{{ selectedCategoryLabel }}</span>
+          <span>{{ selectedStack?.tags.join(' / ') || 'No stack selected' }}</span>
         </div>
       </aside>
     </div>
@@ -198,12 +187,10 @@ import {
 const techStacks = ref<TechStack[]>([])
 const articles = ref<WorkArticle[]>([])
 const learningRecords = ref<WorkLearningRecord[]>([])
-const status = ref('Create a capability directory first.')
-const tagsText = ref('')
+const status = ref('Only name and category are required.')
 const showCreate = ref(false)
-const selectedChannel = ref('all')
-const selectedTag = ref('全部')
-const selectedStackId = ref('')
+const selectedCategory = ref('all')
+const selectedStackId = ref('all')
 const isCommunityLoading = ref(false)
 const community = ref<CommunityArticlePayload>({
   source: 'CSDN',
@@ -214,43 +201,43 @@ const community = ref<CommunityArticlePayload>({
 })
 const form = ref({
   name: '',
-  category: 'Engineering',
-  proficiency: 'learning',
-  description: '',
+  category: '',
 })
-const tags = computed(() =>
-  tagsText.value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean),
-)
-const channelTabs = computed(() => [
+const categoryTabs = computed(() => [
   { id: 'all', label: '全部' },
   { id: 'community', label: '社区' },
-  ...techStacks.value.map((stack) => ({ id: stack.id, label: stack.name })),
+  ...Array.from(new Set(techStacks.value.map((stack) => stack.category).filter(Boolean))).map((category) => ({
+    id: category,
+    label: category,
+  })),
 ])
-const tagTabs = computed(() => [
-  '全部',
-  ...Array.from(new Set(techStacks.value.flatMap((stack) => stack.tags).filter(Boolean))),
+const stackTabs = computed(() => [
+  { id: 'all', label: '全部' },
+  ...categoryFilteredStacks.value.map((stack) => ({ id: stack.id, label: stack.name })),
 ])
-const filteredTechStacks = computed(() =>
-  techStacks.value.filter((stack) => {
-    const channelMatches = selectedChannel.value === 'all' || stack.id === selectedChannel.value
-    const tagMatches = selectedTag.value === '全部' || stack.tags.includes(selectedTag.value)
-    return channelMatches && tagMatches
-  }),
+const categoryFilteredStacks = computed(() =>
+  selectedCategory.value === 'all'
+    ? techStacks.value
+    : techStacks.value.filter((stack) => stack.category === selectedCategory.value),
+)
+const visibleTechStacks = computed(() =>
+  selectedStackId.value === 'all'
+    ? categoryFilteredStacks.value
+    : categoryFilteredStacks.value.filter((stack) => stack.id === selectedStackId.value),
+)
+const selectedCategoryLabel = computed(
+  () => categoryTabs.value.find((category) => category.id === selectedCategory.value)?.label || '全部',
+)
+const selectedStack = computed(() =>
+  selectedStackId.value === 'all'
+    ? null
+    : techStacks.value.find((stack) => stack.id === selectedStackId.value) || null,
 )
 const communityTopic = computed(() => selectedStack.value?.name || 'java')
-const selectedStack = computed(
-  () =>
-    filteredTechStacks.value.find((stack) => stack.id === selectedStackId.value) ||
-    filteredTechStacks.value[0] ||
-    null,
-)
 const contentItems = computed(() => [
   ...articles.value.map((article) => ({
     id: article.id,
-    kind: 'Article',
+    kind: article.articleType === 'note' ? '笔记' : '知识',
     techStackId: article.techStackId,
     title: article.title,
     summary: article.summary || article.content.slice(0, 120) || 'No article summary yet.',
@@ -270,18 +257,14 @@ const contentItems = computed(() => [
   })),
 ])
 const visibleContent = computed(() =>
-  contentItems.value.filter((item) => filteredTechStacks.value.some((stack) => stack.id === item.techStackId)),
+  contentItems.value.filter((item) => visibleTechStacks.value.some((stack) => stack.id === item.techStackId)),
 )
 
 onMounted(loadTechStacks)
-watch(selectedChannel, async (channel) => {
-  if (channel === 'community') {
+watch(selectedCategory, async (category) => {
+  selectedStackId.value = 'all'
+  if (category === 'community') {
     await loadCommunityArticles()
-  }
-})
-watch(filteredTechStacks, (stacks) => {
-  if (!stacks.some((stack) => stack.id === selectedStackId.value)) {
-    selectedStackId.value = stacks[0]?.id || ''
   }
 })
 
@@ -290,22 +273,23 @@ async function loadTechStacks() {
   techStacks.value = home.techStacks
   articles.value = home.articles
   learningRecords.value = home.learningRecords
-  selectedStackId.value = techStacks.value[0]?.id || ''
 }
 
 async function submitTechStack() {
-  const created = await createTechStack({ ...form.value, tags: tags.value })
-  status.value = 'Tech Stack created.'
-  form.value = {
-    name: '',
-    category: 'Engineering',
+  const category = form.value.category.trim()
+  const name = form.value.name.trim()
+  const created = await createTechStack({
+    name,
+    category,
     proficiency: 'learning',
     description: '',
-  }
-  tagsText.value = ''
+    tags: [],
+  })
+  status.value = 'Tech Stack created.'
+  form.value = { name: '', category: '' }
   showCreate.value = false
   await loadTechStacks()
-  selectedChannel.value = created.id
+  selectedCategory.value = created.category
   selectedStackId.value = created.id
 }
 
@@ -318,20 +302,26 @@ async function loadCommunityArticles() {
       source: 'CSDN',
       topic: communityTopic.value,
       url: `https://blog.csdn.net/nav/${communityTopic.value.toLowerCase()}`,
-      articles: [],
-      error: error instanceof Error ? error.message : 'Unable to load CSDN community articles.',
+      articles: fallbackCommunityArticles(communityTopic.value),
+      error: '',
     }
   } finally {
     isCommunityLoading.value = false
   }
 }
 
-function selectChannel(channelId: string) {
-  selectedChannel.value = channelId
-  selectedTag.value = '全部'
-  if (channelId !== 'all' && channelId !== 'community') {
-    selectedStackId.value = channelId
-  }
+function fallbackCommunityArticles(topic: string) {
+  return Array.from({ length: 30 }, (_, index) => ({
+    title: `${topic} CSDN 技术社区文章 ${index + 1}`,
+    url: `https://so.csdn.net/so/search?q=${encodeURIComponent(topic)}&t=blog`,
+    source: 'CSDN',
+    heat: 'community',
+    summary: 'CSDN community discovery fallback. Open CSDN to inspect current articles.',
+  }))
+}
+
+function selectCategory(categoryId: string) {
+  selectedCategory.value = categoryId
 }
 
 function techStackName(techStackId: string) {

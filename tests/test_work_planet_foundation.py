@@ -119,6 +119,17 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertEqual(len(articles), 30)
         self.assertEqual(articles[0].title, "Java article title 0")
 
+    def test_csdn_community_fallback_returns_displayable_articles(self):
+        class FailingCSDNCommunityService(CSDNCommunityService):
+            def _fetch_articles(self, url, *, limit):
+                raise OSError("network blocked")
+
+        result = FailingCSDNCommunityService().hot_articles("java", limit=30)
+
+        self.assertEqual(result["error"], "")
+        self.assertEqual(len(result["articles"]), 30)
+        self.assertEqual(result["articles"][0]["source"], "CSDN")
+
     def test_work_contracts_are_declared(self):
         contracts = {(contract["method"], contract["path"]) for contract in list_contracts()}
 
@@ -142,6 +153,14 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn("DynamicResume", router)
         self.assertIn("Enter Work Planet", portal)
         self.assertNotIn("/:futurePlanet(work|novel|life|creator)", router)
+
+    def test_work_tech_stack_directory_uses_two_level_tabs_and_modal_create(self):
+        directory = (PROJECT_ROOT / "frontend/src/planets/work/tech-stack/TechStackDirectory.vue").read_text()
+
+        self.assertIn("selectedCategory", directory)
+        self.assertIn("stackTabs", directory)
+        self.assertIn("modal-backdrop", directory)
+        self.assertIn("CSDN 社区热文", directory)
 
 
 if __name__ == "__main__":

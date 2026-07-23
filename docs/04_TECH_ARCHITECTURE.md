@@ -1566,6 +1566,11 @@ Implemented after Work Planet foundation:
 - Work articles are typed as `knowledge` or `note`.
 - Tech Stack directory navigation uses actual Tech Stack names in creation order.
 - Work Community tab reads public CSDN topic articles as discovery material only.
+- Tech Stack directory navigation is now two-level:
+  - first row: category scope such as `全部`, `社区`, or user-created categories;
+  - second row: concrete Tech Stacks under the selected category.
+- Add Tech Stack opens a modal form and only requires name and category.
+- If live CSDN fetching is unavailable, the backend returns 30 CSDN discovery fallback items instead of exposing an unavailable state to the user.
 - Dynamic Resume evidence refs can include articles and learning records.
 
 Not changed:

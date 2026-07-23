@@ -153,6 +153,8 @@ Work Tech Stack directories now support article writing and learning records, so
 
 The Work Tech Stack page includes a Community tab for reading public CSDN topic articles. Community articles are discovery material only; they are not automatically imported into Work Knowledge.
 
+The Tech Stack directory uses a two-row navigation pattern: first choose a category such as `全部` or `社区`, then choose a concrete Tech Stack inside that category. Creating a Tech Stack opens a modal form and does not move the directory layout.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run
