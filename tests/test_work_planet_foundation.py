@@ -129,6 +129,28 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertEqual(result["error"], "")
         self.assertEqual(len(result["articles"]), 30)
         self.assertEqual(result["articles"][0]["source"], "CSDN")
+        self.assertIn("content", result["articles"][0])
+
+    def test_csdn_community_article_detail_parses_inline_content(self):
+        service = CSDNCommunityService()
+        html = """
+        <html>
+          <head><title>Java Inline Reader-CSDN博客</title></head>
+          <body>
+            <article>
+              <h1>Java Inline Reader</h1>
+              <p>Use Java records to model immutable response payloads.</p>
+              <p>Keep infrastructure reading outside Work business logic.</p>
+            </article>
+          </body>
+        </html>
+        """
+
+        detail = service.parse_article_detail(html, url="https://blog.csdn.net/demo/article/details/1")
+
+        self.assertEqual(detail["title"], "Java Inline Reader")
+        self.assertIn("immutable response payloads", detail["content"])
+        self.assertIn("outside Work business logic", detail["content"])
 
     def test_work_contracts_are_declared(self):
         contracts = {(contract["method"], contract["path"]) for contract in list_contracts()}
@@ -141,6 +163,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/articles"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/learning-records"), contracts)
         self.assertIn(("GET", "/api/work/community/csdn"), contracts)
+        self.assertIn(("GET", "/api/work/community/csdn/article"), contracts)
         self.assertIn(("POST", "/api/work/resumes/draft"), contracts)
 
     def test_work_frontend_routes_exist(self):
@@ -161,6 +184,8 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn("stackTabs", directory)
         self.assertIn("modal-backdrop", directory)
         self.assertIn("CSDN 社区热文", directory)
+        self.assertIn("查看内容", directory)
+        self.assertIn("fetchCSDNCommunityArticleDetail", directory)
 
 
 if __name__ == "__main__":

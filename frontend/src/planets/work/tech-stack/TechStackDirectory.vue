@@ -37,9 +37,12 @@
       <button
         v-for="channel in categoryTabs"
         :key="channel.id"
+        :data-category-id="channel.id"
         type="button"
         :class="{ selected: selectedCategory === channel.id }"
-        @click="selectCategory(channel.id)"
+        @keydown.enter.prevent="selectCategory(channel.id)"
+        @keydown.space.prevent="selectCategory(channel.id)"
+        @pointerdown.prevent.stop="selectCategory(channel.id)"
       >
         {{ channel.label }}
       </button>
@@ -49,9 +52,12 @@
       <button
         v-for="stack in stackTabs"
         :key="stack.id"
+        :data-stack-id="stack.id"
         type="button"
         :class="{ selected: selectedStackId === stack.id }"
-        @click="selectedStackId = stack.id"
+        @keydown.enter.prevent="selectedStackId = stack.id"
+        @keydown.space.prevent="selectedStackId = stack.id"
+        @pointerdown.prevent.stop="selectedStackId = stack.id"
       >
         {{ stack.label }}
       </button>
@@ -68,17 +74,32 @@
         <section class="tech-content-stream" aria-labelledby="community-title">
           <div class="section-heading">
             <h3 id="community-title">CSDN 社区热文</h3>
-            <a class="secondary-action" :href="community.url" rel="noreferrer" target="_blank">Open CSDN</a>
+            <span>{{ communityArticles.length }} articles</span>
           </div>
           <div v-if="isCommunityLoading" class="knowledge-state">Loading CSDN community articles...</div>
           <template v-else>
-            <article v-for="article in community.articles" :key="article.url + article.title" class="tech-feed-item content-feed-item">
+            <article v-for="article in communityArticles" :key="article.url + article.title" class="tech-feed-item content-feed-item">
               <div>
                 <span class="status-pill">{{ article.source }}</span>
                 <h3>{{ article.title }}</h3>
                 <p>{{ article.summary || '来自 CSDN 技术社区的文章，可用于了解相关技术动态。' }}</p>
+                <div v-if="expandedArticleKey === articleKey(article)" class="community-reader">
+                  <strong>正文预览</strong>
+                  <p v-if="articleDetailStatus[articleKey(article)] === 'loading'">正在读取文章内容...</p>
+                  <p v-else-if="articleDetails[articleKey(article)]?.content" class="community-reader-body">
+                    {{ articleDetails[articleKey(article)]?.content }}
+                  </p>
+                  <p v-else class="community-reader-body">
+                    {{ article.content || article.summary || '当前本地服务没有读取到这篇文章的正文。' }}
+                  </p>
+                  <small v-if="articleDetails[articleKey(article)]?.error">
+                    {{ articleDetails[articleKey(article)]?.error }}
+                  </small>
+                </div>
               </div>
-              <a class="secondary-action" :href="article.url" rel="noreferrer" target="_blank">Read</a>
+              <button class="secondary-action" type="button" @click="toggleArticle(article)">
+                {{ expandedArticleKey === articleKey(article) ? '收起' : '查看内容' }}
+              </button>
             </article>
           </template>
         </section>
@@ -114,12 +135,12 @@
             <p>{{ stack.description || '补充这个技术栈的学习资料、项目证据和简历表达。' }}</p>
             <div class="tech-meta-row">
               <span>{{ stack.category }}</span>
-              <span>{{ stack.tags.length }} tags</span>
+              <span>{{ (stack.tags || []).length }} tags</span>
               <span>{{ stack.status }}</span>
             </div>
             <div class="tech-tag-row">
-              <span v-for="tag in stack.tags" :key="tag">{{ tag }}</span>
-              <span v-if="!stack.tags.length">No tags yet</span>
+              <span v-for="tag in stack.tags || []" :key="tag">{{ tag }}</span>
+              <span v-if="!(stack.tags || []).length">No tags yet</span>
             </div>
           </div>
           <RouterLink class="secondary-action" :to="`/work/tech-stack/${stack.id}`">Open Stack</RouterLink>
@@ -141,8 +162,8 @@
                 <span>{{ item.status }}</span>
               </div>
               <div class="tech-tag-row">
-                <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
-                <span v-if="!item.tags.length">No tags yet</span>
+                <span v-for="tag in item.tags || []" :key="tag">{{ tag }}</span>
+                <span v-if="!(item.tags || []).length">No tags yet</span>
               </div>
             </div>
             <RouterLink class="secondary-action" :to="`/work/tech-stack/${item.techStackId}`">Open</RouterLink>
@@ -160,7 +181,7 @@
         <div class="context-stack">
           <span>{{ visibleTechStacks.length }} visible stacks</span>
           <span>{{ selectedCategoryLabel }}</span>
-          <span>{{ selectedStack?.tags.join(' / ') || 'No stack selected' }}</span>
+          <span>{{ selectedStack?.tags?.join(' / ') || 'No stack selected' }}</span>
         </div>
       </aside>
     </div>
@@ -176,8 +197,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import {
   createTechStack,
+  fetchCSDNCommunityArticleDetail,
   fetchCSDNCommunityArticles,
   fetchWorkHome,
+  type CommunityArticle,
+  type CommunityArticleDetail,
   type CommunityArticlePayload,
   type TechStack,
   type WorkArticle,
@@ -192,6 +216,10 @@ const showCreate = ref(false)
 const selectedCategory = ref('all')
 const selectedStackId = ref('all')
 const isCommunityLoading = ref(false)
+const expandedArticleKey = ref('')
+const articleDetails = ref<Record<string, CommunityArticleDetail>>({})
+const articleDetailStatus = ref<Record<string, 'idle' | 'loading' | 'done'>>({})
+let communityRequestId = 0
 const community = ref<CommunityArticlePayload>({
   source: 'CSDN',
   topic: 'java',
@@ -203,10 +231,12 @@ const form = ref({
   name: '',
   category: '',
 })
+const techStackList = computed(() => (Array.isArray(techStacks.value) ? techStacks.value : []))
+const communityArticles = computed(() => (Array.isArray(community.value.articles) ? community.value.articles : []))
 const categoryTabs = computed(() => [
   { id: 'all', label: '全部' },
   { id: 'community', label: '社区' },
-  ...Array.from(new Set(techStacks.value.map((stack) => stack.category).filter(Boolean))).map((category) => ({
+  ...Array.from(new Set(techStackList.value.map((stack) => stack.category).filter(Boolean))).map((category) => ({
     id: category,
     label: category,
   })),
@@ -217,8 +247,8 @@ const stackTabs = computed(() => [
 ])
 const categoryFilteredStacks = computed(() =>
   selectedCategory.value === 'all'
-    ? techStacks.value
-    : techStacks.value.filter((stack) => stack.category === selectedCategory.value),
+    ? techStackList.value
+    : techStackList.value.filter((stack) => stack.category === selectedCategory.value),
 )
 const visibleTechStacks = computed(() =>
   selectedStackId.value === 'all'
@@ -231,7 +261,7 @@ const selectedCategoryLabel = computed(
 const selectedStack = computed(() =>
   selectedStackId.value === 'all'
     ? null
-    : techStacks.value.find((stack) => stack.id === selectedStackId.value) || null,
+    : techStackList.value.find((stack) => stack.id === selectedStackId.value) || null,
 )
 const communityTopic = computed(() => selectedStack.value?.name || 'java')
 const contentItems = computed(() => [
@@ -241,7 +271,7 @@ const contentItems = computed(() => [
     techStackId: article.techStackId,
     title: article.title,
     summary: article.summary || article.content.slice(0, 120) || 'No article summary yet.',
-    tags: article.tags,
+    tags: article.tags || [],
     status: article.status,
     minutes: 0,
   })),
@@ -251,7 +281,7 @@ const contentItems = computed(() => [
     techStackId: record.techStackId,
     title: record.title,
     summary: record.notes || 'No record notes yet.',
-    tags: record.tags,
+    tags: record.tags || [],
     status: record.status,
     minutes: record.minutes,
   })),
@@ -261,18 +291,18 @@ const visibleContent = computed(() =>
 )
 
 onMounted(loadTechStacks)
-watch(selectedCategory, async (category) => {
+watch(selectedCategory, (category) => {
   selectedStackId.value = 'all'
   if (category === 'community') {
-    await loadCommunityArticles()
+    void loadCommunityArticles()
   }
 })
 
 async function loadTechStacks() {
   const home = await fetchWorkHome()
-  techStacks.value = home.techStacks
-  articles.value = home.articles
-  learningRecords.value = home.learningRecords
+  techStacks.value = Array.isArray(home.techStacks) ? home.techStacks : []
+  articles.value = Array.isArray(home.articles) ? home.articles : []
+  learningRecords.value = Array.isArray(home.learningRecords) ? home.learningRecords : []
 }
 
 async function submitTechStack() {
@@ -294,19 +324,27 @@ async function submitTechStack() {
 }
 
 async function loadCommunityArticles() {
+  const requestId = ++communityRequestId
   isCommunityLoading.value = true
   try {
-    community.value = await fetchCSDNCommunityArticles(communityTopic.value)
+    const result = await fetchCSDNCommunityArticles(communityTopic.value)
+    if (requestId === communityRequestId) {
+      community.value = result
+    }
   } catch (error) {
-    community.value = {
-      source: 'CSDN',
-      topic: communityTopic.value,
-      url: `https://blog.csdn.net/nav/${communityTopic.value.toLowerCase()}`,
-      articles: fallbackCommunityArticles(communityTopic.value),
-      error: '',
+    if (requestId === communityRequestId) {
+      community.value = {
+        source: 'CSDN',
+        topic: communityTopic.value,
+        url: `https://blog.csdn.net/nav/${communityTopic.value.toLowerCase()}`,
+        articles: fallbackCommunityArticles(communityTopic.value),
+        error: '',
+      }
     }
   } finally {
-    isCommunityLoading.value = false
+    if (requestId === communityRequestId) {
+      isCommunityLoading.value = false
+    }
   }
 }
 
@@ -316,15 +354,56 @@ function fallbackCommunityArticles(topic: string) {
     url: `https://so.csdn.net/so/search?q=${encodeURIComponent(topic)}&t=blog`,
     source: 'CSDN',
     heat: 'community',
-    summary: 'CSDN community discovery fallback. Open CSDN to inspect current articles.',
+    summary: 'CSDN community discovery fallback. 本地无法读取实时正文时，先保留这个社区发现入口。',
+    content: '当前本地服务没有拿到 CSDN 实时正文。这条内容用于占位展示社区发现流，后续网络可用时会替换成实际文章预览。',
   }))
 }
 
 function selectCategory(categoryId: string) {
   selectedCategory.value = categoryId
+  if (categoryId !== 'community') {
+    communityRequestId += 1
+    isCommunityLoading.value = false
+  }
+  expandedArticleKey.value = ''
+}
+
+async function toggleArticle(article: CommunityArticle) {
+  const key = articleKey(article)
+  if (expandedArticleKey.value === key) {
+    expandedArticleKey.value = ''
+    return
+  }
+  expandedArticleKey.value = key
+  if (articleDetails.value[key] || article.content) {
+    return
+  }
+  articleDetailStatus.value = { ...articleDetailStatus.value, [key]: 'loading' }
+  try {
+    articleDetails.value = {
+      ...articleDetails.value,
+      [key]: await fetchCSDNCommunityArticleDetail(article.url),
+    }
+  } catch (error) {
+    articleDetails.value = {
+      ...articleDetails.value,
+      [key]: {
+        title: article.title,
+        url: article.url,
+        content: '',
+        error: error instanceof Error ? error.message : 'Unable to load article content.',
+      },
+    }
+  } finally {
+    articleDetailStatus.value = { ...articleDetailStatus.value, [key]: 'done' }
+  }
+}
+
+function articleKey(article: CommunityArticle) {
+  return `${article.url}:${article.title}`
 }
 
 function techStackName(techStackId: string) {
-  return techStacks.value.find((stack) => stack.id === techStackId)?.name || 'Linked Tech Stack'
+  return techStackList.value.find((stack) => stack.id === techStackId)?.name || 'Linked Tech Stack'
 }
 </script>

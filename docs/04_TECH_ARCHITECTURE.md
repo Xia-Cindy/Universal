@@ -1571,6 +1571,8 @@ Implemented after Work Planet foundation:
   - second row: concrete Tech Stacks under the selected category.
 - Add Tech Stack opens a modal form and only requires name and category.
 - If live CSDN fetching is unavailable, the backend returns 30 CSDN discovery fallback items instead of exposing an unavailable state to the user.
+- Work Community article detail reading is exposed through `GET /api/work/community/csdn/article` and rendered inline in the Work frontend.
+- Community loading is non-blocking so users can return to `全部` or another category without waiting for CSDN.
 - Dynamic Resume evidence refs can include articles and learning records.
 
 Not changed:

@@ -253,6 +253,7 @@ export interface CommunityArticle {
   source: string
   heat: string
   summary: string
+  content: string
 }
 
 export interface CommunityArticlePayload {
@@ -260,6 +261,13 @@ export interface CommunityArticlePayload {
   topic: string
   url: string
   articles: CommunityArticle[]
+  error: string
+}
+
+export interface CommunityArticleDetail {
+  title: string
+  url: string
+  content: string
   error: string
 }
 
@@ -322,6 +330,15 @@ export async function fetchCSDNCommunityArticles(topic = 'java'): Promise<Commun
   const response = await fetch(`${API_BASE}/work/community/csdn?${params.toString()}`)
   if (!response.ok) {
     throw new Error('Unable to load CSDN community articles')
+  }
+  return response.json()
+}
+
+export async function fetchCSDNCommunityArticleDetail(url: string): Promise<CommunityArticleDetail> {
+  const params = new URLSearchParams({ url })
+  const response = await fetch(`${API_BASE}/work/community/csdn/article?${params.toString()}`)
+  if (!response.ok) {
+    throw new Error('Unable to load CSDN article content')
   }
   return response.json()
 }

@@ -1,6 +1,7 @@
 import html
 import re
 from dataclasses import dataclass
+from urllib.parse import urlparse
 from urllib import error, request
 
 
@@ -11,6 +12,7 @@ class CommunityArticle:
     source: str = "CSDN"
     heat: str = ""
     summary: str = ""
+    content: str = ""
 
     def to_dict(self) -> dict[str, str]:
         return {
@@ -19,6 +21,7 @@ class CommunityArticle:
             "source": self.source,
             "heat": self.heat,
             "summary": self.summary,
+            "content": self.content,
         }
 
 
@@ -71,6 +74,25 @@ class CSDNCommunityService:
             raise ValueError("CSDN community page did not expose article cards")
         return articles
 
+    def article_detail(self, url: str) -> dict[str, str]:
+        if not self._is_csdn_article_url(url):
+            return {
+                "title": "",
+                "url": url,
+                "content": "",
+                "error": "Only CSDN article detail pages can be read inside Universe OS.",
+            }
+        try:
+            content = self._fetch_html(url)
+            return {**self.parse_article_detail(content, url=url), "error": ""}
+        except (OSError, ValueError) as exc:
+            return {
+                "title": "",
+                "url": url,
+                "content": "",
+                "error": str(exc),
+            }
+
     def parse_articles(self, content: str, *, limit: int = 30) -> list[CommunityArticle]:
         candidates: list[CommunityArticle] = []
         seen: set[str] = set()
@@ -91,6 +113,23 @@ class CSDNCommunityService:
             if len(candidates) >= limit:
                 break
         return candidates
+
+    def parse_article_detail(self, content: str, *, url: str) -> dict[str, str]:
+        title = self._extract_title(content)
+        article_match = re.search(
+            r'<article[^>]*>(.*?)</article>|<div[^>]+(?:id|class)="[^"]*(?:content_views|article_content|blog-content-box)[^"]*"[^>]*>(.*?)</div>',
+            content,
+            re.S | re.I,
+        )
+        raw_body = next((group for group in article_match.groups() if group), "") if article_match else content
+        text = self._html_to_text(raw_body)
+        if not text:
+            raise ValueError("CSDN article content is unavailable for inline reading")
+        return {
+            "title": title,
+            "url": url,
+            "content": text[:3000],
+        }
 
     def _fallback_articles(self, topic: str, limit: int) -> list[CommunityArticle]:
         seeds = [
@@ -115,10 +154,44 @@ class CSDNCommunityService:
                     title=f"{title}{suffix}",
                     url=search_url,
                     heat="community",
-                    summary="CSDN community discovery fallback. Open CSDN to inspect current articles.",
+                    summary="CSDN community discovery fallback. 本地无法读取实时正文时，先保留这个社区发现入口。",
+                    content="当前本地服务没有拿到 CSDN 实时正文。这条内容用于占位展示社区发现流，后续网络可用时会替换成实际文章预览。",
                 )
             )
         return articles
+
+    def _fetch_html(self, url: str) -> str:
+        req = request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 UniverseOS/0.1",
+                "Accept": "text/html,application/xhtml+xml",
+            },
+        )
+        try:
+            with request.urlopen(req, timeout=self._timeout_seconds) as response:
+                return response.read().decode("utf-8", errors="replace")
+        except error.URLError as exc:
+            raise OSError(f"CSDN article fetch failed: {exc.reason}") from exc
+
+    def _extract_title(self, content: str) -> str:
+        title_match = re.search(r"<h1[^>]*>(.*?)</h1>", content, re.S | re.I)
+        if not title_match:
+            title_match = re.search(r"<title[^>]*>(.*?)</title>", content, re.S | re.I)
+        if not title_match:
+            return ""
+        return self._html_to_text(title_match.group(1)).replace("-CSDN博客", "").strip()
+
+    def _html_to_text(self, content: str) -> str:
+        cleaned = re.sub(r"<script[^>]*>.*?</script>|<style[^>]*>.*?</style>", " ", content, flags=re.S | re.I)
+        cleaned = re.sub(r"<br\s*/?>|</p>|</div>|</h\d>|</li>", "\n", cleaned, flags=re.I)
+        cleaned = re.sub(r"<[^>]+>", " ", cleaned)
+        lines = [" ".join(html.unescape(line).split()) for line in cleaned.splitlines()]
+        return "\n".join(line for line in lines if line)
+
+    def _is_csdn_article_url(self, url: str) -> bool:
+        parsed = urlparse(url)
+        return parsed.scheme in {"http", "https"} and parsed.netloc.endswith("csdn.net") and "/article/details/" in parsed.path
 
     def _normalize_topic(self, topic: str) -> str:
         normalized = topic.strip().lower().replace(" ", "")

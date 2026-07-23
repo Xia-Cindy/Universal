@@ -159,6 +159,7 @@ MILESTONE_10_CONTRACTS: tuple[ApiContract, ...] = (
         "milestone_10",
     ),
     ApiContract("GET", "/api/work/community/csdn", "work_community_csdn", "milestone_10"),
+    ApiContract("GET", "/api/work/community/csdn/article", "work_community_csdn_article", "milestone_10"),
     ApiContract("GET", "/api/work/projects", "list_work_projects", "milestone_10"),
     ApiContract("POST", "/api/work/projects", "create_work_project", "milestone_10"),
     ApiContract("GET", "/api/work/resumes", "list_work_resumes", "milestone_10"),

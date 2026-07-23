@@ -176,6 +176,8 @@
 - [x] Move Add Tech Stack into a modal form with only name and category required.
 - [x] Refine Tech Stack directory into category row plus stack row, with Community isolated from stack tabs.
 - [x] Keep CSDN Community display usable with 30 discovery items when live fetch is unavailable.
+- [x] Add inline CSDN article reading inside Work Planet without requiring a jump to CSDN.
+- [x] Keep category switching usable while Community articles are loading.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 

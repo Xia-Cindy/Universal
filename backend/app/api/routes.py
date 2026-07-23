@@ -177,6 +177,10 @@ class ApiFacade:
         self.registry.get_enterable_planet("work")
         return self.work_community.hot_articles(topic=topic, limit=30)
 
+    def get_work_community_article_detail(self, url: str) -> dict[str, str]:
+        self.registry.get_enterable_planet("work")
+        return self.work_community.article_detail(url)
+
     def list_work_projects(self) -> list[dict[str, object]]:
         user = self.users.current_user()
         return self.work.list_projects(user.id)

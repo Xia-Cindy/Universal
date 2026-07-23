@@ -155,6 +155,8 @@ The Work Tech Stack page includes a Community tab for reading public CSDN topic 
 
 The Tech Stack directory uses a two-row navigation pattern: first choose a category such as `全部` or `社区`, then choose a concrete Tech Stack inside that category. Creating a Tech Stack opens a modal form and does not move the directory layout.
 
+CSDN Community articles can be expanded inline inside Work Planet. The backend keeps CSDN access behind Universe APIs; community content is still discovery material and is not automatically saved into Work Knowledge.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run

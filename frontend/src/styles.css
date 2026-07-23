@@ -1596,6 +1596,8 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  position: relative;
+  z-index: 2;
 }
 
 .tech-channel-tabs {
@@ -1702,6 +1704,30 @@ textarea {
 
 .content-feed-item {
   background: #fff;
+}
+
+.community-reader {
+  background: #f8fbfc;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.community-reader strong {
+  color: #131923;
+}
+
+.community-reader small {
+  color: #8a5a18;
+}
+
+.community-reader-body {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-line;
 }
 
 .tech-feed-item h3 {
