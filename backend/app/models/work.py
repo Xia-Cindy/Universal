@@ -70,6 +70,7 @@ class WorkArticle:
     tech_stack_id: str
     title: str
     content: str
+    article_type: str = "knowledge"
     summary: str = ""
     tags: tuple[str, ...] = ()
     status: str = "draft"
@@ -83,6 +84,7 @@ class WorkArticle:
             "userId": self.user_id,
             "techStackId": self.tech_stack_id,
             "title": self.title,
+            "articleType": self.article_type,
             "summary": self.summary,
             "content": self.content,
             "tags": list(self.tags),

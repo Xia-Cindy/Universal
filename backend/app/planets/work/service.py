@@ -87,6 +87,7 @@ class WorkService:
             user_id=user_id,
             tech_stack_id=tech_stack_id,
             title=payload["title"],
+            article_type=payload.get("articleType", "knowledge"),
             summary=payload.get("summary", ""),
             content=payload.get("content", ""),
             tags=tuple(payload.get("tags", [])),

@@ -69,6 +69,10 @@ def create_app():
     def create_work_learning_record(tech_stack_id: str, payload: dict):
         return api.create_work_learning_record(tech_stack_id, payload)
 
+    @app.get("/api/work/community/csdn")
+    def get_work_community_articles(topic: str = "java"):
+        return api.get_work_community_articles(topic)
+
     @app.get("/api/work/projects")
     def list_work_projects():
         return api.list_work_projects()

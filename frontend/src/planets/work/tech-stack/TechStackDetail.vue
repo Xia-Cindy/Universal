@@ -39,6 +39,13 @@
             标签
             <input v-model="articleTagsText" placeholder="backend, auth, project" />
           </label>
+          <label>
+            类型
+            <select v-model="articleForm.articleType">
+              <option value="knowledge">知识</option>
+              <option value="note">笔记</option>
+            </select>
+          </label>
           <label class="wide-field">
             摘要
             <input v-model="articleForm.summary" placeholder="这篇文章解决什么问题" />
@@ -88,7 +95,7 @@
         <div v-if="detail.articles.length || detail.learningRecords.length" class="tech-feed">
           <article v-for="article in detail.articles" :key="article.id" class="tech-feed-item content-feed-item">
             <div>
-              <span class="status-pill">Article</span>
+              <span class="status-pill">{{ article.articleType === 'note' ? '笔记' : '知识' }}</span>
               <h3>{{ article.title }}</h3>
               <p>{{ article.summary || article.content }}</p>
               <div class="tech-tag-row">
@@ -148,6 +155,7 @@ const articleTagsText = ref('')
 const recordTagsText = ref('')
 const articleForm = ref({
   title: '',
+  articleType: 'knowledge',
   summary: '',
   content: '',
 })
@@ -173,7 +181,7 @@ async function submitArticle() {
     tags: articleTags.value,
   })
   articleStatus.value = 'Article saved.'
-  articleForm.value = { title: '', summary: '', content: '' }
+  articleForm.value = { title: '', articleType: 'knowledge', summary: '', content: '' }
   articleTagsText.value = ''
   await loadDetail()
 }

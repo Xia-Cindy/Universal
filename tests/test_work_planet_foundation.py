@@ -3,6 +3,7 @@ from pathlib import Path
 
 from backend.app.api.contracts import list_contracts
 from backend.app.api.routes import ApiFacade
+from backend.app.planets.work.community import CSDNCommunityService
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -67,6 +68,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
             stack["id"],
             {
                 "title": "FastAPI Dependency Notes",
+                "articleType": "note",
                 "summary": "Dependency injection patterns.",
                 "content": "Use dependencies to express request-scoped capabilities.",
                 "tags": ["backend", "auth"],
@@ -86,11 +88,36 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         resume = self.api.create_work_resume_draft({"roleTarget": "Backend Engineer"})
 
         self.assertEqual(detail["articles"][0]["id"], article["id"])
+        self.assertEqual(detail["articles"][0]["articleType"], "note")
         self.assertEqual(detail["learningRecords"][0]["id"], record["id"])
         self.assertEqual(home["summary"]["articleCount"], 1)
         self.assertEqual(home["summary"]["learningRecordCount"], 1)
         self.assertIn(f"article:{article['id']}", resume["evidenceRefs"])
         self.assertIn(f"learning_record:{record['id']}", resume["evidenceRefs"])
+
+    def test_tech_stacks_keep_creation_order(self):
+        java = self.api.create_work_tech_stack(
+            {"name": "Java", "category": "Backend", "proficiency": "learning"}
+        )
+        vue = self.api.create_work_tech_stack(
+            {"name": "Vue", "category": "Frontend", "proficiency": "learning"}
+        )
+
+        stacks = self.api.list_work_tech_stacks()
+
+        self.assertEqual([stack["id"] for stack in stacks], [java["id"], vue["id"]])
+
+    def test_csdn_community_parser_limits_to_30_articles(self):
+        service = CSDNCommunityService()
+        html = "".join(
+            f'<a href="https://blog.csdn.net/example/article/details/{index}">Java article title {index}</a>'
+            for index in range(35)
+        )
+
+        articles = service.parse_articles(html, limit=30)
+
+        self.assertEqual(len(articles), 30)
+        self.assertEqual(articles[0].title, "Java article title 0")
 
     def test_work_contracts_are_declared(self):
         contracts = {(contract["method"], contract["path"]) for contract in list_contracts()}
@@ -102,6 +129,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn(("GET", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/articles"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks/{tech_stack_id}/learning-records"), contracts)
+        self.assertIn(("GET", "/api/work/community/csdn"), contracts)
         self.assertIn(("POST", "/api/work/resumes/draft"), contracts)
 
     def test_work_frontend_routes_exist(self):

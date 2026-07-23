@@ -171,6 +171,8 @@
 - [x] Bind Work Knowledge documents to Tech Stack and tags.
 - [x] Separate RAGFlow datasets by Study Goal for provider-backed Study Knowledge.
 - [x] Add Tech Stack-owned article writing and learning record capture.
+- [x] Add CSDN Community tab for public technology article discovery without auto-ingesting it into Knowledge.
+- [x] Keep Tech Stack tabs ordered by creation time and type Work articles as Knowledge or Note.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 

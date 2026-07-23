@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS work_articles (
     user_id TEXT NOT NULL,
     tech_stack_id TEXT NOT NULL REFERENCES tech_stacks(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
+    article_type TEXT NOT NULL DEFAULT 'knowledge',
     summary TEXT NOT NULL DEFAULT '',
     content TEXT NOT NULL DEFAULT '',
     tags TEXT NOT NULL DEFAULT '[]',

@@ -22,8 +22,7 @@ class WorkRepository:
     def list_tech_stacks(self, user_id: str) -> list[TechStack]:
         return sorted(
             [item for item in self.tech_stacks.values() if item.user_id == user_id],
-            key=lambda item: item.updated_at,
-            reverse=True,
+            key=lambda item: item.created_at,
         )
 
     def save_project(self, project: WorkProject) -> WorkProject:

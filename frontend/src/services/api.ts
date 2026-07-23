@@ -192,6 +192,7 @@ export interface WorkArticle {
   userId: string
   techStackId: string
   title: string
+  articleType: 'knowledge' | 'note'
   summary: string
   content: string
   tags: string[]
@@ -246,6 +247,22 @@ export interface WorkHomePayload {
   resumes: ResumeVersion[]
 }
 
+export interface CommunityArticle {
+  title: string
+  url: string
+  source: string
+  heat: string
+  summary: string
+}
+
+export interface CommunityArticlePayload {
+  source: string
+  topic: string
+  url: string
+  articles: CommunityArticle[]
+  error: string
+}
+
 const API_BASE = '/api'
 
 export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
@@ -296,6 +313,15 @@ export async function fetchTechStackDetail(techStackId: string) {
   const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`)
   if (!response.ok) {
     throw new Error('Unable to load Tech Stack')
+  }
+  return response.json()
+}
+
+export async function fetchCSDNCommunityArticles(topic = 'java'): Promise<CommunityArticlePayload> {
+  const params = new URLSearchParams({ topic })
+  const response = await fetch(`${API_BASE}/work/community/csdn?${params.toString()}`)
+  if (!response.ok) {
+    throw new Error('Unable to load CSDN community articles')
   }
   return response.json()
 }

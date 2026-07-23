@@ -151,6 +151,8 @@ Current Work Knowledge refinement adds a first-class Work Knowledge module. Work
 
 Work Tech Stack directories now support article writing and learning records, so each stack can collect knowledge, practice notes, project evidence and resume-ready proof in one place.
 
+The Work Tech Stack page includes a Community tab for reading public CSDN topic articles. Community articles are discovery material only; they are not automatically imported into Work Knowledge.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run

@@ -16,7 +16,7 @@ from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.planets.study.workspace import StudyWorkspaceService
-from backend.app.planets.work import WorkRepository, WorkService
+from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
 from backend.app.retrieval import RetrievalQuery, RetrievalService, RetrieverTool
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
@@ -108,6 +108,7 @@ class ApiFacade:
         )
         self.work_repository = WorkRepository()
         self.work = WorkService(self.work_repository)
+        self.work_community = CSDNCommunityService()
 
     def _create_knowledge_provider(self):
         if settings.knowledge_provider != "ragflow":
@@ -171,6 +172,10 @@ class ApiFacade:
     def create_work_learning_record(self, tech_stack_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         return self.work.create_learning_record(user.id, tech_stack_id, payload)
+
+    def get_work_community_articles(self, topic: str = "java") -> dict[str, object]:
+        self.registry.get_enterable_planet("work")
+        return self.work_community.hot_articles(topic=topic, limit=30)
 
     def list_work_projects(self) -> list[dict[str, object]]:
         user = self.users.current_user()

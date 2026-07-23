@@ -1563,6 +1563,9 @@ Implemented after Work Planet foundation:
   - `WorkArticle`
   - `WorkLearningRecord`
 - Tech Stack detail can create and list articles and learning records.
+- Work articles are typed as `knowledge` or `note`.
+- Tech Stack directory navigation uses actual Tech Stack names in creation order.
+- Work Community tab reads public CSDN topic articles as discovery material only.
 - Dynamic Resume evidence refs can include articles and learning records.
 
 Not changed:

@@ -42,19 +42,19 @@
       </div>
     </form>
 
-    <div class="tech-channel-tabs" aria-label="Tech categories">
+    <div class="tech-channel-tabs" aria-label="Tech stack channels">
       <button
-        v-for="category in categoryTabs"
-        :key="category"
+        v-for="channel in channelTabs"
+        :key="channel.id"
         type="button"
-        :class="{ selected: selectedCategory === category }"
-        @click="selectedCategory = category"
+        :class="{ selected: selectedChannel === channel.id }"
+        @click="selectChannel(channel.id)"
       >
-        {{ category }}
+        {{ channel.label }}
       </button>
     </div>
 
-    <div class="tech-topic-tabs" aria-label="Tech tags">
+    <div v-if="selectedChannel !== 'community'" class="tech-topic-tabs" aria-label="Tech tags">
       <button
         v-for="tag in tagTabs"
         :key="tag"
@@ -66,7 +66,43 @@
       </button>
     </div>
 
-    <div v-if="techStacks.length" class="tech-nav-layout">
+    <div v-if="selectedChannel === 'community'" class="tech-nav-layout">
+      <aside class="tech-directory-panel" aria-label="Community source">
+        <strong>社区来源</strong>
+        <span>CSDN</span>
+        <small>{{ communityTopic }} · Top 30</small>
+      </aside>
+
+      <div class="tech-feed">
+        <section class="tech-content-stream" aria-labelledby="community-title">
+          <div class="section-heading">
+            <h3 id="community-title">CSDN 社区热文</h3>
+            <a class="secondary-action" :href="community.url" rel="noreferrer" target="_blank">Open CSDN</a>
+          </div>
+          <div v-if="isCommunityLoading" class="knowledge-state">Loading CSDN community articles...</div>
+          <div v-else-if="community.error" class="knowledge-state">
+            <strong>CSDN articles unavailable.</strong>
+            <span>{{ community.error }}</span>
+          </div>
+          <article v-for="article in community.articles" :key="article.url" class="tech-feed-item content-feed-item">
+            <div>
+              <span class="status-pill">{{ article.source }}</span>
+              <h3>{{ article.title }}</h3>
+              <p>{{ article.summary || '来自 CSDN 技术社区的文章，可用于了解相关技术动态。' }}</p>
+            </div>
+            <a class="secondary-action" :href="article.url" rel="noreferrer" target="_blank">Read</a>
+          </article>
+        </section>
+      </div>
+
+      <aside class="tech-evidence-panel">
+        <p class="eyebrow">Community</p>
+        <strong>只做资讯参考</strong>
+        <p>社区文章不会自动进入你的 Work Knowledge；需要你确认后再上传或写成自己的文章/笔记。</p>
+      </aside>
+    </div>
+
+    <div v-else-if="techStacks.length" class="tech-nav-layout">
       <aside class="tech-directory-panel" aria-label="Tech stack directory">
         <strong>技术目录</strong>
         <button
@@ -151,7 +187,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import {
   createTechStack,
+  fetchCSDNCommunityArticles,
   fetchWorkHome,
+  type CommunityArticlePayload,
   type TechStack,
   type WorkArticle,
   type WorkLearningRecord,
@@ -163,9 +201,17 @@ const learningRecords = ref<WorkLearningRecord[]>([])
 const status = ref('Create a capability directory first.')
 const tagsText = ref('')
 const showCreate = ref(false)
-const selectedCategory = ref('全部')
+const selectedChannel = ref('all')
 const selectedTag = ref('全部')
 const selectedStackId = ref('')
+const isCommunityLoading = ref(false)
+const community = ref<CommunityArticlePayload>({
+  source: 'CSDN',
+  topic: 'java',
+  url: 'https://blog.csdn.net/nav/java',
+  articles: [],
+  error: '',
+})
 const form = ref({
   name: '',
   category: 'Engineering',
@@ -178,9 +224,10 @@ const tags = computed(() =>
     .map((tag) => tag.trim())
     .filter(Boolean),
 )
-const categoryTabs = computed(() => [
-  '全部',
-  ...Array.from(new Set(techStacks.value.map((stack) => stack.category).filter(Boolean))),
+const channelTabs = computed(() => [
+  { id: 'all', label: '全部' },
+  { id: 'community', label: '社区' },
+  ...techStacks.value.map((stack) => ({ id: stack.id, label: stack.name })),
 ])
 const tagTabs = computed(() => [
   '全部',
@@ -188,11 +235,12 @@ const tagTabs = computed(() => [
 ])
 const filteredTechStacks = computed(() =>
   techStacks.value.filter((stack) => {
-    const categoryMatches = selectedCategory.value === '全部' || stack.category === selectedCategory.value
+    const channelMatches = selectedChannel.value === 'all' || stack.id === selectedChannel.value
     const tagMatches = selectedTag.value === '全部' || stack.tags.includes(selectedTag.value)
-    return categoryMatches && tagMatches
+    return channelMatches && tagMatches
   }),
 )
+const communityTopic = computed(() => selectedStack.value?.name || 'java')
 const selectedStack = computed(
   () =>
     filteredTechStacks.value.find((stack) => stack.id === selectedStackId.value) ||
@@ -226,6 +274,11 @@ const visibleContent = computed(() =>
 )
 
 onMounted(loadTechStacks)
+watch(selectedChannel, async (channel) => {
+  if (channel === 'community') {
+    await loadCommunityArticles()
+  }
+})
 watch(filteredTechStacks, (stacks) => {
   if (!stacks.some((stack) => stack.id === selectedStackId.value)) {
     selectedStackId.value = stacks[0]?.id || ''
@@ -241,7 +294,7 @@ async function loadTechStacks() {
 }
 
 async function submitTechStack() {
-  await createTechStack({ ...form.value, tags: tags.value })
+  const created = await createTechStack({ ...form.value, tags: tags.value })
   status.value = 'Tech Stack created.'
   form.value = {
     name: '',
@@ -252,6 +305,33 @@ async function submitTechStack() {
   tagsText.value = ''
   showCreate.value = false
   await loadTechStacks()
+  selectedChannel.value = created.id
+  selectedStackId.value = created.id
+}
+
+async function loadCommunityArticles() {
+  isCommunityLoading.value = true
+  try {
+    community.value = await fetchCSDNCommunityArticles(communityTopic.value)
+  } catch (error) {
+    community.value = {
+      source: 'CSDN',
+      topic: communityTopic.value,
+      url: `https://blog.csdn.net/nav/${communityTopic.value.toLowerCase()}`,
+      articles: [],
+      error: error instanceof Error ? error.message : 'Unable to load CSDN community articles.',
+    }
+  } finally {
+    isCommunityLoading.value = false
+  }
+}
+
+function selectChannel(channelId: string) {
+  selectedChannel.value = channelId
+  selectedTag.value = '全部'
+  if (channelId !== 'all' && channelId !== 'community') {
+    selectedStackId.value = channelId
+  }
 }
 
 function techStackName(techStackId: string) {
