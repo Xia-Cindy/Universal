@@ -37,6 +37,38 @@ def create_app():
     def get_study_home():
         return api.get_study_home()
 
+    @app.get("/api/work/home")
+    def get_work_home():
+        return api.get_work_home()
+
+    @app.get("/api/work/tech-stacks")
+    def list_work_tech_stacks():
+        return api.list_work_tech_stacks()
+
+    @app.post("/api/work/tech-stacks")
+    def create_work_tech_stack(payload: dict):
+        return api.create_work_tech_stack(payload)
+
+    @app.get("/api/work/tech-stacks/{tech_stack_id}")
+    def get_work_tech_stack(tech_stack_id: str):
+        return api.get_work_tech_stack(tech_stack_id)
+
+    @app.get("/api/work/projects")
+    def list_work_projects():
+        return api.list_work_projects()
+
+    @app.post("/api/work/projects")
+    def create_work_project(payload: dict):
+        return api.create_work_project(payload)
+
+    @app.get("/api/work/resumes")
+    def list_work_resumes():
+        return api.list_work_resumes()
+
+    @app.post("/api/work/resumes/draft")
+    def create_work_resume_draft(payload: dict):
+        return api.create_work_resume_draft(payload)
+
     @app.get("/api/study/workspace")
     def get_study_workspace():
         return api.get_study_workspace()

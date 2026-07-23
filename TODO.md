@@ -157,6 +157,19 @@
 - [x] Allow task priority editing from Plan.
 - [x] Keep AI Core, RAGFlow provider, Retrieval, Memory and Work Planet untouched in this slice.
 
+## Milestone 10.0 Work Planet Foundation
+
+- [x] Make Work Planet active and enterable from Universe Portal.
+- [x] Add Work-owned Tech Stack, Project and Resume domain models.
+- [x] Add migration `011_work_planet_foundation.sql`.
+- [x] Add Work Home API and frontend page.
+- [x] Add Tech Stack directory and detail pages.
+- [x] Add project evidence creation.
+- [x] Add Dynamic Resume draft creation based on confirmed Work evidence.
+- [x] Allow Work to reference shared Knowledge through Knowledge Service summaries only.
+- [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
+- [x] Keep Work Agent and autonomous resume generation out of scope.
+
 ## Later Milestones
 
 - [ ] Connect Study services to PostgreSQL adapters.
@@ -167,7 +180,7 @@
 - [ ] Backfill existing local documents into RAGFlow when original content is available.
 - [ ] Productize Plan Builder with editable long-term, monthly and weekly plan layers.
 - [ ] Implement Goal-aware Knowledge Spaces: exam isolation, reading bookshelf and knowledge cards.
-- [ ] Implement Work Planet foundation after explicit milestone approval.
-- [ ] Implement Dynamic Resume after Work Planet evidence model exists.
+- [ ] Add Work Agent capability after explicit design approval.
+- [ ] Add richer Dynamic Resume editor, version comparison and user confirmation flow.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
 - [ ] Implement Wrong Questions and Review.

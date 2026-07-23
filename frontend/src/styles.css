@@ -1490,6 +1490,36 @@ textarea {
   background: #f2f5f7;
 }
 
+.work-workspace {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(62, 92, 118, 0.14), transparent 28%),
+    linear-gradient(135deg, #f7f8f5 0%, #eef4f3 48%, #f7f3ec 100%);
+  color: #131923;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.work-header {
+  border-color: rgba(62, 92, 118, 0.2);
+}
+
+.work-grid .study-nav a.router-link-active {
+  background: #243447;
+}
+
+.work-home .primary-action,
+.work-workspace button:not(.secondary-action) {
+  background: #243447;
+}
+
+.tech-stack-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.resume-card .whitespace {
+  white-space: pre-line;
+}
+
 @media (max-width: 980px) {
   .planet-field,
   .study-header,
@@ -1549,7 +1579,8 @@ textarea {
 
 @media (max-width: 760px) {
   .portal-hero,
-  .study-workspace {
+  .study-workspace,
+  .work-workspace {
     padding: 28px 16px 40px;
   }
 

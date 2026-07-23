@@ -1498,6 +1498,49 @@ Not changed:
 - Dynamic Resume implementation.
 - Goal-aware Knowledge Spaces persistence for bookshelf/cards.
 
+## Milestone 10.0 Work Planet Foundation
+
+Status: completed for the first Work Planet foundation.
+
+Implemented:
+
+- Registered Work Planet as an active enterable Planet.
+- Added Work modules for Home, Tech Stack, Projects and Dynamic Resume.
+- Added Work-owned domain models:
+  - `TechStack`
+  - `WorkProject`
+  - `ResumeVersion`
+- Added Work repository and service boundaries under `backend/app/planets/work/`.
+- Added API contracts and routes:
+  - `GET /api/work/home`
+  - `GET /api/work/tech-stacks`
+  - `POST /api/work/tech-stacks`
+  - `GET /api/work/tech-stacks/{tech_stack_id}`
+  - `GET /api/work/projects`
+  - `POST /api/work/projects`
+  - `GET /api/work/resumes`
+  - `POST /api/work/resumes/draft`
+- Added migration `011_work_planet_foundation.sql`.
+- Added Work Workspace frontend:
+  - Work Home
+  - Tech Stack directory
+  - Tech Stack detail
+  - Projects
+  - Dynamic Resume
+- Kept Work access to Study Knowledge behind shared Knowledge Service summaries.
+- Added tests for Work Planet enterability, API contracts, Tech Stack detail, Resume evidence refs and frontend routing.
+
+Not changed:
+
+- AI Core architecture.
+- Agent registration.
+- Retrieval architecture.
+- RAGFlow provider architecture.
+- Memory architecture.
+- No Work Agent implementation.
+- No autonomous resume generation.
+- No direct Work Planet dependency on Study Planet repositories.
+
 ---
 
 # End

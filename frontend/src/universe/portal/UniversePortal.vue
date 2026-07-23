@@ -5,8 +5,7 @@
         <p class="eyebrow">Universe OS</p>
         <h1 id="portal-title">Enter your personal intelligent world</h1>
         <p>
-          Study Planet is the active learning room. Other planets stay visible as future spaces,
-          without pretending to be ready workspaces.
+          Study Planet holds your learning loop. Work Planet turns knowledge and practice into career evidence.
         </p>
       </div>
       <div class="planet-field">
@@ -48,10 +47,10 @@ const planets = ref<PlanetSummary[]>([
   {
     name: 'work',
     displayName: 'Work Planet',
-    status: 'coming_later',
-    description: 'Future professional workspace placeholder.',
-    primaryAction: 'Coming Later',
-    enterable: false,
+    status: 'active',
+    description: 'A professional capability workspace for tech stack, evidence, and dynamic resume.',
+    primaryAction: 'Enter Work Planet',
+    enterable: true,
   },
   {
     name: 'novel',
@@ -82,6 +81,9 @@ const planets = ref<PlanetSummary[]>([
 function enterPlanet(planet: PlanetSummary) {
   if (planet.name === 'study' && planet.enterable) {
     router.push('/study')
+  }
+  if (planet.name === 'work' && planet.enterable) {
+    router.push('/work')
   }
 }
 </script>

@@ -16,6 +16,7 @@ from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.planets.study.workspace import StudyWorkspaceService
+from backend.app.planets.work import WorkRepository, WorkService
 from backend.app.retrieval import RetrievalQuery, RetrievalService, RetrieverTool
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
@@ -105,6 +106,8 @@ class ApiFacade:
             repository=self.study_repository,
             ai_core=self.ai_core,
         )
+        self.work_repository = WorkRepository()
+        self.work = WorkService(self.work_repository)
 
     def _create_knowledge_provider(self):
         if settings.knowledge_provider != "ragflow":
@@ -128,6 +131,46 @@ class ApiFacade:
 
     def get_planet(self, planet_name: str) -> dict[str, object]:
         return self.universe.planet(planet_name)
+
+    def get_work_home(self) -> dict[str, object]:
+        user = self.users.current_user()
+        self.registry.get_enterable_planet("work")
+        return self.work.home(
+            user.id,
+            knowledge_summary=self.knowledge.overview(user.id),
+        )
+
+    def list_work_tech_stacks(self) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.work.list_tech_stacks(user.id)
+
+    def create_work_tech_stack(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.create_tech_stack(user.id, payload)
+
+    def get_work_tech_stack(self, tech_stack_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.tech_stack_detail(
+            user.id,
+            tech_stack_id,
+            knowledge_summary=self.knowledge.overview(user.id),
+        )
+
+    def list_work_projects(self) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.work.list_projects(user.id)
+
+    def create_work_project(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.create_project(user.id, payload)
+
+    def list_work_resumes(self) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.work.list_resumes(user.id)
+
+    def create_work_resume_draft(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.work.create_resume_draft(user.id, payload)
 
     def get_study_home(self) -> dict[str, object]:
         user = self.users.current_user()

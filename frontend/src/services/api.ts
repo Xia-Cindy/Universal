@@ -160,6 +160,56 @@ export interface StudyWorkspacePayload {
   analyticsSummary: StudyAnalyticsPayload
 }
 
+export interface TechStack {
+  id: string
+  userId: string
+  name: string
+  category: string
+  proficiency: string
+  description: string
+  tags: string[]
+  status: string
+}
+
+export interface WorkProject {
+  id: string
+  userId: string
+  title: string
+  description: string
+  techStackIds: string[]
+  evidenceRefs: string[]
+  status: string
+}
+
+export interface ResumeVersion {
+  id: string
+  userId: string
+  roleTarget: string
+  title: string
+  content: string
+  evidenceRefs: string[]
+  status: string
+}
+
+export interface WorkHomePayload {
+  state: string
+  primaryAction: {
+    type: string
+    label: string
+    route: string
+    description: string
+  }
+  summary: {
+    techStackCount: number
+    projectCount: number
+    resumeCount: number
+    knowledgeDocumentCount: number
+  }
+  techStacks: TechStack[]
+  projects: WorkProject[]
+  resumes: ResumeVersion[]
+}
+
 const API_BASE = '/api'
 
 export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
@@ -174,6 +224,82 @@ export async function fetchStudyHome() {
   const response = await fetch(`${API_BASE}/study/home`)
   if (!response.ok) {
     throw new Error('Unable to load Study Home')
+  }
+  return response.json()
+}
+
+export async function fetchWorkHome(): Promise<WorkHomePayload> {
+  const response = await fetch(`${API_BASE}/work/home`)
+  if (!response.ok) {
+    throw new Error('Unable to load Work Home')
+  }
+  return response.json()
+}
+
+export async function fetchTechStacks(): Promise<TechStack[]> {
+  const response = await fetch(`${API_BASE}/work/tech-stacks`)
+  if (!response.ok) {
+    throw new Error('Unable to load Tech Stacks')
+  }
+  return response.json()
+}
+
+export async function createTechStack(payload: Record<string, unknown>): Promise<TechStack> {
+  const response = await fetch(`${API_BASE}/work/tech-stacks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Tech Stack')
+  }
+  return response.json()
+}
+
+export async function fetchTechStackDetail(techStackId: string) {
+  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`)
+  if (!response.ok) {
+    throw new Error('Unable to load Tech Stack')
+  }
+  return response.json()
+}
+
+export async function fetchWorkProjects(): Promise<WorkProject[]> {
+  const response = await fetch(`${API_BASE}/work/projects`)
+  if (!response.ok) {
+    throw new Error('Unable to load Work Projects')
+  }
+  return response.json()
+}
+
+export async function createWorkProject(payload: Record<string, unknown>): Promise<WorkProject> {
+  const response = await fetch(`${API_BASE}/work/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Work Project')
+  }
+  return response.json()
+}
+
+export async function fetchResumeVersions(): Promise<ResumeVersion[]> {
+  const response = await fetch(`${API_BASE}/work/resumes`)
+  if (!response.ok) {
+    throw new Error('Unable to load Resume Versions')
+  }
+  return response.json()
+}
+
+export async function createResumeDraft(payload: Record<string, unknown>): Promise<ResumeVersion> {
+  const response = await fetch(`${API_BASE}/work/resumes/draft`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Resume Draft')
   }
   return response.json()
 }

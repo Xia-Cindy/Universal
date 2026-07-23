@@ -11,6 +11,12 @@ import StudyPlaceholder from '../planets/study/placeholder/StudyPlaceholder.vue'
 import StudyTutor from '../planets/study/tutor/StudyTutor.vue'
 import StudyKnowledge from '../planets/study/knowledge/StudyKnowledge.vue'
 import StudyAnalytics from '../planets/study/analytics/StudyAnalytics.vue'
+import WorkWorkspace from '../planets/work/layout/WorkWorkspace.vue'
+import WorkHome from '../planets/work/home/WorkHome.vue'
+import TechStackDirectory from '../planets/work/tech-stack/TechStackDirectory.vue'
+import TechStackDetail from '../planets/work/tech-stack/TechStackDetail.vue'
+import WorkProjects from '../planets/work/projects/WorkProjects.vue'
+import DynamicResume from '../planets/work/resume/DynamicResume.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -36,6 +42,17 @@ export const router = createRouter({
         },
       ],
     },
-    { path: '/:futurePlanet(work|novel|life|creator)', redirect: '/' },
+    {
+      path: '/work',
+      component: WorkWorkspace,
+      children: [
+        { path: '', name: 'WorkHome', component: WorkHome },
+        { path: 'tech-stack', name: 'TechStackDirectory', component: TechStackDirectory },
+        { path: 'tech-stack/:techStackId', name: 'TechStackDetail', component: TechStackDetail },
+        { path: 'projects', name: 'WorkProjects', component: WorkProjects },
+        { path: 'resume', name: 'DynamicResume', component: DynamicResume },
+      ],
+    },
+    { path: '/:futurePlanet(novel|life|creator)', redirect: '/' },
   ],
 })

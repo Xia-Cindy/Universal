@@ -16,6 +16,7 @@ from backend.app.models.study import (
     WeekPlan,
     YearPlan,
 )
+from backend.app.models.work import ResumeVersion, TechStack, WorkProject
 
 __all__ = [
     "DailyTask",
@@ -36,10 +37,13 @@ __all__ = [
     "Planet",
     "PlanetModule",
     "PlanetStatus",
+    "ResumeVersion",
     "SessionStatus",
     "StudyGoal",
     "StudySession",
     "TaskStatus",
+    "TechStack",
     "WeekPlan",
+    "WorkProject",
     "YearPlan",
 ]

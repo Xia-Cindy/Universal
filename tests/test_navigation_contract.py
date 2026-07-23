@@ -17,11 +17,11 @@ class NavigationContractTests(unittest.TestCase):
         for label in ("Home", "Plan", "Knowledge", "Tutor", "Review", "Analytics"):
             self.assertIn(f"label: '{label}'", layout)
 
-    def test_study_planet_remains_only_enterable_planet(self):
+    def test_study_and_work_are_enterable_planets(self):
         planets = ApiFacade().list_planets()["planets"]
         enterable = [planet["name"] for planet in planets if planet["enterable"]]
 
-        self.assertEqual(enterable, ["study"])
+        self.assertEqual(enterable, ["study", "work"])
 
 
 if __name__ == "__main__":

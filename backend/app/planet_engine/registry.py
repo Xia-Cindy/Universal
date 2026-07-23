@@ -24,6 +24,13 @@ STUDY_MODULES: tuple[PlanetModule, ...] = (
     PlanetModule("analytics", "Analytics", "/study/analytics"),
 )
 
+WORK_MODULES: tuple[PlanetModule, ...] = (
+    PlanetModule("work_home", "Home", "/work"),
+    PlanetModule("tech_stack", "Tech Stack", "/work/tech-stack"),
+    PlanetModule("projects", "Projects", "/work/projects"),
+    PlanetModule("dynamic_resume", "Dynamic Resume", "/work/resume"),
+)
+
 
 class PlanetRegistry:
     def __init__(self, planets: tuple[Planet, ...]):
@@ -65,9 +72,10 @@ def create_default_registry() -> PlanetRegistry:
             Planet(
                 name="work",
                 display_name="Work Planet",
-                status=PlanetStatus.COMING_LATER,
-                description="Future professional workspace placeholder.",
-                primary_action="Coming Later",
+                status=PlanetStatus.ACTIVE,
+                description="A professional capability workspace for tech stack, evidence, and dynamic resume.",
+                primary_action="Enter Work Planet",
+                modules=WORK_MODULES,
             ),
             Planet(
                 name="novel",
@@ -92,4 +100,3 @@ def create_default_registry() -> PlanetRegistry:
             ),
         )
     )
-

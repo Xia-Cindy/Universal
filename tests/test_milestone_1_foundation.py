@@ -9,19 +9,20 @@ from backend.app.planet_engine.registry import PlanetUnavailableError
 
 
 class PlanetRegistryTests(unittest.TestCase):
-    def test_study_is_only_enterable_planet(self):
+    def test_study_and_work_are_enterable_planets(self):
         registry = create_default_registry()
         planets = registry.list_planets()
         enterable = [planet.name for planet in planets if planet.enterable]
 
-        self.assertEqual(enterable, ["study"])
+        self.assertEqual(enterable, ["study", "work"])
         self.assertEqual(len(planets), 5)
 
-    def test_future_planets_are_blocked(self):
+    def test_remaining_future_planets_are_blocked(self):
         registry = create_default_registry()
 
-        with self.assertRaises(PlanetUnavailableError):
-            registry.get_enterable_planet("work")
+        for planet_name in ("novel", "life", "creator"):
+            with self.assertRaises(PlanetUnavailableError):
+                registry.get_enterable_planet(planet_name)
 
 
 class MemoryScopeTests(unittest.TestCase):
@@ -75,4 +76,3 @@ class ApiContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

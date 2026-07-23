@@ -139,6 +139,14 @@ Milestone 7.9 starts Study productization from the latest design document:
 - Study Plan adds a weekly Calendar view over Daily Tasks.
 - Daily Tasks now have editable priority for Calendar planning.
 
+Milestone 10.0 activates the Work Planet foundation:
+
+- Universe Portal can enter Work Planet.
+- Work Workspace includes Home, Tech Stack, Projects, and Dynamic Resume.
+- Tech Stack detail can reference shared Knowledge through the backend Knowledge Service.
+- Dynamic Resume drafts are evidence-based and do not invent experience.
+- AI Core, Retrieval, RAGFlow, and Memory architecture remain unchanged.
+
 The source of truth lives in `AGENTS.md` and `docs/`.
 
 ## Local Browser Run
