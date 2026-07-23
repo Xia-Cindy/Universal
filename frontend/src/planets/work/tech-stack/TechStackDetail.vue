@@ -86,74 +86,30 @@
           <input v-model="articleForm.title" class="article-title-input" required placeholder="输入文章标题" />
 
           <div class="article-inline-toolbar" aria-label="写作工具栏">
-            <button class="icon-tool-button" title="文本" type="button" @click="addTextBlock">T</button>
-            <button class="icon-tool-button" title="图片" type="button" @click="addImageBlock()">Img</button>
-            <button class="icon-tool-button" title="表格" type="button" @click="addTableBlock()">Grid</button>
-            <button class="icon-tool-button" title="代码块" type="button" @click="addCodeBlock">Code</button>
+            <button class="icon-tool-button" title="正文段落" type="button" @mousedown.prevent="insertParagraph">P</button>
+            <button class="icon-tool-button" title="二级标题" type="button" @mousedown.prevent="insertHeading">H2</button>
+            <button class="icon-tool-button" title="图片" type="button" @mousedown.prevent="openImagePicker">Img</button>
+            <button class="icon-tool-button" title="表格" type="button" @mousedown.prevent="insertTable()">Grid</button>
+            <button class="icon-tool-button" title="代码块" type="button" @mousedown.prevent="insertCodeBlock">Code</button>
+            <span class="toolbar-divider" aria-hidden="true"></span>
+            <button class="icon-tool-button" title="左对齐" type="button" @mousedown.prevent="alignSelection('left')">L</button>
+            <button class="icon-tool-button" title="居中" type="button" @mousedown.prevent="alignSelection('center')">C</button>
+            <button class="icon-tool-button" title="右对齐" type="button" @mousedown.prevent="alignSelection('right')">R</button>
+            <button class="icon-tool-button wide-icon-tool" title="向右合并表格单元格" type="button" @mousedown.prevent="mergeTableCellRight">Merge</button>
           </div>
+          <input ref="imageInputRef" class="visually-hidden" type="file" accept="image/*" @change="insertSelectedImage" />
 
-          <div class="article-block-stack">
-            <section v-for="block in articleForm.blocks" :key="block.id" class="article-block">
-              <textarea
-                v-if="block.kind === 'text'"
-                v-model="block.content"
-                class="article-body-editor"
-                rows="10"
-                placeholder="# 第一章&#10;&#10;像写小说一样写文章。用 # / ## 标题自然形成左侧目录。"
-                @focus="activeBlockId = block.id"
-                @paste="handleEditorPaste($event, block.id)"
-              />
-
-              <div v-else-if="block.kind === 'table'" class="article-table-block">
-                <div class="article-block-toolbar">
-                  <strong>表格</strong>
-                  <button class="icon-tool-button" title="加行" type="button" @click="addTableRow(block)">+R</button>
-                  <button class="icon-tool-button" title="加列" type="button" @click="addTableColumn(block)">+C</button>
-                  <button class="icon-tool-button" title="左对齐" type="button" @click="alignSelectedCell(block, 'left')">L</button>
-                  <button class="icon-tool-button" title="居中" type="button" @click="alignSelectedCell(block, 'center')">C</button>
-                  <button class="icon-tool-button" title="右对齐" type="button" @click="alignSelectedCell(block, 'right')">R</button>
-                  <button class="icon-tool-button" title="向右合并" type="button" @click="mergeSelectedCellRight(block)">Merge</button>
-                  <button class="icon-tool-button" title="删除表格" type="button" @click="removeBlock(block.id)">Del</button>
-                </div>
-                <table>
-                  <tbody>
-                    <tr v-for="(row, rowIndex) in block.rows" :key="rowIndex">
-                      <td
-                        v-for="(cell, columnIndex) in row"
-                        v-show="!cell.hidden"
-                        :key="columnIndex"
-                        :class="`align-${cell.align}`"
-                        :colspan="cell.colspan"
-                      >
-                        <input
-                          v-model="cell.value"
-                          @focus="selectedTableCell = { blockId: block.id, rowIndex, columnIndex }"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div v-else-if="block.kind === 'code'" class="article-code-block">
-                <div class="article-block-toolbar">
-                  <strong>代码块</strong>
-                  <input v-model="block.language" placeholder="plain text" />
-                  <button class="icon-tool-button" title="删除代码块" type="button" @click="removeBlock(block.id)">Del</button>
-                </div>
-                <textarea v-model="block.content" rows="8" placeholder="在这里写代码或 plain text。" />
-              </div>
-
-              <div v-else class="article-image-block">
-                <div class="article-block-toolbar">
-                  <strong>图片</strong>
-                  <button class="icon-tool-button" title="删除图片" type="button" @click="removeBlock(block.id)">Del</button>
-                </div>
-                <input v-model="block.alt" placeholder="图片说明" />
-                <input v-model="block.url" placeholder="图片地址，或直接粘贴图片到正文" />
-                <img v-if="block.url" :alt="block.alt" :src="block.url" />
-              </div>
-            </section>
+          <div
+            ref="editorRef"
+            class="article-rich-editor"
+            contenteditable="true"
+            data-placeholder="像写文档一样写正文。代码块、图片、表格会插入到光标所在位置。"
+            @blur="syncArticleContent"
+            @input="syncArticleContent"
+            @keyup="rememberSelection"
+            @mouseup="rememberSelection"
+            @paste="handleEditorPaste"
+          >
           </div>
         </main>
       </form>
@@ -168,41 +124,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createWorkArticle, deleteTechStack, fetchTechStackDetail, updateTechStack } from '../../../services/api'
 
-type TextBlock = {
-  id: string
-  kind: 'text'
-  content: string
-}
-
-type TableBlock = {
-  id: string
-  kind: 'table'
-  rows: TableCell[][]
-}
-
-type TableCell = {
-  value: string
-  align: 'left' | 'center' | 'right'
-  colspan: number
-  hidden: boolean
-}
-
-type CodeBlock = {
-  id: string
-  kind: 'code'
-  language: string
-  content: string
-}
-
-type ImageBlock = {
-  id: string
-  kind: 'image'
-  alt: string
-  url: string
-}
-
-type ArticleBlock = TextBlock | TableBlock | CodeBlock | ImageBlock
-
 const route = useRoute()
 const router = useRouter()
 const detail = ref<any | null>(null)
@@ -211,11 +132,12 @@ const stackStatus = ref('Update name, category, proficiency, tags or description
 const stackTagsText = ref('')
 const showStackEditor = ref(false)
 const selectedHeading = ref('')
-const activeBlockId = ref('')
-const selectedTableCell = ref<{ blockId: string; rowIndex: number; columnIndex: number } | null>(null)
+const editorRef = ref<HTMLElement | null>(null)
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const savedRange = ref<Range | null>(null)
 const articleForm = ref({
   title: '',
-  blocks: [createTextBlock('')],
+  contentHtml: '',
 })
 const stackForm = ref({
   name: '',
@@ -225,25 +147,11 @@ const stackForm = ref({
 })
 const stackTags = computed(() => splitTags(stackTagsText.value))
 const articleOutline = computed(() =>
-  articleForm.value.blocks.flatMap((block, blockIndex) => {
-    if (block.kind !== 'text') {
-      return []
-    }
-    return block.content
-      .split('\n')
-      .map((line, lineIndex) => {
-        const match = line.match(/^(#{1,3})\s+(.+)$/)
-        if (!match) {
-          return null
-        }
-        return {
-          id: `heading-${blockIndex}-${lineIndex}`,
-          level: match[1].length,
-          title: match[2].trim(),
-        }
-      })
-      .filter(Boolean) as Array<{ id: string; level: number; title: string }>
-  }),
+  Array.from(editorRef.value?.querySelectorAll('h1, h2, h3') || []).map((heading, index) => ({
+    id: `heading-${index}`,
+    level: Number(heading.tagName.slice(1)),
+    title: heading.textContent?.trim() || '未命名章节',
+  })),
 )
 
 onMounted(async () => {
@@ -287,104 +195,118 @@ async function archiveStack() {
 }
 
 async function submitArticle() {
+  syncArticleContent()
+  const content = composeArticleContent()
   await createWorkArticle(String(route.params.techStackId), {
     title: articleForm.value.title,
     articleType: 'knowledge',
-    summary: firstParagraph(composeArticleContent()),
-    content: `# ${articleForm.value.title}\n\n${composeArticleContent()}`.trim(),
+    summary: firstParagraph(editorRef.value?.innerText || ''),
+    content: `<h1>${escapeHtml(articleForm.value.title)}</h1>\n${content}`.trim(),
     tags: stackTags.value,
   })
   articleStatus.value = 'Article saved.'
-  articleForm.value = { title: '', blocks: [createTextBlock('')] }
+  articleForm.value = { title: '', contentHtml: '' }
+  if (editorRef.value) {
+    editorRef.value.innerHTML = ''
+  }
   selectedHeading.value = ''
   await loadDetail()
 }
 
 function appendChapter() {
-  const block = activeTextBlock()
-  block.content = `${block.content.trim()}\n\n## 第 ${articleOutline.value.length + 1} 章\n\n`.trimStart()
+  insertHeading(`第 ${articleOutline.value.length + 1} 章`)
 }
 
-function addTextBlock(content = '') {
-  const block = createTextBlock(content)
-  articleForm.value.blocks.push(block)
-  activeBlockId.value = block.id
+function insertParagraph() {
+  insertHtmlAtCursor('<p><br></p>')
 }
 
-function addTableBlock(rows?: string[][]) {
-  articleForm.value.blocks.push({
-    id: createId('table'),
-    kind: 'table',
-    rows: toTableCells(rows || [
-      ['', '', ''],
-      ['', '', ''],
-      ['', '', ''],
-    ]),
-  })
+function insertHeading(title = '新章节') {
+  insertHtmlAtCursor(`<h2>${escapeHtml(title)}</h2><p><br></p>`)
 }
 
-function addCodeBlock() {
-  articleForm.value.blocks.push({
-    id: createId('code'),
-    kind: 'code',
-    language: '',
-    content: '',
-  })
+function openImagePicker() {
+  rememberSelection()
+  imageInputRef.value?.click()
 }
 
-function addImageBlock(url = '', alt = '图片说明') {
-  articleForm.value.blocks.push({
-    id: createId('image'),
-    kind: 'image',
-    alt,
-    url,
-  })
-}
-
-function removeBlock(blockId: string) {
-  if (articleForm.value.blocks.length === 1) {
-    articleForm.value.blocks = [createTextBlock('')]
+async function insertSelectedImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) {
     return
   }
-  articleForm.value.blocks = articleForm.value.blocks.filter((block) => block.id !== blockId)
+  insertImage(await readImageAsDataUrl(file), file.name || '图片说明')
+  input.value = ''
 }
 
-function addTableRow(block: TableBlock) {
-  const columnCount = block.rows[0]?.length || 3
-  block.rows.push(Array.from({ length: columnCount }, () => createTableCell()))
+function insertImage(url: string, alt = '图片说明') {
+  insertHtmlAtCursor(
+    `<figure class="article-image-fragment"><img src="${escapeAttribute(url)}" alt="${escapeAttribute(
+      alt,
+    )}"><figcaption>${escapeHtml(alt)}</figcaption></figure><p><br></p>`,
+  )
+  articleStatus.value = 'Image inserted into article body.'
 }
 
-function addTableColumn(block: TableBlock) {
-  block.rows.forEach((row) => row.push(createTableCell()))
+function insertTable(rows?: string[][]) {
+  const sourceRows = rows || [
+    ['', '', ''],
+    ['', '', ''],
+    ['', '', ''],
+  ]
+  const body = sourceRows
+    .map(
+      (row) =>
+        `<tr>${row
+          .map((cell) => `<td contenteditable="true">${escapeHtml(cell || '')}</td>`)
+          .join('')}</tr>`,
+    )
+    .join('')
+  insertHtmlAtCursor(`<table class="article-table-fragment"><tbody>${body}</tbody></table><p><br></p>`)
+  articleStatus.value = 'Table inserted into article body.'
 }
 
-function alignSelectedCell(block: TableBlock, align: TableCell['align']) {
-  const cell = getSelectedCell(block)
+function insertCodeBlock() {
+  insertHtmlAtCursor(
+    '<pre class="article-code-fragment"><code contenteditable="true">plain text</code></pre><p><br></p>',
+  )
+  articleStatus.value = 'Code block inserted into article body.'
+}
+
+function alignSelection(align: 'left' | 'center' | 'right') {
+  restoreSelection()
+  const cell = closestSelectedElement('td')
   if (cell) {
-    cell.align = align
-  }
-}
-
-function mergeSelectedCellRight(block: TableBlock) {
-  const selection = selectedTableCell.value
-  if (!selection || selection.blockId !== block.id) {
+    ;(cell as HTMLElement).style.textAlign = align
+    syncArticleContent()
     return
   }
-  const row = block.rows[selection.rowIndex]
-  const cell = row?.[selection.columnIndex]
+  const command = align === 'left' ? 'justifyLeft' : align === 'center' ? 'justifyCenter' : 'justifyRight'
+  document.execCommand(command)
+  syncArticleContent()
+}
+
+function mergeTableCellRight() {
+  restoreSelection()
+  const cell = closestSelectedElement('td') as HTMLTableCellElement | null
   if (!cell) {
+    articleStatus.value = 'Place cursor inside a table cell before merging.'
     return
   }
-  const next = row?.[selection.columnIndex + cell.colspan]
-  if (!cell || !next || next.hidden) {
+  const next = cell.nextElementSibling as HTMLTableCellElement | null
+  if (!next || next.tagName.toLowerCase() !== 'td') {
+    articleStatus.value = 'No right-side cell to merge.'
     return
   }
-  cell.colspan += next.colspan
-  next.hidden = true
+  cell.colSpan += next.colSpan || 1
+  next.remove()
+  syncArticleContent()
+  articleStatus.value = 'Table cell merged.'
 }
 
-async function handleEditorPaste(event: ClipboardEvent, blockId: string) {
-  activeBlockId.value = blockId
+async function handleEditorPaste(event: ClipboardEvent) {
+  rememberSelection()
   const items = Array.from(event.clipboardData?.items || [])
   const imageItems = items.filter((item) => item.type.startsWith('image/'))
   if (imageItems.length) {
@@ -392,37 +314,87 @@ async function handleEditorPaste(event: ClipboardEvent, blockId: string) {
     for (const item of imageItems) {
       const file = item.getAsFile()
       if (file) {
-        addImageBlock(await readImageAsDataUrl(file), file.name || 'pasted-image')
+        insertImage(await readImageAsDataUrl(file), file.name || 'pasted-image')
       }
     }
-    articleStatus.value = 'Image pasted into article.'
     return
   }
 
   const text = event.clipboardData?.getData('text/plain') || ''
   if (looksLikeTable(text)) {
     event.preventDefault()
-    addTableBlock(parsePastedTable(text))
-    articleStatus.value = 'Table pasted into article.'
+    insertTable(parsePastedTable(text))
+    return
+  }
+
+  window.setTimeout(syncArticleContent)
+}
+
+function rememberSelection() {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount || !editorRef.value) {
+    return
+  }
+  const range = selection.getRangeAt(0)
+  if (editorRef.value.contains(range.commonAncestorContainer)) {
+    savedRange.value = range.cloneRange()
   }
 }
 
-function activeTextBlock() {
-  const found = articleForm.value.blocks.find(
-    (block): block is TextBlock => block.id === activeBlockId.value && block.kind === 'text',
-  )
-  if (found) {
-    return found
+function restoreSelection() {
+  if (!editorRef.value) {
+    return
   }
-  const existing = articleForm.value.blocks.find((block): block is TextBlock => block.kind === 'text')
-  if (existing) {
-    activeBlockId.value = existing.id
-    return existing
+  editorRef.value.focus()
+  const selection = window.getSelection()
+  if (!selection) {
+    return
   }
-  const created = createTextBlock('')
-  articleForm.value.blocks.unshift(created)
-  activeBlockId.value = created.id
-  return created
+  selection.removeAllRanges()
+  if (savedRange.value) {
+    selection.addRange(savedRange.value)
+    return
+  }
+  const range = document.createRange()
+  range.selectNodeContents(editorRef.value)
+  range.collapse(false)
+  selection.addRange(range)
+}
+
+function insertHtmlAtCursor(html: string) {
+  restoreSelection()
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount || !editorRef.value) {
+    return
+  }
+  const range = selection.getRangeAt(0)
+  const fragment = range.createContextualFragment(html)
+  const lastNode = fragment.lastChild
+  range.deleteContents()
+  range.insertNode(fragment)
+  if (lastNode) {
+    const nextRange = document.createRange()
+    nextRange.setStartAfter(lastNode)
+    nextRange.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(nextRange)
+    savedRange.value = nextRange.cloneRange()
+  }
+  syncArticleContent()
+}
+
+function closestSelectedElement(selector: string) {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount || !editorRef.value) {
+    return null
+  }
+  let node: Node | null = selection.getRangeAt(0).startContainer
+  if (node.nodeType === Node.TEXT_NODE) {
+    node = node.parentElement
+  }
+  const element = node as Element | null
+  const found = element?.closest(selector) || null
+  return found && editorRef.value.contains(found) ? found : null
 }
 
 function readImageAsDataUrl(file: File) {
@@ -450,44 +422,12 @@ function parsePastedTable(text: string) {
 }
 
 function composeArticleContent() {
-  return articleForm.value.blocks
-    .map((block) => {
-      if (block.kind === 'text') {
-        return block.content.trim()
-      }
-      if (block.kind === 'table') {
-        return block.rows
-          .map((row) => row.filter((cell) => !cell.hidden).map((cell) => cell.value).join('\t'))
-          .join('\n')
-      }
-      if (block.kind === 'code') {
-        return `Code block${block.language ? ` (${block.language})` : ''}:\n${block.content}`
-      }
-      return `Image: ${block.alt}\n${block.url}`
-    })
-    .filter(Boolean)
-    .join('\n\n')
+  syncArticleContent()
+  return articleForm.value.contentHtml
 }
 
-function getSelectedCell(block: TableBlock) {
-  const selection = selectedTableCell.value
-  if (!selection || selection.blockId !== block.id) {
-    return null
-  }
-  return block.rows[selection.rowIndex]?.[selection.columnIndex] || null
-}
-
-function toTableCells(rows: string[][]) {
-  return rows.map((row) => row.map((value) => createTableCell(value)))
-}
-
-function createTableCell(value = ''): TableCell {
-  return {
-    value,
-    align: 'left',
-    colspan: 1,
-    hidden: false,
-  }
+function syncArticleContent() {
+  articleForm.value.contentHtml = editorRef.value?.innerHTML || ''
 }
 
 function firstParagraph(value: string) {
@@ -506,15 +446,13 @@ function splitTags(value: string) {
     .filter(Boolean)
 }
 
-function createTextBlock(content: string): TextBlock {
-  return {
-    id: createId('text'),
-    kind: 'text',
-    content,
-  }
+function escapeHtml(value: string) {
+  const container = document.createElement('div')
+  container.textContent = value
+  return container.innerHTML
 }
 
-function createId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+function escapeAttribute(value: string) {
+  return escapeHtml(value).replace(/"/g, '&quot;')
 }
 </script>

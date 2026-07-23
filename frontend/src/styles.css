@@ -1842,47 +1842,6 @@ textarea {
   padding: 10px 0;
 }
 
-.article-body-editor {
-  border: 0;
-  color: #243447;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.02rem;
-  line-height: 1.8;
-  min-height: 58vh;
-  resize: vertical;
-}
-
-.article-block-stack {
-  display: grid;
-  gap: 14px;
-}
-
-.article-block {
-  display: grid;
-}
-
-.article-block-toolbar {
-  align-items: center;
-  background: #f8fbfc;
-  border-bottom: 1px solid #d5dee4;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px;
-}
-
-.article-block-toolbar strong {
-  color: #131923;
-  font-size: 0.84rem;
-  margin-right: auto;
-}
-
-.article-block-toolbar input {
-  max-width: 120px;
-  min-height: 28px;
-  padding: 0.28rem 0.42rem;
-}
-
 .compact-tool-button,
 .icon-tool-button {
   border-radius: 6px;
@@ -1900,82 +1859,103 @@ textarea {
   min-width: 30px;
 }
 
-.article-table-block,
-.article-code-block,
-.article-image-block {
-  border: 1px solid #d5dee4;
-  border-radius: 8px;
-  overflow: hidden;
+.article-title-input:focus,
+.article-rich-editor:focus {
+  outline: 0;
 }
 
-.article-table-block table {
-  border-collapse: collapse;
-  width: 100%;
+.toolbar-divider {
+  background: #d5dee4;
+  height: 22px;
+  margin: 0 3px;
+  width: 1px;
 }
 
-.article-table-block td {
-  border: 1px solid #d5dee4;
-  min-width: 96px;
-  padding: 0;
+.wide-icon-tool {
+  min-width: 50px;
 }
 
-.article-table-block td.align-left input {
-  text-align: left;
+.article-rich-editor {
+  color: #313a46;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.03rem;
+  line-height: 1.85;
+  min-height: 58vh;
+  padding: 8px 0 32px;
 }
 
-.article-table-block td.align-center input {
-  text-align: center;
+.article-rich-editor:empty::before {
+  color: #8a96a6;
+  content: attr(data-placeholder);
+  pointer-events: none;
 }
 
-.article-table-block td.align-right input {
-  text-align: right;
+.article-rich-editor h2,
+.article-rich-editor h3 {
+  color: #1f2937;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.35;
+  margin: 2rem 0 0.8rem;
 }
 
-.article-table-block input {
-  background: #ffffff;
-  border: 0;
-  border-radius: 0;
-  color: #243447;
-  min-height: 34px;
-  padding: 0.42rem 0.5rem;
-  width: 100%;
-}
-
-.article-code-block textarea {
-  background: #111827;
-  border: 0;
-  border-radius: 0;
-  color: #e5f0f0;
+.article-code-fragment {
+  background: #f6f8fa;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  color: #24292f;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  line-height: 1.6;
-  min-height: 180px;
-  padding: 12px;
+  line-height: 1.55;
+  margin: 1rem 0;
+  overflow-x: auto;
+  padding: 12px 14px;
+  white-space: pre-wrap;
 }
 
-.article-image-block {
-  display: grid;
-  gap: 10px;
-  padding-bottom: 12px;
+.article-table-fragment {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
 }
 
-.article-image-block input {
-  margin: 0 12px;
+.article-table-fragment td {
+  border: 1px solid #cfd8df;
+  min-width: 96px;
+  padding: 8px 10px;
+  vertical-align: top;
 }
 
-.article-image-block img {
+.article-table-fragment td:focus {
+  outline: 2px solid rgba(11, 138, 136, 0.22);
+  outline-offset: -2px;
+}
+
+.article-image-fragment {
+  margin: 1.1rem 0;
+}
+
+.article-image-fragment img {
   border: 1px solid #d5dee4;
-  border-radius: 8px;
-  margin: 0 12px;
-  max-height: 280px;
-  max-width: calc(100% - 24px);
+  border-radius: 6px;
+  display: block;
+  max-height: 420px;
+  max-width: 100%;
   object-fit: contain;
 }
 
-.article-title-input:focus,
-.article-body-editor:focus,
-.article-table-block input:focus,
-.article-code-block textarea:focus {
-  outline: 0;
+.article-image-fragment figcaption {
+  color: #6b7280;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.86rem;
+  margin-top: 6px;
+}
+
+.visually-hidden {
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
 }
 
 .article-builder {

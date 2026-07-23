@@ -1574,7 +1574,7 @@ Implemented after Work Planet foundation:
 - Work Community article detail reading is exposed through `GET /api/work/community/csdn/article` and rendered inline in the Work frontend.
 - Community loading is non-blocking so users can return to `全部` or another category without waiting for CSDN.
 - Tech Stack management now supports update and soft archive through Work Service.
-- Tech Stack article authoring uses the existing `WorkArticle.content` field and renders a focused editor with an auto-generated left outline plus a compact title-level toolbar for structured image, Excel-like table and standalone code blocks; no new Knowledge, Retrieval, AI Core or RAG behavior is introduced.
+- Tech Stack article authoring uses the existing `WorkArticle.content` field and renders a focused editor with an auto-generated left outline plus a compact title-level toolbar that inserts image, table and code content directly into the article body; no new Knowledge, Retrieval, AI Core or RAG behavior is introduced.
 - Dynamic Resume evidence refs can include articles and learning records.
 
 Not changed:
