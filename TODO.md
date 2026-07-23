@@ -180,6 +180,7 @@
 - [x] Keep category switching usable while Community articles are loading.
 - [x] Add Tech Stack update and archive actions.
 - [x] Refine Tech Stack article writing into a focused editor with an auto-generated left outline.
+- [x] Add compact right-side article tools for structured image, Excel-like table and standalone code blocks, plus pasted image/table handling.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.
 

@@ -157,7 +157,7 @@ The Tech Stack directory uses a two-row navigation pattern: first choose a categ
 
 CSDN Community articles can be expanded inline inside Work Planet. The backend keeps CSDN access behind Universe APIs; community content is still discovery material and is not automatically saved into Work Knowledge.
 
-Tech Stack detail now includes stack management and a focused article editor. The writing surface behaves like a simple manuscript editor: the left outline is generated from headings in the article body, and the page avoids extra panels below the editor.
+Tech Stack detail now includes stack management and a focused article editor. The writing surface behaves like a simple manuscript editor: the left outline is generated from headings in text blocks, and compact right-side tools add structured image, Excel-like table and standalone code blocks without adding extra panels below the editor.
 
 The source of truth lives in `AGENTS.md` and `docs/`.
 
