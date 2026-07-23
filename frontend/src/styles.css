@@ -810,17 +810,26 @@ button:disabled {
   padding: 22px;
   position: absolute;
   text-align: center;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
   width: 150px;
 }
 
 .planet-object.active {
-  background: #168c93;
-  border-color: rgba(125, 230, 219, 0.76);
+  background: rgba(22, 140, 147, 0.78);
+  border-color: rgba(125, 230, 219, 0.48);
+}
+
+.planet-object:hover,
+.planet-object:focus-within {
   box-shadow:
-    0 0 0 40px rgba(125, 230, 219, 0.08),
-    0 28px 72px rgba(13, 130, 132, 0.28);
-  height: 280px;
-  width: 280px;
+    0 0 0 28px rgba(125, 230, 219, 0.08),
+    0 24px 58px rgba(13, 130, 132, 0.3);
+  transform: scale(1.12);
+  z-index: 2;
 }
 
 .planet-object .status-pill {
@@ -842,6 +851,11 @@ button:disabled {
   left: 50%;
   top: 45%;
   transform: translate(-50%, -50%);
+}
+
+.planet-object.study:hover,
+.planet-object.study:focus-within {
+  transform: translate(-50%, -50%) scale(1.12);
 }
 
 .planet-object.work {
@@ -877,8 +891,11 @@ button:disabled {
 }
 
 .planet-object button {
-  margin-top: 1.3rem;
+  font-size: 0.72rem;
+  margin-top: 0.75rem;
+  min-height: 30px;
   order: 3;
+  padding: 0.48rem 0.58rem;
 }
 
 .planet-object button:disabled {
@@ -887,13 +904,11 @@ button:disabled {
 
 .planet-object.active .status-pill {
   color: #e7fffc;
-  font-size: 1.1rem;
   order: 2;
 }
 
 .planet-object.active h2 {
-  font-size: 1.7rem;
-  max-width: 200px;
+  max-width: 120px;
 }
 
 .portal-status {
@@ -1516,6 +1531,149 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.tech-nav-page {
+  background: #ffffff;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  color: #131923;
+  padding: 20px;
+}
+
+.tech-nav-hero {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.tech-create-form {
+  background: #f8fbfc;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.tech-channel-tabs,
+.tech-topic-tabs {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tech-channel-tabs {
+  border-bottom: 1px solid #d5dee4;
+  margin-top: 18px;
+  padding-bottom: 12px;
+}
+
+.tech-topic-tabs {
+  margin: 12px 0 18px;
+}
+
+.tech-channel-tabs button,
+.tech-topic-tabs button,
+.tech-directory-panel button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #5b6877;
+  min-height: 34px;
+  padding: 0.48rem 0.62rem;
+}
+
+.work-workspace .tech-channel-tabs button,
+.work-workspace .tech-topic-tabs button,
+.work-workspace .tech-directory-panel button {
+  background: transparent;
+}
+
+.tech-channel-tabs button.selected {
+  background: #131923;
+  color: #ffffff;
+}
+
+.tech-topic-tabs button.selected,
+.tech-directory-panel button.selected {
+  background: #e4f5f4;
+  border-color: rgba(11, 138, 136, 0.22);
+  color: #0b6f70;
+}
+
+.tech-nav-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 180px minmax(0, 1fr) 220px;
+}
+
+.tech-directory-panel,
+.tech-evidence-panel {
+  align-self: start;
+  background: #f8fbfc;
+  border: 1px solid #d5dee4;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.tech-directory-panel button {
+  align-items: start;
+  display: grid;
+  justify-content: stretch;
+  text-align: left;
+  white-space: normal;
+}
+
+.tech-directory-panel small,
+.tech-feed-item p,
+.tech-evidence-panel p {
+  color: #5b6877;
+}
+
+.tech-feed {
+  display: grid;
+  gap: 12px;
+}
+
+.tech-feed-item {
+  align-items: center;
+  border-bottom: 1px solid #d5dee4;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 10px 0 16px;
+}
+
+.tech-feed-item h3 {
+  color: #131923;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  margin: 0.6rem 0 0.4rem;
+}
+
+.tech-feed-item p {
+  line-height: 1.48;
+  margin: 0 0 0.7rem;
+}
+
+.tech-meta-row,
+.tech-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tech-meta-row span,
+.tech-tag-row span {
+  background: #f2f5f7;
+  border: 1px solid #d5dee4;
+  border-radius: 999px;
+  color: #5b6877;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.36rem 0.52rem;
+}
+
 .resume-card .whitespace {
   white-space: pre-line;
 }
@@ -1527,7 +1685,8 @@ textarea {
   .next-action-room,
   .home-layout,
   .insight-panel,
-  .knowledge-grid {
+  .knowledge-grid,
+  .tech-nav-layout {
     grid-template-columns: 1fr;
   }
 
@@ -1535,8 +1694,14 @@ textarea {
     align-items: stretch;
   }
 
-  .planet-object.active {
-    transform: translate(-50%, -50%);
+  .planet-object:hover,
+  .planet-object:focus-within {
+    transform: scale(1.1);
+  }
+
+  .planet-object.study:hover,
+  .planet-object.study:focus-within {
+    transform: translate(-50%, -50%) scale(1.1);
   }
 
   .planet-field {
@@ -1592,14 +1757,16 @@ textarea {
     min-height: 760px;
   }
 
-  .planet-object.active {
-    height: 240px;
-    width: 240px;
-  }
-
   .planet-object {
     height: 132px;
     width: 132px;
+  }
+
+  .tech-nav-hero,
+  .tech-feed-item {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .study-header,

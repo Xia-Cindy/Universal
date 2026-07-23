@@ -1,10 +1,17 @@
 <template>
-  <section class="study-plan" aria-labelledby="tech-stack-title">
-    <p class="eyebrow">Tech Stack</p>
-    <h2 id="tech-stack-title">技术栈目录</h2>
-    <p class="surface-copy">每个技术栈都可以下钻到知识、项目证据和简历表达。</p>
+  <section class="tech-nav-page" aria-labelledby="tech-stack-title">
+    <header class="tech-nav-hero">
+      <div>
+        <p class="eyebrow">Tech Stack</p>
+        <h2 id="tech-stack-title">技术栈目录</h2>
+        <p class="surface-copy">像浏览技术频道一样管理能力：分类、标签、证据、项目和简历表达都从这里进入。</p>
+      </div>
+      <button type="button" @click="showCreate = !showCreate">
+        {{ showCreate ? 'Close Create' : 'Add Tech Stack' }}
+      </button>
+    </header>
 
-    <form class="study-form" @submit.prevent="submitTechStack">
+    <form v-if="showCreate" class="study-form tech-create-form" @submit.prevent="submitTechStack">
       <label>
         技术名称
         <input v-model="form.name" required placeholder="FastAPI / Vue / RAG" />
@@ -35,29 +42,95 @@
       </div>
     </form>
 
-    <div v-if="techStacks.length" class="knowledge-grid tech-stack-grid">
-      <article v-for="stack in techStacks" :key="stack.id" class="knowledge-document">
-        <span class="status-pill">{{ stack.proficiency }}</span>
-        <h3>{{ stack.name }}</h3>
-        <p class="surface-copy">{{ stack.description || stack.category }}</p>
-        <small>{{ stack.tags.join(' / ') || 'No tags yet' }}</small>
-        <RouterLink class="primary-action" :to="`/work/tech-stack/${stack.id}`">Open Stack</RouterLink>
-      </article>
+    <div class="tech-channel-tabs" aria-label="Tech categories">
+      <button
+        v-for="category in categoryTabs"
+        :key="category"
+        type="button"
+        :class="{ selected: selectedCategory === category }"
+        @click="selectedCategory = category"
+      >
+        {{ category }}
+      </button>
     </div>
+
+    <div class="tech-topic-tabs" aria-label="Tech tags">
+      <button
+        v-for="tag in tagTabs"
+        :key="tag"
+        type="button"
+        :class="{ selected: selectedTag === tag }"
+        @click="selectedTag = tag"
+      >
+        {{ tag }}
+      </button>
+    </div>
+
+    <div v-if="techStacks.length" class="tech-nav-layout">
+      <aside class="tech-directory-panel" aria-label="Tech stack directory">
+        <strong>技术目录</strong>
+        <button
+          v-for="stack in filteredTechStacks"
+          :key="stack.id"
+          type="button"
+          :class="{ selected: selectedStackId === stack.id }"
+          @click="selectedStackId = stack.id"
+        >
+          <span>{{ stack.name }}</span>
+          <small>{{ stack.category }}</small>
+        </button>
+      </aside>
+
+      <div class="tech-feed">
+        <article v-for="stack in filteredTechStacks" :key="stack.id" class="tech-feed-item">
+          <div class="tech-feed-main">
+            <span class="status-pill">{{ stack.proficiency }}</span>
+            <h3>{{ stack.name }}</h3>
+            <p>{{ stack.description || '补充这个技术栈的学习资料、项目证据和简历表达。' }}</p>
+            <div class="tech-meta-row">
+              <span>{{ stack.category }}</span>
+              <span>{{ stack.tags.length }} tags</span>
+              <span>{{ stack.status }}</span>
+            </div>
+            <div class="tech-tag-row">
+              <span v-for="tag in stack.tags" :key="tag">{{ tag }}</span>
+              <span v-if="!stack.tags.length">No tags yet</span>
+            </div>
+          </div>
+          <RouterLink class="secondary-action" :to="`/work/tech-stack/${stack.id}`">Open Stack</RouterLink>
+        </article>
+      </div>
+
+      <aside class="tech-evidence-panel">
+        <p class="eyebrow">Evidence</p>
+        <strong>{{ selectedStack?.name || '选择一个技术栈' }}</strong>
+        <p>{{ selectedStack?.description || '下钻后可以查看关联知识、项目证据和简历片段。' }}</p>
+        <div class="context-stack">
+          <span>{{ filteredTechStacks.length }} visible stacks</span>
+          <span>{{ selectedStack?.category || 'No category selected' }}</span>
+          <span>{{ selectedStack?.tags.join(' / ') || 'No tags yet' }}</span>
+        </div>
+      </aside>
+    </div>
+
     <div v-else class="knowledge-state">
-      <strong>No Tech Stack yet.</strong>
-      <span>Create one capability you want to turn into career evidence.</span>
+      <strong>还没有技术栈。</strong>
+      <span>先创建一个能力目录，再把学习资料、项目证据和动态简历串起来。</span>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { createTechStack, fetchTechStacks, type TechStack } from '../../../services/api'
 
 const techStacks = ref<TechStack[]>([])
 const status = ref('Create a capability directory first.')
 const tagsText = ref('')
+const showCreate = ref(false)
+const selectedCategory = ref('全部')
+const selectedTag = ref('全部')
+const selectedStackId = ref('')
 const form = ref({
   name: '',
   category: 'Engineering',
@@ -70,11 +143,38 @@ const tags = computed(() =>
     .map((tag) => tag.trim())
     .filter(Boolean),
 )
+const categoryTabs = computed(() => [
+  '全部',
+  ...Array.from(new Set(techStacks.value.map((stack) => stack.category).filter(Boolean))),
+])
+const tagTabs = computed(() => [
+  '全部',
+  ...Array.from(new Set(techStacks.value.flatMap((stack) => stack.tags).filter(Boolean))),
+])
+const filteredTechStacks = computed(() =>
+  techStacks.value.filter((stack) => {
+    const categoryMatches = selectedCategory.value === '全部' || stack.category === selectedCategory.value
+    const tagMatches = selectedTag.value === '全部' || stack.tags.includes(selectedTag.value)
+    return categoryMatches && tagMatches
+  }),
+)
+const selectedStack = computed(
+  () =>
+    filteredTechStacks.value.find((stack) => stack.id === selectedStackId.value) ||
+    filteredTechStacks.value[0] ||
+    null,
+)
 
 onMounted(loadTechStacks)
+watch(filteredTechStacks, (stacks) => {
+  if (!stacks.some((stack) => stack.id === selectedStackId.value)) {
+    selectedStackId.value = stacks[0]?.id || ''
+  }
+})
 
 async function loadTechStacks() {
   techStacks.value = await fetchTechStacks()
+  selectedStackId.value = techStacks.value[0]?.id || ''
 }
 
 async function submitTechStack() {
@@ -87,6 +187,7 @@ async function submitTechStack() {
     description: '',
   }
   tagsText.value = ''
+  showCreate.value = false
   await loadTechStacks()
 }
 </script>
