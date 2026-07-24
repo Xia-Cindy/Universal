@@ -270,6 +270,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn("addTableColumnAfter", detail)
         self.assertIn("deleteTableColumn", detail)
         self.assertIn("mergeTableCellRight", detail)
+        self.assertIn("splitTableCell", detail)
         self.assertIn("toolbar-group", detail)
         self.assertIn("color-tool", detail)
         self.assertNotIn("article-block-stack", detail)

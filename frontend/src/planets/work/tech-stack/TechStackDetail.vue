@@ -113,6 +113,7 @@
               <button class="icon-tool-button" aria-label="向右增加列" title="向右增加列" type="button" @mousedown.prevent="addTableColumnAfter">C+</button>
               <button class="icon-tool-button" aria-label="删除当前列" title="删除当前列" type="button" @mousedown.prevent="deleteTableColumn">C-</button>
               <button class="icon-tool-button wide-icon-tool" aria-label="向右合并表格单元格" title="向右合并表格单元格" type="button" @mousedown.prevent="mergeTableCellRight">⇥</button>
+              <button class="icon-tool-button wide-icon-tool" aria-label="拆分当前表格单元格" title="拆分当前表格单元格" type="button" @mousedown.prevent="splitTableCell">⇤</button>
             </div>
           </div>
           <input ref="imageInputRef" class="visually-hidden" type="file" accept="image/*" @change="insertSelectedImage" />
@@ -341,6 +342,27 @@ function mergeTableCellRight() {
   next.remove()
   syncArticleContent()
   articleStatus.value = 'Table cell merged.'
+}
+
+function splitTableCell() {
+  restoreSelection()
+  const cell = currentTableCell()
+  if (!cell) {
+    articleStatus.value = 'Place cursor inside a merged table cell before splitting.'
+    return
+  }
+  const span = cell.colSpan || 1
+  if (span <= 1) {
+    articleStatus.value = 'This table cell is not merged.'
+    return
+  }
+  cell.colSpan = 1
+  for (let index = 1; index < span; index += 1) {
+    cell.after(createEditableCell())
+  }
+  focusElement(cell)
+  syncArticleContent()
+  articleStatus.value = 'Table cell split.'
 }
 
 function addTableRowAfter() {
