@@ -112,21 +112,7 @@
       </aside>
     </div>
 
-    <div v-else-if="techStacks.length" class="tech-nav-layout">
-      <aside class="tech-directory-panel" aria-label="Tech stack directory">
-        <strong>技术目录</strong>
-        <button
-          v-for="stack in visibleTechStacks"
-          :key="stack.id"
-          type="button"
-          :class="{ selected: selectedStackId === stack.id }"
-          @click="selectedStackId = stack.id"
-        >
-          <span>{{ stack.name }}</span>
-          <small>{{ stack.category }}</small>
-        </button>
-      </aside>
-
+    <div v-else-if="techStacks.length" class="tech-nav-layout tech-stack-list-layout">
       <div class="tech-feed">
         <article v-for="stack in visibleTechStacks" :key="stack.id" class="tech-feed-item">
           <div class="tech-feed-main">

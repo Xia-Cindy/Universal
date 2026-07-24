@@ -240,10 +240,12 @@ class WorkPlanetFoundationTests(unittest.TestCase):
 
         self.assertIn("selectedCategory", directory)
         self.assertIn("stackTabs", directory)
+        self.assertIn("tech-stack-list-layout", directory)
         self.assertIn("modal-backdrop", directory)
         self.assertIn("CSDN 社区热文", directory)
         self.assertIn("查看内容", directory)
         self.assertIn("fetchCSDNCommunityArticleDetail", directory)
+        self.assertNotIn('aria-label="Tech stack directory"', directory)
 
     def test_work_tech_stack_detail_has_management_and_article_builder(self):
         detail = (PROJECT_ROOT / "frontend/src/planets/work/tech-stack/TechStackDetail.vue").read_text()

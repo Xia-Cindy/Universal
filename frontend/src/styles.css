@@ -1532,12 +1532,12 @@ textarea {
 }
 
 .work-grid .study-nav a.router-link-active {
-  background: #243447;
+  background: #0b8a88;
 }
 
 .work-home .primary-action,
 .work-workspace button:not(.secondary-action) {
-  background: #243447;
+  background: #0b8a88;
 }
 
 .tech-stack-grid {
@@ -1638,8 +1638,9 @@ textarea {
 }
 
 .tech-channel-tabs button.selected {
-  background: #131923;
-  color: #ffffff;
+  background: #e4f5f4;
+  border-color: rgba(11, 138, 136, 0.24);
+  color: #0b6f70;
 }
 
 .tech-topic-tabs button.selected,
@@ -1650,8 +1651,9 @@ textarea {
 }
 
 .work-workspace .tech-channel-tabs button.selected {
-  background: #131923;
-  color: #ffffff;
+  background: #e4f5f4;
+  border-color: rgba(11, 138, 136, 0.24);
+  color: #0b6f70;
 }
 
 .work-workspace .tech-topic-tabs button.selected,
@@ -1664,6 +1666,10 @@ textarea {
   display: grid;
   gap: 18px;
   grid-template-columns: 180px minmax(0, 1fr) 220px;
+}
+
+.tech-stack-list-layout {
+  grid-template-columns: minmax(0, 1fr) 220px;
 }
 
 .tech-directory-panel,
