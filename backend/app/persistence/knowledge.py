@@ -60,6 +60,13 @@ class SQLiteKnowledgeRepository:
                 )
         return chunks
 
+    def delete_document(self, document_id: str, user_id: str) -> Document:
+        document = self.get_document(document_id, user_id)
+        with self._db.transaction() as db:
+            db.execute("DELETE FROM document_chunks WHERE document_id = ?", (document_id,))
+            db.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+        return document
+
     def list_chunks(self, document_id: str, user_id: str) -> list[DocumentChunk]:
         rows = self._db.connection.execute(
             "SELECT payload FROM document_chunks WHERE document_id = ? AND user_id = ? ORDER BY chunk_index",

@@ -6,10 +6,31 @@ from backend.app.models import Document
 class KnowledgeProvider(Protocol):
     name: str
 
+    def health_check(self) -> dict[str, object]:
+        ...
+
     def upload_document(self, *, user_id: str, document: Document) -> dict[str, object]:
         ...
 
     def parse_document(
+        self,
+        *,
+        user_id: str,
+        dataset_id: str,
+        document_id: str,
+    ) -> dict[str, object]:
+        ...
+
+    def get_document_status(
+        self,
+        *,
+        user_id: str,
+        dataset_id: str,
+        document_id: str,
+    ) -> dict[str, object]:
+        ...
+
+    def delete_document(
         self,
         *,
         user_id: str,

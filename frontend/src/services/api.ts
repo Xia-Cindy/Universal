@@ -113,6 +113,39 @@ export interface KnowledgeDocumentDetail {
   chunks: KnowledgeChunk[]
 }
 
+export interface EvidenceSource {
+  sourceId: string
+  documentId: string
+  chunkId: string
+  title: string
+  quote: string
+  score: number
+  metadata: Record<string, unknown>
+  sourceUrl?: string | null
+}
+
+export interface ReviewQueueItem {
+  review: {
+    id: string
+    wrongQuestionId: string
+    stage: number
+    intervalDays: number
+    dueDate: string
+    status: string
+    result?: string | null
+  }
+  wrongQuestion: {
+    id: string
+    goalId: string
+    question: string
+    correctAnswer: string
+    explanation: string
+    subject: string
+    topic: string
+    status: string
+  }
+}
+
 export interface StudyAnalyticsPayload {
   progressSummary: Record<string, any>
   learningInsights: string[]
@@ -628,14 +661,38 @@ export async function finishExecutionSession(sessionId: string, payload: Record<
   return response.json()
 }
 
-export async function askStudyTutor(question: string) {
+export async function askStudyTutor(question: string, scope = 'current_goal') {
   const response = await fetch(`${API_BASE}/study/tutor/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, scope }),
   })
   if (!response.ok) {
     throw new Error('Unable to ask Tutor')
+  }
+  return response.json()
+}
+
+export async function saveTutorAnswerEvent(payload: {
+  question: string
+  answer: string
+  sources: EvidenceSource[]
+}) {
+  const response = await fetch(`${API_BASE}/study/tutor/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to save Tutor answer as a Learning Event')
+  }
+  return response.json()
+}
+
+export async function fetchKnowledgeEvidence(documentId: string): Promise<EvidenceSource[]> {
+  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}/evidence`)
+  if (!response.ok) {
+    throw new Error('Unable to load Knowledge evidence')
   }
   return response.json()
 }
@@ -760,6 +817,24 @@ export async function processKnowledgeDocument(documentId: string): Promise<Know
   return response.json()
 }
 
+export async function refreshKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
+  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}/status`)
+  if (!response.ok) {
+    throw new Error('Unable to refresh Knowledge document status')
+  }
+  return response.json()
+}
+
+export async function retryKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
+  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}/retry`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error('Unable to retry Knowledge document')
+  }
+  return response.json()
+}
+
 export async function processWorkKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
   const response = await fetch(`${API_BASE}/work/knowledge/documents/${documentId}/process`, {
     method: 'POST',
@@ -799,6 +874,45 @@ export async function createStudyAnalyticsReport(): Promise<StudyAnalyticsPayloa
   })
   if (!response.ok) {
     throw new Error('Unable to create Study Analytics report')
+  }
+  return response.json()
+}
+
+export async function fetchReviewQueue(includeFuture = true): Promise<ReviewQueueItem[]> {
+  const response = await fetch(`${API_BASE}/study/review/queue?includeFuture=${includeFuture}`)
+  if (!response.ok) {
+    throw new Error('Unable to load Review queue')
+  }
+  return response.json()
+}
+
+export async function createWrongQuestion(payload: {
+  question: string
+  correctAnswer?: string
+  explanation?: string
+  subject?: string
+  topic?: string
+  goalId?: string
+}) {
+  const response = await fetch(`${API_BASE}/study/review/wrong-questions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create Wrong Question')
+  }
+  return response.json()
+}
+
+export async function completeReviewItem(reviewId: string, result = 'remembered') {
+  const response = await fetch(`${API_BASE}/study/review/items/${reviewId}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ result }),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to complete Review item')
   }
   return response.json()
 }

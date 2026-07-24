@@ -936,6 +936,20 @@ Goal
 2. 提交当前已完成的 Study Workspace polish 与 RAGFlow provider adapter。
 3. 再进入生产 RAGFlow runtime validation 或 Milestone 7.9 Plan Builder。
 
+## 27.1 四阶段执行中的 RAGFlow Runtime 状态
+
+本次执行已补齐 RAGFlow runtime contract：health check、异步 status refresh、Study Knowledge 前端轮询、失败 retry 和删除同步。完整测试及 frontend build 已通过。
+
+本地 RAGFlow health/API 访问正常，但真实文档解析在 embedding provider 阶段因 `InvalidApiKey` 失败。因此 TXT、Markdown、PDF 的 `processed` 验收尚未通过；产品文案继续标记为实验性，待 RAGFlow embedding provider 配置有效后再做真实样本验收。
+
+## 27.2 四阶段产品闭环
+
+- Shared persistence 阶段补齐 SQLite migration runner、repository adapters、唯一 Study current context，并保持现有 service boundaries。
+- RAGFlow runtime 阶段补齐 health/status polling/retry/delete contract；真实 embedding provider key 仍是外部 blocker。
+- Citation/Evidence 阶段补齐 Tutor scope、统一 source shape、quote preview、Knowledge click-through 和保存 Learning Event。
+- Review 阶段补齐 Wrong Question、1/3/7/30 review items、幂等完成和 Analytics summary；Review 不依赖 AI。
+- Session execution finish 会在首次结束时同步关联 Task、Learning Event 和 Memory write point，重复 finish 不重复计数。
+
 ---
 
 # 27. Shared Persistence Foundation

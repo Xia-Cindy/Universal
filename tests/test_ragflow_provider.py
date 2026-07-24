@@ -91,6 +91,18 @@ class StubRAGFlowClient:
                     ]
                 },
             }
+        if path.endswith("/documents") and method == "GET":
+            return {
+                "code": 0,
+                "data": {
+                    "docs": [{"id": "doc-1", "run": "DONE", "fail_reason": None}],
+                    "total": 1,
+                },
+            }
+        if path == "/api/v1/datasets" and method == "GET":
+            return {"code": 0, "data": []}
+        if path.endswith("/documents") and method == "DELETE":
+            return {"code": 0}
         if path == "/api/v1/retrieval":
             return {
                 "code": 0,
@@ -242,6 +254,24 @@ class RAGFlowProviderTests(unittest.TestCase):
         self.assertNotEqual(first_upload["datasetId"], second_upload["datasetId"])
         dataset_creates = [request for request in client.requests if request[1] == "/api/v1/datasets"]
         self.assertEqual(len(dataset_creates), 2)
+
+    def test_ragflow_runtime_contract_normalizes_health_status_and_delete(self):
+        client = StubRAGFlowClient()
+        provider = RAGFlowKnowledgeProvider(client=client)
+
+        self.assertEqual(provider.health_check()["status"], "ok")
+        status = provider.get_document_status(
+            user_id="local-user",
+            dataset_id="dataset-1",
+            document_id="doc-1",
+        )
+        self.assertEqual(status["status"], "done")
+        deleted = provider.delete_document(
+            user_id="local-user",
+            dataset_id="dataset-1",
+            document_id="doc-1",
+        )
+        self.assertEqual(deleted["status"], "deleted")
 
 
 if __name__ == "__main__":

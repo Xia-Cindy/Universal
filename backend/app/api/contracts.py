@@ -43,9 +43,12 @@ MILESTONE_2_CONTRACTS: tuple[ApiContract, ...] = (
 MILESTONE_3_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("POST", "/api/study/tutor/ask", "study_tutor_ask", "milestone_3"),
     ApiContract("GET", "/api/study/tutor/history", "study_tutor_history", "milestone_3"),
+    ApiContract("POST", "/api/study/tutor/events", "save_tutor_answer_event", "milestone_8_citations"),
+    ApiContract("GET", "/api/study/knowledge/documents/{document_id}/evidence", "knowledge_evidence", "milestone_8_citations"),
 )
 
 MILESTONE_4_1_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("GET", "/api/knowledge/provider/health", "knowledge_provider_health", "milestone_8_runtime"),
     ApiContract("POST", "/api/study/knowledge/documents", "create_knowledge_document", "milestone_4_1"),
     ApiContract("GET", "/api/study/knowledge", "knowledge_overview", "milestone_4_1"),
     ApiContract("GET", "/api/study/knowledge/documents", "list_knowledge_documents", "milestone_4_1"),
@@ -67,6 +70,9 @@ MILESTONE_4_1_CONTRACTS: tuple[ApiContract, ...] = (
         "update_knowledge_document",
         "milestone_4_1",
     ),
+    ApiContract("GET", "/api/study/knowledge/documents/{document_id}/status", "refresh_knowledge_document", "milestone_8_runtime"),
+    ApiContract("POST", "/api/study/knowledge/documents/{document_id}/retry", "retry_knowledge_document", "milestone_8_runtime"),
+    ApiContract("DELETE", "/api/study/knowledge/documents/{document_id}", "delete_knowledge_document", "milestone_8_runtime"),
 )
 
 MILESTONE_4_2_CONTRACTS: tuple[ApiContract, ...] = (
@@ -122,6 +128,13 @@ MILESTONE_7_5_CONTRACTS: tuple[ApiContract, ...] = (
 
 MILESTONE_7_6_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/study/workspace", "study_workspace", "milestone_7_6"),
+)
+
+MILESTONE_8_REVIEW_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("POST", "/api/study/review/wrong-questions", "create_wrong_question", "milestone_8_review"),
+    ApiContract("GET", "/api/study/review/wrong-questions", "list_wrong_questions", "milestone_8_review"),
+    ApiContract("GET", "/api/study/review/queue", "get_review_queue", "milestone_8_review"),
+    ApiContract("POST", "/api/study/review/items/{review_id}/complete", "complete_review_item", "milestone_8_review"),
 )
 
 MILESTONE_10_CONTRACTS: tuple[ApiContract, ...] = (
@@ -183,6 +196,7 @@ def list_contracts() -> list[dict[str, str]]:
             *MILESTONE_7_CONTRACTS,
             *MILESTONE_7_5_CONTRACTS,
             *MILESTONE_7_6_CONTRACTS,
+            *MILESTONE_8_REVIEW_CONTRACTS,
             *MILESTONE_10_CONTRACTS,
         )
     ]

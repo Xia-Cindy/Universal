@@ -117,6 +117,18 @@ class RAGFlowKnowledgeProvider:
         self._dataset_name = dataset_name
         self._dataset_ids_by_scope: dict[str, str] = {}
 
+    def health_check(self) -> dict[str, object]:
+        response = self._client.request_json(
+            "GET",
+            "/api/v1/datasets",
+            query={"page": 1, "page_size": 1},
+        )
+        return {
+            "provider": self.name,
+            "status": "ok",
+            "datasetCount": len(response.get("data", [])) if isinstance(response.get("data"), list) else 0,
+        }
+
     def upload_document(self, *, user_id: str, document: Document) -> dict[str, object]:
         dataset_id = self._ensure_dataset(document)
         response = self._client.upload_document(
@@ -152,6 +164,56 @@ class RAGFlowKnowledgeProvider:
             "datasetId": dataset_id,
             "documentId": document_id,
             "status": response.get("data", {}).get("run") if isinstance(response.get("data"), dict) else "chunking",
+            "raw": response,
+        }
+
+    def get_document_status(
+        self,
+        *,
+        user_id: str,
+        dataset_id: str,
+        document_id: str,
+    ) -> dict[str, object]:
+        response = self._client.request_json(
+            "GET",
+            f"/api/v1/datasets/{dataset_id}/documents",
+            query={"id": document_id, "page": 1, "page_size": 1},
+        )
+        data = response.get("data", [])
+        if isinstance(data, dict):
+            documents = data.get("docs", [])
+            item = documents[0] if isinstance(documents, list) and documents else {}
+        else:
+            item = data[0] if isinstance(data, list) and data else data
+        if not isinstance(item, dict):
+            raise RAGFlowAPIError("RAGFlow did not return document status")
+        run = str(item.get("run") or item.get("status") or "unknown").lower()
+        return {
+            "provider": self.name,
+            "datasetId": dataset_id,
+            "documentId": document_id,
+            "status": run,
+            "errorMessage": item.get("fail_reason") or item.get("error_message"),
+            "raw": item,
+        }
+
+    def delete_document(
+        self,
+        *,
+        user_id: str,
+        dataset_id: str,
+        document_id: str,
+    ) -> dict[str, object]:
+        response = self._client.request_json(
+            "DELETE",
+            f"/api/v1/datasets/{dataset_id}/documents",
+            {"ids": [document_id]},
+        )
+        return {
+            "provider": self.name,
+            "datasetId": dataset_id,
+            "documentId": document_id,
+            "status": "deleted",
             "raw": response,
         }
 

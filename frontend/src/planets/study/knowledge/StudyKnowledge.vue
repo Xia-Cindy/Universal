@@ -129,6 +129,13 @@
             >
               Process
             </button>
+            <button
+              v-if="document.processingStatus === 'failed' && document.provider !== 'local'"
+              type="button"
+              @click="retryDocument(document.id)"
+            >
+              Retry
+            </button>
           </div>
           <p v-if="document.errorMessage" class="error-text">{{ document.errorMessage }}</p>
         </article>
@@ -172,13 +179,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   createKnowledgeDocument,
   fetchKnowledgeDocument,
   fetchKnowledgeDocuments,
   fetchStudyWorkspace,
   processKnowledgeDocument,
+  refreshKnowledgeDocument,
+  retryKnowledgeDocument,
   type KnowledgeDocument,
   type KnowledgeDocumentDetail,
   type KnowledgeDocumentPayload,
@@ -194,6 +204,7 @@ const form = ref<KnowledgeDocumentPayload>({
   content: '',
   contentEncoding: 'text',
 })
+const route = useRoute()
 const goals = ref<StudyGoal[]>([])
 const goalFilter = ref('all')
 const selectedFileName = ref('')
@@ -206,6 +217,7 @@ const articleTagsText = ref('')
 const isLoading = ref(false)
 const isUploading = ref(false)
 const isSavingArticle = ref(false)
+let statusPollTimer: ReturnType<typeof setInterval> | null = null
 const articleForm = ref({
   title: '',
   subject: '',
@@ -241,6 +253,7 @@ const canSaveArticle = computed(
 
 onMounted(loadDocuments)
 onMounted(loadGoalContext)
+onUnmounted(() => stopStatusPolling())
 
 async function loadDocuments() {
   isLoading.value = true
@@ -260,7 +273,11 @@ async function loadDocuments() {
     ) {
       selectedDocument.value = null
     }
-    if (documents.value.length && !selectedDocument.value) {
+    const requestedDocumentId = typeof route.query.documentId === 'string' ? route.query.documentId : ''
+    const requestedDocument = documents.value.find((document) => document.id === requestedDocumentId)
+    if (requestedDocument) {
+      await selectDocument(requestedDocument.id)
+    } else if (documents.value.length && !selectedDocument.value) {
       await selectDocument(documents.value[0].id)
     }
   } finally {
@@ -448,6 +465,11 @@ function documentGoalLabel(goalId?: string | null) {
 
 async function selectDocument(documentId: string) {
   selectedDocument.value = await fetchKnowledgeDocument(documentId)
+  if (isProviderProcessing(selectedDocument.value.document)) {
+    startStatusPolling(documentId)
+  } else {
+    stopStatusPolling()
+  }
 }
 
 async function processDocument(documentId: string) {
@@ -462,6 +484,47 @@ async function processDocument(documentId: string) {
     await selectDocument(documentId)
   } finally {
     isLoading.value = false
+  }
+}
+
+async function retryDocument(documentId: string) {
+  isLoading.value = true
+  try {
+    selectedDocument.value = await retryKnowledgeDocument(documentId)
+    await loadDocuments()
+    await selectDocument(documentId)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function isProviderProcessing(document: KnowledgeDocument) {
+  return document.provider !== 'local' && ['parsing', 'chunking'].includes(document.processingStatus)
+}
+
+function startStatusPolling(documentId: string) {
+  stopStatusPolling()
+  statusPollTimer = setInterval(async () => {
+    try {
+      const detail = await refreshKnowledgeDocument(documentId)
+      selectedDocument.value = detail
+      const item = documents.value.find((document) => document.id === documentId)
+      if (item) {
+        Object.assign(item, detail.document)
+      }
+      if (!isProviderProcessing(detail.document)) {
+        stopStatusPolling()
+      }
+    } catch (error) {
+      statusMessage.value = error instanceof Error ? error.message : 'Unable to refresh provider status.'
+    }
+  }, 2500)
+}
+
+function stopStatusPolling() {
+  if (statusPollTimer) {
+    clearInterval(statusPollTimer)
+    statusPollTimer = null
   }
 }
 </script>

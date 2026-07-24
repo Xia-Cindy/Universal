@@ -195,13 +195,16 @@
 - [x] Persist one `current_goal` per user and Study Planet in `user_planet_context`.
 - [ ] Add PostgreSQL adapter using the same repository interfaces.
 - [ ] Connect Knowledge services to PostgreSQL adapters and object/file storage.
-- [ ] Run production RAGFlow runtime validation with a real API key and embedding model configured.
-- [ ] Add provider status polling and retry handling.
-- [ ] Add provider-backed citation formatting for Tutor answers.
+- [ ] Run production RAGFlow runtime validation with a real API key and embedding model configured; current blocker is an invalid RAGFlow embedding-provider key.
+- [x] Add provider status polling and retry handling.
+- [x] Synchronize provider document deletion with RAGFlow.
+- [x] Add stable Citation / Evidence source contract, source quote preview, Knowledge click-through and saved Tutor Learning Events.
 - [ ] Backfill existing local documents into RAGFlow when original content is available.
 - [ ] Productize Plan Builder with editable long-term, monthly and weekly plan layers.
 - [ ] Implement full Goal-aware Knowledge Space UI modes: exam isolation, reading bookshelf and knowledge cards.
 - [ ] Add Work Agent capability after explicit design approval.
 - [ ] Add richer Dynamic Resume editor, version comparison and user confirmation flow.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
-- [ ] Implement Wrong Questions and Review.
+- [x] Implement Wrong Questions, 1/3/7/30 Review queue, idempotent completion and Analytics summary integration.
+- [ ] Complete real RAGFlow TXT/Markdown/PDF processed acceptance after fixing the embedding provider key/model.
+- [ ] Add PostgreSQL transaction adapter / unit-of-work for atomic Session finish across Task, Event and Memory.

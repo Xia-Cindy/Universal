@@ -18,6 +18,7 @@ from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.planets.study.workspace import StudyWorkspaceService
+from backend.app.planets.study.review import ReviewService
 from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
 from backend.app.planets.work.repository import SQLiteWorkRepository
 from backend.app.persistence import SQLitePersistence
@@ -107,6 +108,7 @@ class ApiFacade:
             sessions=self.study_sessions,
             memory=self.memory,
         )
+        self.study_review = ReviewService(self.study_repository)
         self.study_tutor = TutorService(
             repository=self.study_repository,
             ai_core=self.ai_core,
@@ -116,6 +118,7 @@ class ApiFacade:
         self.study_analytics = StudyAnalyticsService(
             repository=self.study_repository,
             ai_core=self.ai_core,
+            review=self.study_review,
         )
         self.work_repository = (
             SQLiteWorkRepository(self.persistence) if self.persistence else WorkRepository()
@@ -338,7 +341,16 @@ class ApiFacade:
             user=user,
             question=payload["question"],
             memory_context=memory_context,
+            scope=payload.get("scope", "current_goal"),
         )
+
+    def save_tutor_answer_event(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_tutor.save_answer_event(user=user, payload=payload)
+
+    def get_knowledge_evidence(self, document_id: str) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.knowledge.evidence(user.id, document_id)
 
     def get_tutor_history(self) -> list[dict[str, object]]:
         user = self.users.current_user()
@@ -379,9 +391,26 @@ class ApiFacade:
         user = self.users.current_user()
         return self.knowledge.document_detail(user.id, document_id)
 
+    def refresh_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.refresh_document(user.id, document_id)
+
     def process_knowledge_document(self, document_id: str) -> dict[str, object]:
         user = self.users.current_user()
         return self.knowledge.process_document(user.id, document_id)
+
+    def retry_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.retry_document(user.id, document_id)
+
+    def delete_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.delete_document(user.id, document_id)
+
+    def knowledge_provider_health(self) -> dict[str, object]:
+        if not self.knowledge_provider:
+            return {"provider": "local", "status": "ok", "experimental": True}
+        return self.knowledge_provider.health_check()
 
     def update_knowledge_document(self, document_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
@@ -467,6 +496,22 @@ class ApiFacade:
             user=user,
             memory_context=memory_context,
         )
+
+    def create_wrong_question(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_review.create_wrong_question(user.id, payload)
+
+    def list_wrong_questions(self) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.study_review.list_wrong_questions(user.id)
+
+    def get_review_queue(self, *, include_future: bool = False) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.study_review.queue(user.id, include_future=include_future)
+
+    def complete_review_item(self, review_id: str, payload: dict | None = None) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_review.complete(user.id, review_id, payload)
 
 
 api = ApiFacade(database_path=settings.database_path if settings.persistence_backend == "sqlite" else None)

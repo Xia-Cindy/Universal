@@ -5,6 +5,7 @@ from backend.app.files import FileService, UnsupportedFileTypeError
 from backend.app.knowledge.providers import KnowledgeProvider
 from backend.app.models import Concept, Document, DocumentChunk, DocumentStatus, DocumentType
 from backend.app.knowledge.repository import KnowledgeRepository
+from backend.app.services.evidence import evidence_source
 
 
 class KnowledgeService:
@@ -118,6 +119,64 @@ class KnowledgeService:
             self._repository.save_document(document)
             return self.document_detail(user_id, document.id)
 
+    def refresh_document(self, user_id: str, document_id: str) -> dict[str, object]:
+        """Refresh provider status and cache chunks once processing completes."""
+        document = self._repository.get_document(document_id, user_id)
+        if not self._provider or not document.provider_dataset_id or not document.provider_document_id:
+            return self.document_detail(user_id, document.id)
+        try:
+            status = self._provider.get_document_status(
+                user_id=user_id,
+                dataset_id=document.provider_dataset_id,
+                document_id=document.provider_document_id,
+            )
+            document.provider_status = str(status.get("status") or "unknown")
+            normalized_status = document.provider_status.lower()
+            if normalized_status in {"done", "success", "processed", "complete", "completed", "3"}:
+                chunks = self._provider.list_document_chunks(
+                    user_id=user_id,
+                    dataset_id=document.provider_dataset_id,
+                    document_id=document.provider_document_id,
+                )
+                self._cache_provider_chunks(user_id, document, chunks)
+                document.processing_status = DocumentStatus.PROCESSED if chunks else DocumentStatus.CHUNKING
+                document.error_message = None
+            elif normalized_status in {"fail", "failed", "error", "4"}:
+                document.processing_status = DocumentStatus.FAILED
+                document.error_message = str(status.get("errorMessage") or "RAGFlow document processing failed")
+            else:
+                document.processing_status = DocumentStatus.CHUNKING
+            document.updated_at = local_now()
+            self._repository.save_document(document)
+            return self.document_detail(user_id, document.id)
+        except (RuntimeError, ValueError) as exc:
+            document.processing_status = DocumentStatus.FAILED
+            document.provider_status = "failed"
+            document.error_message = str(exc)
+            document.updated_at = local_now()
+            self._repository.save_document(document)
+            return self.document_detail(user_id, document.id)
+
+    def retry_document(self, user_id: str, document_id: str) -> dict[str, object]:
+        document = self._repository.get_document(document_id, user_id)
+        document.processing_status = DocumentStatus.UPLOADED
+        document.error_message = None
+        document.provider_status = None
+        document.updated_at = local_now()
+        self._repository.save_document(document)
+        return self.process_document(user_id, document.id)
+
+    def delete_document(self, user_id: str, document_id: str) -> dict[str, object]:
+        document = self._repository.get_document(document_id, user_id)
+        if self._provider and document.provider_dataset_id and document.provider_document_id:
+            self._provider.delete_document(
+                user_id=user_id,
+                dataset_id=document.provider_dataset_id,
+                document_id=document.provider_document_id,
+            )
+        self._repository.delete_document(document.id, user_id)
+        return {"id": document.id, "status": "deleted"}
+
     def _process_with_provider(self, user_id: str, document: Document) -> dict[str, object]:
         try:
             if not document.content and not document.storage_path:
@@ -149,41 +208,17 @@ class KnowledgeService:
                 document_id=provider_document_id,
             )
             document.provider_status = str(parse_result.get("status") or "chunking")
+            document.updated_at = local_now()
+            self._repository.save_document(document)
+            if hasattr(self._provider, "get_document_status"):
+                return self.refresh_document(user_id, document.id)
             chunks = self._provider.list_document_chunks(
                 user_id=user_id,
                 dataset_id=provider_dataset_id,
                 document_id=provider_document_id,
             )
-            if chunks:
-                self._repository.replace_chunks(
-                    document.id,
-                    [
-                        DocumentChunk(
-                            user_id=user_id,
-                            document_id=document.id,
-                            chunk_index=index,
-                            content=str(chunk.get("content", "")),
-                            metadata=self._provider_chunk_metadata(
-                                chunk=chunk,
-                                document=document,
-                                provider_document_id=provider_document_id,
-                            ),
-                        )
-                        for index, chunk in enumerate(chunks)
-                        if chunk.get("content")
-                    ],
-                )
-                self._repository.save_concept(
-                    Concept(
-                        user_id=user_id,
-                        subject=document.subject,
-                        topic=document.topic,
-                        name=document.topic,
-                    )
-                )
-                document.processing_status = DocumentStatus.PROCESSED
-            else:
-                document.processing_status = DocumentStatus.CHUNKING
+            self._cache_provider_chunks(user_id, document, chunks)
+            document.processing_status = DocumentStatus.PROCESSED if chunks else DocumentStatus.CHUNKING
             document.updated_at = local_now()
             self._repository.save_document(document)
             return self.document_detail(user_id, document.id)
@@ -194,6 +229,36 @@ class KnowledgeService:
             document.updated_at = local_now()
             self._repository.save_document(document)
             return self.document_detail(user_id, document.id)
+
+    def _cache_provider_chunks(self, user_id: str, document: Document, chunks: list[dict[str, object]]) -> None:
+        valid_chunks = [chunk for chunk in chunks if chunk.get("content")]
+        if not valid_chunks:
+            return
+        self._repository.replace_chunks(
+            document.id,
+            [
+                DocumentChunk(
+                    user_id=user_id,
+                    document_id=document.id,
+                    chunk_index=index,
+                    content=str(chunk.get("content", "")),
+                    metadata=self._provider_chunk_metadata(
+                        chunk=chunk,
+                        document=document,
+                        provider_document_id=str(document.provider_document_id),
+                    ),
+                )
+                for index, chunk in enumerate(valid_chunks)
+            ],
+        )
+        self._repository.save_concept(
+            Concept(
+                user_id=user_id,
+                subject=document.subject,
+                topic=document.topic,
+                name=document.topic,
+            )
+        )
 
     def _provider_chunk_metadata(
         self,
@@ -245,6 +310,28 @@ class KnowledgeService:
             "document": document.to_dict(),
             "chunks": [chunk.to_dict() for chunk in chunks],
         }
+
+    def evidence(self, user_id: str, document_id: str) -> list[dict[str, object]]:
+        document = self._repository.get_document(document_id, user_id)
+        return [
+            evidence_source(
+                {
+                    "documentId": document.id,
+                    "chunkId": chunk.id,
+                    "content": chunk.content,
+                    "metadata": {
+                        **chunk.metadata,
+                        "fileName": document.file_name,
+                        "goalId": document.goal_id,
+                        "subject": document.subject,
+                        "topic": document.topic,
+                    },
+                    "score": 1.0,
+                    "identifiers": {"documentId": document.id, "chunkId": chunk.id},
+                }
+            )
+            for chunk in self._repository.list_chunks(document.id, user_id)
+        ]
 
     def overview(self, user_id: str) -> dict[str, object]:
         documents = self._repository.list_documents(user_id)

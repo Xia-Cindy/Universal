@@ -54,6 +54,14 @@ class KnowledgeRepository:
             self.chunks[chunk.id] = chunk
         return chunks
 
+    def delete_document(self, document_id: str, user_id: str) -> Document:
+        document = self.get_document(document_id, user_id)
+        self.documents.pop(document_id, None)
+        self.chunks = {
+            chunk_id: chunk for chunk_id, chunk in self.chunks.items() if chunk.document_id != document_id
+        }
+        return document
+
     def list_chunks(self, document_id: str, user_id: str) -> list[DocumentChunk]:
         return sorted(
             [

@@ -1609,4 +1609,34 @@ Not changed:
 - Retrieval 的 in-memory vector store 不属于本阶段持久化范围；RAGFlow provider 通过后续 runtime acceptance 负责生产检索状态。
 - Session finish 的跨 Task、Learning Event、Memory、Analytics 统一 application transaction 仍是下一阶段工作。
 
+## 28. RAGFlow Runtime Acceptance Status
+
+已完成代码合同与本地验证：
+
+- `KnowledgeProvider` 提供 health check、document status、retry 和 delete boundary。
+- RAGFlow-backed Knowledge 文档支持异步 status refresh；Study Knowledge UI 在 `parsing` / `chunking` 状态下轮询。
+- Provider 删除会先同步删除 RAGFlow document，再删除 Universe metadata 和本地 chunk preview。
+- RAGFlow health endpoint 在本地 runtime 可访问，mocked provider tests 与完整 backend/frontend checks 已通过。
+
+当前未通过的外部验收：
+
+- RAGFlow API 可访问，但其 embedding model provider 返回 `InvalidApiKey`，因此真实 TXT、Markdown、PDF 尚未完成 `processed` 验收。
+- 在有效 embedding provider key/model 配置前，不把 RAGFlow-backed Knowledge 描述为已可用生产能力。
+- Citation / source click-through 仍属于下一阶段统一 Evidence 合同，不在本节提前宣称完成。
+
+## 29. Citation / Evidence 与 Review Loop
+
+已完成：
+
+- `backend/app/services/evidence.py` 提供共享 Evidence source normalization。
+- Tutor 通过 AI Core ToolRouter 得到检索结果后，Study Tutor 将结果映射为 `sourceId`、`documentId`、`chunkId`、`title`、`quote`、`score`、`metadata` 和 `sourceUrl`。
+- Knowledge Evidence API 和 Tutor response 使用同一来源形状；无结果时保持明确的 no-source 状态。
+- Wrong Question 和 Review item 属于 Study 业务事实，由 ReviewService 管理；Analytics 只读取 summary，不创建 analytics persistence table。
+- Review 不创建 Agent，不调用 AI Core，不修改 Retrieval、Memory 或 Knowledge architecture。
+
+未完成：
+
+- 真实 RAGFlow processed 文档和跨 provider 稳定位置引用。
+- 跨 repository 的 PostgreSQL unit-of-work transaction。
+
 # End

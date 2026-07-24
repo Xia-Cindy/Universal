@@ -67,6 +67,11 @@ Milestone 4.3 connects Retrieval to Study Tutor through AI Core:
 
 Milestone 4.3 does not implement Knowledge Graph, automatic summarization, Memory Intelligence, or new Agents.
 
+The current Tutor response contract exposes normalized Evidence sources when
+retrieval returns chunks. Sources include a quote preview and a Knowledge
+click-through URL; an empty result is shown explicitly as no available
+Knowledge source. Tutor answers can be saved as Learning Events.
+
 Milestone 5 adds the Memory Intelligence foundation:
 
 - shared Memory Manager repository/service boundary
@@ -259,6 +264,16 @@ Full installation notes live in `docs/06_RAGFLOW_INSTALLATION.md`.
 RAGFlow remains experimental until runtime health, real-key document processing,
 status polling, retry, deletion synchronization and citation click-through have
 all passed the integration checklist.
+
+Current runtime status: health check, provider status polling, retry and delete
+synchronization are implemented and tested. Real document processing is still
+blocked by the RAGFlow embedding provider configuration: the configured
+embedding model currently returns `InvalidApiKey`. Until that provider key is
+fixed and TXT, Markdown and PDF acceptance samples reach `processed`, all
+RAGFlow-backed Knowledge copy remains experimental.
+
+The current Review loop stores Wrong Questions and creates 1/3/7/30-day Review
+items without requiring AI. Review completion is included in Study Analytics.
 
 ## Test
 

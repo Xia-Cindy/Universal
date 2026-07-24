@@ -221,6 +221,10 @@ def create_app():
     def get_tutor_history():
         return api.get_tutor_history()
 
+    @app.post("/api/study/tutor/events")
+    def save_tutor_answer_event(payload: dict):
+        return api.save_tutor_answer_event(payload)
+
     @app.post("/api/study/knowledge/documents")
     def create_knowledge_document(payload: dict):
         return api.create_knowledge_document(payload)
@@ -249,9 +253,29 @@ def create_app():
     def get_knowledge_document(document_id: str):
         return api.get_knowledge_document(document_id)
 
+    @app.get("/api/study/knowledge/documents/{document_id}/evidence")
+    def get_knowledge_evidence(document_id: str):
+        return api.get_knowledge_evidence(document_id)
+
+    @app.get("/api/study/knowledge/documents/{document_id}/status")
+    def refresh_knowledge_document(document_id: str):
+        return api.refresh_knowledge_document(document_id)
+
     @app.post("/api/study/knowledge/documents/{document_id}/process")
     def process_knowledge_document(document_id: str):
         return api.process_knowledge_document(document_id)
+
+    @app.post("/api/study/knowledge/documents/{document_id}/retry")
+    def retry_knowledge_document(document_id: str):
+        return api.retry_knowledge_document(document_id)
+
+    @app.delete("/api/study/knowledge/documents/{document_id}")
+    def delete_knowledge_document(document_id: str):
+        return api.delete_knowledge_document(document_id)
+
+    @app.get("/api/knowledge/provider/health")
+    def knowledge_provider_health():
+        return api.knowledge_provider_health()
 
     @app.patch("/api/study/knowledge/documents/{document_id}")
     def update_knowledge_document(document_id: str, payload: dict):
@@ -308,6 +332,22 @@ def create_app():
     @app.post("/api/study/analytics/report")
     def create_study_analytics_report():
         return api.create_study_analytics_report()
+
+    @app.post("/api/study/review/wrong-questions")
+    def create_wrong_question(payload: dict):
+        return api.create_wrong_question(payload)
+
+    @app.get("/api/study/review/wrong-questions")
+    def list_wrong_questions():
+        return api.list_wrong_questions()
+
+    @app.get("/api/study/review/queue")
+    def get_review_queue(includeFuture: bool = False):
+        return api.get_review_queue(include_future=includeFuture)
+
+    @app.post("/api/study/review/items/{review_id}/complete")
+    def complete_review_item(review_id: str, payload: dict | None = None):
+        return api.complete_review_item(review_id, payload)
 
     return app
 
