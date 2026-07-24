@@ -21,10 +21,18 @@ from backend.app.planets.study.workspace import StudyWorkspaceService
 from backend.app.planets.study.review import ReviewService
 from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
 from backend.app.planets.work.repository import SQLiteWorkRepository
-from backend.app.persistence import SQLitePersistence
+from backend.app.persistence import (
+    PostgresKnowledgeRepository,
+    PostgresMemoryRepository,
+    PostgresPersistence,
+    PostgresStudyRepository,
+    PostgresWorkRepository,
+    SQLitePersistence,
+)
+from backend.app.storage import LocalObjectStorage, S3ObjectStorage
 from backend.app.retrieval import RetrievalQuery, RetrievalService, RetrieverTool
 from backend.app.universe import UniverseService
-from backend.app.users import UserService
+from backend.app.users import AuthService, ConsoleEmailSender, SMTPEmailSender, UserService
 
 
 class ApiFacade:
@@ -33,21 +41,44 @@ class ApiFacade:
     def __init__(self, *, database_path: str | None = None) -> None:
         self.registry = create_default_registry()
         self.universe = UniverseService(self.registry)
-        self.persistence = SQLitePersistence(database_path) if database_path else None
+        if settings.persistence_backend == "postgres":
+            if not settings.database_url:
+                raise ValueError("DATABASE_URL is required when PERSISTENCE_BACKEND=postgres")
+            self.persistence = PostgresPersistence(settings.database_url)
+            study_repository = PostgresStudyRepository(self.persistence)
+            knowledge_repository = PostgresKnowledgeRepository(self.persistence)
+            memory_repository = PostgresMemoryRepository(self.persistence)
+            work_repository = PostgresWorkRepository(self.persistence)
+        else:
+            self.persistence = SQLitePersistence(database_path) if database_path else None
+            study_repository = SQLiteStudyRepository(self.persistence) if self.persistence else StudyRepository()
+            knowledge_repository = SQLiteKnowledgeRepository(self.persistence) if self.persistence else KnowledgeRepository()
+            memory_repository = SQLiteMemoryRepository(self.persistence) if self.persistence else None
+            work_repository = SQLiteWorkRepository(self.persistence) if self.persistence else WorkRepository()
         self.users = UserService(settings.default_user_id, persistence=self.persistence)
+        email_sender = (
+            SMTPEmailSender(
+                host=settings.smtp_host,
+                port=settings.smtp_port,
+                username=settings.smtp_username,
+                password=settings.smtp_password,
+                sender=settings.smtp_from,
+            )
+            if settings.email_backend == "smtp"
+            else ConsoleEmailSender()
+        )
+        self.auth = AuthService(users=self.users, persistence=self.persistence, sender=email_sender)
         self.memory = MemoryService(
-            repository=SQLiteMemoryRepository(self.persistence) if self.persistence else None,
+            repository=memory_repository,
         )
-        self.study_repository = (
-            SQLiteStudyRepository(self.persistence) if self.persistence else StudyRepository()
-        )
-        self.knowledge_repository = (
-            SQLiteKnowledgeRepository(self.persistence) if self.persistence else KnowledgeRepository()
-        )
+        self.study_repository = study_repository
+        self.knowledge_repository = knowledge_repository
+        self.object_storage = self._create_object_storage()
         self.knowledge_provider = self._create_knowledge_provider()
         self.knowledge = KnowledgeService(
             repository=self.knowledge_repository,
             provider=self.knowledge_provider,
+            storage=self.object_storage,
         )
         self.retrieval = RetrievalService(
             knowledge_repository=self.knowledge_repository,
@@ -120,9 +151,7 @@ class ApiFacade:
             ai_core=self.ai_core,
             review=self.study_review,
         )
-        self.work_repository = (
-            SQLiteWorkRepository(self.persistence) if self.persistence else WorkRepository()
-        )
+        self.work_repository = work_repository
         self.work = WorkService(self.work_repository)
         self.work_community = CSDNCommunityService()
 
@@ -136,12 +165,49 @@ class ApiFacade:
                 base_url=settings.ragflow_base_url,
                 api_key=settings.ragflow_api_key,
             ),
-            dataset_id=settings.ragflow_dataset_id or None,
-            dataset_name=settings.ragflow_dataset_name,
-        )
+                dataset_id=settings.ragflow_dataset_id or None,
+                dataset_name=settings.ragflow_dataset_name,
+                embedding_model=settings.ragflow_embedding_model,
+                llm_model=settings.ragflow_llm_model,
+                rerank_model=settings.ragflow_rerank_model,
+            )
+
+    def _create_object_storage(self):
+        if settings.object_storage_backend == "s3":
+            return S3ObjectStorage(
+                bucket=settings.object_storage_bucket,
+                region=settings.object_storage_region,
+                endpoint_url=settings.object_storage_endpoint_url or None,
+                access_key_id=settings.object_storage_access_key_id or None,
+                secret_access_key=settings.object_storage_secret_access_key or None,
+            )
+        if settings.object_storage_backend == "local":
+            return LocalObjectStorage(settings.object_storage_root)
+        return None
 
     def health(self) -> dict[str, str]:
         return {"status": "ok", "product": settings.app_name}
+
+    def request_registration(self, payload: dict) -> dict[str, object]:
+        return self.auth.request_registration(
+            email=payload["email"],
+            password=payload["password"],
+            display_name=payload.get("displayName", ""),
+        )
+
+    def verify_registration(self, payload: dict) -> dict[str, object]:
+        session = self.auth.verify_registration(email=payload["email"], code=payload["code"])
+        return {"token": session.token, "user": session.user.to_dict()}
+
+    def login(self, payload: dict) -> dict[str, object]:
+        session = self.auth.login(email=payload["email"], password=payload["password"])
+        return {"token": session.token, "user": session.user.to_dict()}
+
+    def current_auth_user(self) -> dict[str, str]:
+        return self.users.current_user().to_dict()
+
+    def authenticate(self, token: str | None):
+        return self.auth.authenticate(token)
 
     def list_planets(self) -> dict[str, object]:
         return self.universe.portal()
@@ -281,6 +347,10 @@ class ApiFacade:
     def create_plan(self, payload: dict | None = None) -> dict[str, object]:
         user = self.users.current_user()
         return self.study_plans.create_plan(user.id, payload)
+
+    def create_plan_node(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_plans.create_plan_node(user.id, payload)
 
     def get_current_plan(self) -> dict[str, object] | None:
         user = self.users.current_user()

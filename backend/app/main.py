@@ -21,9 +21,37 @@ def create_app():
 
     app = FastAPI(title="Universe OS API")
 
+    @app.middleware("http")
+    async def auth_context(request, call_next):
+        token = request.headers.get("Authorization", "")
+        token = token.removeprefix("Bearer ").strip() or None
+        user = api.authenticate(token)
+        context_token = api.users.set_current_user(user) if user else None
+        try:
+            return await call_next(request)
+        finally:
+            if context_token is not None:
+                api.users.reset_current_user(context_token)
+
     @app.get("/api/health")
     def health():
         return api.health()
+
+    @app.post("/api/auth/register/request")
+    def request_registration(payload: dict):
+        return api.request_registration(payload)
+
+    @app.post("/api/auth/register/verify")
+    def verify_registration(payload: dict):
+        return api.verify_registration(payload)
+
+    @app.post("/api/auth/login")
+    def login(payload: dict):
+        return api.login(payload)
+
+    @app.get("/api/auth/me")
+    def auth_me():
+        return api.current_auth_user()
 
     @app.get("/api/planets")
     def list_planets():
@@ -168,6 +196,10 @@ def create_app():
     @app.post("/api/study/plans")
     def create_plan(payload: dict | None = None):
         return api.create_plan(payload)
+
+    @app.post("/api/study/plans/nodes")
+    def create_plan_node(payload: dict):
+        return api.create_plan_node(payload)
 
     @app.get("/api/study/plans/current")
     def get_current_plan():

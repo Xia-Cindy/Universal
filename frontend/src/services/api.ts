@@ -33,6 +33,7 @@ export interface DailyTask {
   taskDate: string
   estimatedMinutes: number
   priority: 'high' | 'medium' | 'low'
+  sortOrder?: number
   status: string
 }
 
@@ -306,8 +307,15 @@ export interface CommunityArticleDetail {
 
 const API_BASE = '/api'
 
+async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const token = localStorage.getItem('universe_auth_token')
+  const headers = new Headers(init.headers)
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  return fetch(input, { ...init, headers })
+}
+
 export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
-  const response = await fetch(`${API_BASE}/planets`)
+  const response = await apiFetch(`${API_BASE}/planets`)
   if (!response.ok) {
     throw new Error('Unable to load planets')
   }
@@ -315,7 +323,7 @@ export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
 }
 
 export async function fetchStudyHome() {
-  const response = await fetch(`${API_BASE}/study/home`)
+  const response = await apiFetch(`${API_BASE}/study/home`)
   if (!response.ok) {
     throw new Error('Unable to load Study Home')
   }
@@ -323,7 +331,7 @@ export async function fetchStudyHome() {
 }
 
 export async function fetchWorkHome(): Promise<WorkHomePayload> {
-  const response = await fetch(`${API_BASE}/work/home`)
+  const response = await apiFetch(`${API_BASE}/work/home`)
   if (!response.ok) {
     throw new Error('Unable to load Work Home')
   }
@@ -331,7 +339,7 @@ export async function fetchWorkHome(): Promise<WorkHomePayload> {
 }
 
 export async function fetchTechStacks(): Promise<TechStack[]> {
-  const response = await fetch(`${API_BASE}/work/tech-stacks`)
+  const response = await apiFetch(`${API_BASE}/work/tech-stacks`)
   if (!response.ok) {
     throw new Error('Unable to load Tech Stacks')
   }
@@ -339,7 +347,7 @@ export async function fetchTechStacks(): Promise<TechStack[]> {
 }
 
 export async function createTechStack(payload: Record<string, unknown>): Promise<TechStack> {
-  const response = await fetch(`${API_BASE}/work/tech-stacks`, {
+  const response = await apiFetch(`${API_BASE}/work/tech-stacks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -351,7 +359,7 @@ export async function createTechStack(payload: Record<string, unknown>): Promise
 }
 
 export async function updateTechStack(techStackId: string, payload: Record<string, unknown>): Promise<TechStack> {
-  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`, {
+  const response = await apiFetch(`${API_BASE}/work/tech-stacks/${techStackId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -363,7 +371,7 @@ export async function updateTechStack(techStackId: string, payload: Record<strin
 }
 
 export async function deleteTechStack(techStackId: string): Promise<TechStack> {
-  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`, {
+  const response = await apiFetch(`${API_BASE}/work/tech-stacks/${techStackId}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
@@ -373,7 +381,7 @@ export async function deleteTechStack(techStackId: string): Promise<TechStack> {
 }
 
 export async function fetchTechStackDetail(techStackId: string) {
-  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}`)
+  const response = await apiFetch(`${API_BASE}/work/tech-stacks/${techStackId}`)
   if (!response.ok) {
     throw new Error('Unable to load Tech Stack')
   }
@@ -382,7 +390,7 @@ export async function fetchTechStackDetail(techStackId: string) {
 
 export async function fetchCSDNCommunityArticles(topic = 'java'): Promise<CommunityArticlePayload> {
   const params = new URLSearchParams({ topic })
-  const response = await fetch(`${API_BASE}/work/community/csdn?${params.toString()}`)
+  const response = await apiFetch(`${API_BASE}/work/community/csdn?${params.toString()}`)
   if (!response.ok) {
     throw new Error('Unable to load CSDN community articles')
   }
@@ -391,7 +399,7 @@ export async function fetchCSDNCommunityArticles(topic = 'java'): Promise<Commun
 
 export async function fetchCSDNCommunityArticleDetail(url: string): Promise<CommunityArticleDetail> {
   const params = new URLSearchParams({ url })
-  const response = await fetch(`${API_BASE}/work/community/csdn/article?${params.toString()}`)
+  const response = await apiFetch(`${API_BASE}/work/community/csdn/article?${params.toString()}`)
   if (!response.ok) {
     throw new Error('Unable to load CSDN article content')
   }
@@ -399,7 +407,7 @@ export async function fetchCSDNCommunityArticleDetail(url: string): Promise<Comm
 }
 
 export async function createWorkArticle(techStackId: string, payload: Record<string, unknown>): Promise<WorkArticle> {
-  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}/articles`, {
+  const response = await apiFetch(`${API_BASE}/work/tech-stacks/${techStackId}/articles`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -414,7 +422,7 @@ export async function createWorkLearningRecord(
   techStackId: string,
   payload: Record<string, unknown>,
 ): Promise<WorkLearningRecord> {
-  const response = await fetch(`${API_BASE}/work/tech-stacks/${techStackId}/learning-records`, {
+  const response = await apiFetch(`${API_BASE}/work/tech-stacks/${techStackId}/learning-records`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -426,7 +434,7 @@ export async function createWorkLearningRecord(
 }
 
 export async function fetchWorkProjects(): Promise<WorkProject[]> {
-  const response = await fetch(`${API_BASE}/work/projects`)
+  const response = await apiFetch(`${API_BASE}/work/projects`)
   if (!response.ok) {
     throw new Error('Unable to load Work Projects')
   }
@@ -434,7 +442,7 @@ export async function fetchWorkProjects(): Promise<WorkProject[]> {
 }
 
 export async function createWorkProject(payload: Record<string, unknown>): Promise<WorkProject> {
-  const response = await fetch(`${API_BASE}/work/projects`, {
+  const response = await apiFetch(`${API_BASE}/work/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -446,7 +454,7 @@ export async function createWorkProject(payload: Record<string, unknown>): Promi
 }
 
 export async function fetchResumeVersions(): Promise<ResumeVersion[]> {
-  const response = await fetch(`${API_BASE}/work/resumes`)
+  const response = await apiFetch(`${API_BASE}/work/resumes`)
   if (!response.ok) {
     throw new Error('Unable to load Resume Versions')
   }
@@ -454,7 +462,7 @@ export async function fetchResumeVersions(): Promise<ResumeVersion[]> {
 }
 
 export async function createResumeDraft(payload: Record<string, unknown>): Promise<ResumeVersion> {
-  const response = await fetch(`${API_BASE}/work/resumes/draft`, {
+  const response = await apiFetch(`${API_BASE}/work/resumes/draft`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -466,7 +474,7 @@ export async function createResumeDraft(payload: Record<string, unknown>): Promi
 }
 
 export async function fetchStudyWorkspace(): Promise<StudyWorkspacePayload> {
-  const response = await fetch(`${API_BASE}/study/workspace`)
+  const response = await apiFetch(`${API_BASE}/study/workspace`)
   if (!response.ok) {
     throw new Error('Unable to load Study Workspace')
   }
@@ -474,7 +482,7 @@ export async function fetchStudyWorkspace(): Promise<StudyWorkspacePayload> {
 }
 
 export async function createGoal(payload: StudyGoalPayload) {
-  const response = await fetch(`${API_BASE}/study/goals`, {
+  const response = await apiFetch(`${API_BASE}/study/goals`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -486,7 +494,7 @@ export async function createGoal(payload: StudyGoalPayload) {
 }
 
 export async function updateGoal(goalId: string, payload: Partial<StudyGoalPayload>) {
-  const response = await fetch(`${API_BASE}/study/goals/${goalId}`, {
+  const response = await apiFetch(`${API_BASE}/study/goals/${goalId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -498,7 +506,7 @@ export async function updateGoal(goalId: string, payload: Partial<StudyGoalPaylo
 }
 
 export async function fetchStudyGoals(): Promise<StudyGoal[]> {
-  const response = await fetch(`${API_BASE}/study/goals`)
+  const response = await apiFetch(`${API_BASE}/study/goals`)
   if (!response.ok) {
     throw new Error('Unable to load goals')
   }
@@ -506,7 +514,7 @@ export async function fetchStudyGoals(): Promise<StudyGoal[]> {
 }
 
 export async function switchStudyGoal(goalId: string) {
-  const response = await fetch(`${API_BASE}/study/goals/${goalId}/switch`, {
+  const response = await apiFetch(`${API_BASE}/study/goals/${goalId}/switch`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -516,15 +524,37 @@ export async function switchStudyGoal(goalId: string) {
 }
 
 export async function fetchStudyOnboarding(): Promise<StudyOnboardingState> {
-  const response = await fetch(`${API_BASE}/study/onboarding`)
+  const response = await apiFetch(`${API_BASE}/study/onboarding`)
   if (!response.ok) {
     throw new Error('Unable to load Study onboarding')
   }
   return response.json()
 }
 
+export async function requestRegistration(payload: { email: string; password: string; displayName: string }) {
+  const response = await apiFetch(`${API_BASE}/auth/register/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail || 'Unable to request verification code')
+  return response.json()
+}
+
+export async function verifyRegistration(payload: { email: string; code: string }) {
+  const response = await apiFetch(`${API_BASE}/auth/register/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail || 'Unable to verify registration')
+  const result = await response.json()
+  localStorage.setItem('universe_auth_token', result.token)
+  return result
+}
+
 export async function createOnboardingGoal(payload: StudyGoalPayload): Promise<StudyOnboardingState> {
-  const response = await fetch(`${API_BASE}/study/onboarding/goal`, {
+  const response = await apiFetch(`${API_BASE}/study/onboarding/goal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -536,7 +566,7 @@ export async function createOnboardingGoal(payload: StudyGoalPayload): Promise<S
 }
 
 export async function createPlan(payload: Record<string, unknown> = {}) {
-  const response = await fetch(`${API_BASE}/study/plans`, {
+  const response = await apiFetch(`${API_BASE}/study/plans`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -547,8 +577,20 @@ export async function createPlan(payload: Record<string, unknown> = {}) {
   return response.json()
 }
 
+export async function createPlanNode(payload: Record<string, unknown>) {
+  const response = await apiFetch(`${API_BASE}/study/plans/nodes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error('Unable to create plan node')
+  }
+  return response.json()
+}
+
 export async function fetchCurrentPlan() {
-  const response = await fetch(`${API_BASE}/study/plans/current`)
+  const response = await apiFetch(`${API_BASE}/study/plans/current`)
   if (!response.ok) {
     throw new Error('Unable to load current plan')
   }
@@ -556,7 +598,7 @@ export async function fetchCurrentPlan() {
 }
 
 export async function updateYearPlan(planId: string, payload: Record<string, unknown>) {
-  const response = await fetch(`${API_BASE}/study/plans/year/${planId}`, {
+  const response = await apiFetch(`${API_BASE}/study/plans/year/${planId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -568,7 +610,7 @@ export async function updateYearPlan(planId: string, payload: Record<string, unk
 }
 
 export async function updateMonthPlan(planId: string, payload: Record<string, unknown>) {
-  const response = await fetch(`${API_BASE}/study/plans/month/${planId}`, {
+  const response = await apiFetch(`${API_BASE}/study/plans/month/${planId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -580,7 +622,7 @@ export async function updateMonthPlan(planId: string, payload: Record<string, un
 }
 
 export async function updateWeekPlan(planId: string, payload: Record<string, unknown>) {
-  const response = await fetch(`${API_BASE}/study/plans/week/${planId}`, {
+  const response = await apiFetch(`${API_BASE}/study/plans/week/${planId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -592,7 +634,7 @@ export async function updateWeekPlan(planId: string, payload: Record<string, unk
 }
 
 export async function updateTask(taskId: string, payload: Partial<DailyTask>) {
-  const response = await fetch(`${API_BASE}/study/tasks/${taskId}`, {
+  const response = await apiFetch(`${API_BASE}/study/tasks/${taskId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -604,7 +646,7 @@ export async function updateTask(taskId: string, payload: Partial<DailyTask>) {
 }
 
 export async function completeTask(taskId: string) {
-  const response = await fetch(`${API_BASE}/study/tasks/${taskId}/complete`, {
+  const response = await apiFetch(`${API_BASE}/study/tasks/${taskId}/complete`, {
     method: 'PATCH',
   })
   if (!response.ok) {
@@ -614,7 +656,7 @@ export async function completeTask(taskId: string) {
 }
 
 export async function startSession(payload: Record<string, unknown>) {
-  const response = await fetch(`${API_BASE}/study/sessions`, {
+  const response = await apiFetch(`${API_BASE}/study/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -626,7 +668,7 @@ export async function startSession(payload: Record<string, unknown>) {
 }
 
 export async function finishSession(sessionId: string, payload: Record<string, unknown>) {
-  const response = await fetch(`${API_BASE}/study/sessions/${sessionId}/finish`, {
+  const response = await apiFetch(`${API_BASE}/study/sessions/${sessionId}/finish`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -638,7 +680,7 @@ export async function finishSession(sessionId: string, payload: Record<string, u
 }
 
 export async function startExecutionSession(payload: Record<string, unknown>) {
-  const response = await fetch(`${API_BASE}/study/execution/sessions`, {
+  const response = await apiFetch(`${API_BASE}/study/execution/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -650,7 +692,7 @@ export async function startExecutionSession(payload: Record<string, unknown>) {
 }
 
 export async function finishExecutionSession(sessionId: string, payload: Record<string, unknown>) {
-  const response = await fetch(`${API_BASE}/study/execution/sessions/${sessionId}/finish`, {
+  const response = await apiFetch(`${API_BASE}/study/execution/sessions/${sessionId}/finish`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -662,7 +704,7 @@ export async function finishExecutionSession(sessionId: string, payload: Record<
 }
 
 export async function askStudyTutor(question: string, scope = 'current_goal') {
-  const response = await fetch(`${API_BASE}/study/tutor/ask`, {
+  const response = await apiFetch(`${API_BASE}/study/tutor/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question, scope }),
@@ -678,7 +720,7 @@ export async function saveTutorAnswerEvent(payload: {
   answer: string
   sources: EvidenceSource[]
 }) {
-  const response = await fetch(`${API_BASE}/study/tutor/events`, {
+  const response = await apiFetch(`${API_BASE}/study/tutor/events`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -690,7 +732,7 @@ export async function saveTutorAnswerEvent(payload: {
 }
 
 export async function fetchKnowledgeEvidence(documentId: string): Promise<EvidenceSource[]> {
-  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}/evidence`)
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents/${documentId}/evidence`)
   if (!response.ok) {
     throw new Error('Unable to load Knowledge evidence')
   }
@@ -698,7 +740,7 @@ export async function fetchKnowledgeEvidence(documentId: string): Promise<Eviden
 }
 
 export async function fetchTutorHistory() {
-  const response = await fetch(`${API_BASE}/study/tutor/history`)
+  const response = await apiFetch(`${API_BASE}/study/tutor/history`)
   if (!response.ok) {
     throw new Error('Unable to load Tutor history')
   }
@@ -706,7 +748,7 @@ export async function fetchTutorHistory() {
 }
 
 export async function createKnowledgeDocument(payload: KnowledgeDocumentPayload) {
-  const response = await fetch(`${API_BASE}/study/knowledge/documents`, {
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -718,7 +760,7 @@ export async function createKnowledgeDocument(payload: KnowledgeDocumentPayload)
 }
 
 export async function createWorkKnowledgeDocument(payload: KnowledgeDocumentPayload) {
-  const response = await fetch(`${API_BASE}/work/knowledge/documents`, {
+  const response = await apiFetch(`${API_BASE}/work/knowledge/documents`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -730,7 +772,7 @@ export async function createWorkKnowledgeDocument(payload: KnowledgeDocumentPayl
 }
 
 export async function fetchKnowledgeOverview() {
-  const response = await fetch(`${API_BASE}/study/knowledge`)
+  const response = await apiFetch(`${API_BASE}/study/knowledge`)
   if (!response.ok) {
     throw new Error('Unable to load Knowledge overview')
   }
@@ -757,7 +799,7 @@ export async function fetchKnowledgeDocuments(
     params.set('techStackId', filters.techStackId)
   }
   const query = params.toString()
-  const response = await fetch(`${API_BASE}/study/knowledge/documents${query ? `?${query}` : ''}`)
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents${query ? `?${query}` : ''}`)
   if (!response.ok) {
     throw new Error('Unable to load Knowledge documents')
   }
@@ -784,7 +826,7 @@ export async function fetchWorkKnowledgeDocuments(
     params.set('techStackId', filters.techStackId)
   }
   const query = params.toString()
-  const response = await fetch(`${API_BASE}/work/knowledge/documents${query ? `?${query}` : ''}`)
+  const response = await apiFetch(`${API_BASE}/work/knowledge/documents${query ? `?${query}` : ''}`)
   if (!response.ok) {
     throw new Error('Unable to load Work Knowledge documents')
   }
@@ -792,7 +834,7 @@ export async function fetchWorkKnowledgeDocuments(
 }
 
 export async function fetchKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
-  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}`)
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents/${documentId}`)
   if (!response.ok) {
     throw new Error('Unable to load Knowledge document')
   }
@@ -800,7 +842,7 @@ export async function fetchKnowledgeDocument(documentId: string): Promise<Knowle
 }
 
 export async function fetchWorkKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
-  const response = await fetch(`${API_BASE}/work/knowledge/documents/${documentId}`)
+  const response = await apiFetch(`${API_BASE}/work/knowledge/documents/${documentId}`)
   if (!response.ok) {
     throw new Error('Unable to load Work Knowledge document')
   }
@@ -808,7 +850,7 @@ export async function fetchWorkKnowledgeDocument(documentId: string): Promise<Kn
 }
 
 export async function processKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
-  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}/process`, {
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents/${documentId}/process`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -818,7 +860,7 @@ export async function processKnowledgeDocument(documentId: string): Promise<Know
 }
 
 export async function refreshKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
-  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}/status`)
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents/${documentId}/status`)
   if (!response.ok) {
     throw new Error('Unable to refresh Knowledge document status')
   }
@@ -826,7 +868,7 @@ export async function refreshKnowledgeDocument(documentId: string): Promise<Know
 }
 
 export async function retryKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
-  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}/retry`, {
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents/${documentId}/retry`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -836,7 +878,7 @@ export async function retryKnowledgeDocument(documentId: string): Promise<Knowle
 }
 
 export async function processWorkKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
-  const response = await fetch(`${API_BASE}/work/knowledge/documents/${documentId}/process`, {
+  const response = await apiFetch(`${API_BASE}/work/knowledge/documents/${documentId}/process`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -849,7 +891,7 @@ export async function updateKnowledgeDocument(
   documentId: string,
   payload: Partial<Pick<KnowledgeDocumentPayload, 'subject' | 'topic' | 'goalId'>>,
 ) {
-  const response = await fetch(`${API_BASE}/study/knowledge/documents/${documentId}`, {
+  const response = await apiFetch(`${API_BASE}/study/knowledge/documents/${documentId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -861,7 +903,7 @@ export async function updateKnowledgeDocument(
 }
 
 export async function fetchStudyAnalytics(): Promise<StudyAnalyticsPayload> {
-  const response = await fetch(`${API_BASE}/study/analytics`)
+  const response = await apiFetch(`${API_BASE}/study/analytics`)
   if (!response.ok) {
     throw new Error('Unable to load Study Analytics')
   }
@@ -869,7 +911,7 @@ export async function fetchStudyAnalytics(): Promise<StudyAnalyticsPayload> {
 }
 
 export async function createStudyAnalyticsReport(): Promise<StudyAnalyticsPayload> {
-  const response = await fetch(`${API_BASE}/study/analytics/report`, {
+  const response = await apiFetch(`${API_BASE}/study/analytics/report`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -879,7 +921,7 @@ export async function createStudyAnalyticsReport(): Promise<StudyAnalyticsPayloa
 }
 
 export async function fetchReviewQueue(includeFuture = true): Promise<ReviewQueueItem[]> {
-  const response = await fetch(`${API_BASE}/study/review/queue?includeFuture=${includeFuture}`)
+  const response = await apiFetch(`${API_BASE}/study/review/queue?includeFuture=${includeFuture}`)
   if (!response.ok) {
     throw new Error('Unable to load Review queue')
   }
@@ -894,7 +936,7 @@ export async function createWrongQuestion(payload: {
   topic?: string
   goalId?: string
 }) {
-  const response = await fetch(`${API_BASE}/study/review/wrong-questions`, {
+  const response = await apiFetch(`${API_BASE}/study/review/wrong-questions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -906,7 +948,7 @@ export async function createWrongQuestion(payload: {
 }
 
 export async function completeReviewItem(reviewId: string, result = 'remembered') {
-  const response = await fetch(`${API_BASE}/study/review/items/${reviewId}/complete`, {
+  const response = await apiFetch(`${API_BASE}/study/review/items/${reviewId}/complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ result }),

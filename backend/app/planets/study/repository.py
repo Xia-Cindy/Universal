@@ -133,7 +133,7 @@ class StudyRepository:
             "yearPlan": year,
             "monthPlans": sorted(months, key=lambda plan: plan.month),
             "weekPlans": sorted(weeks, key=lambda plan: plan.week_start),
-            "dailyTasks": sorted(tasks, key=lambda task: (task.task_date, task.created_at)),
+            "dailyTasks": sorted(tasks, key=lambda task: (task.task_date, task.sort_order, task.created_at)),
         }
 
     def list_year_plans_for_goal(self, user_id: str, goal_id: str) -> list[YearPlan]:
@@ -167,18 +167,18 @@ class StudyRepository:
         )
 
     def list_tasks_for_date(self, user_id: str, goal_id: str, task_date: date) -> list[DailyTask]:
-        return [
+        return sorted([
             task
             for task in self.daily_tasks.values()
             if task.user_id == user_id and task.goal_id == goal_id and task.task_date == task_date
-        ]
+        ], key=lambda task: (task.sort_order, task.created_at))
 
     def list_tasks_for_goal(self, user_id: str, goal_id: str) -> list[DailyTask]:
-        return [
+        return sorted([
             task
             for task in self.daily_tasks.values()
             if task.user_id == user_id and task.goal_id == goal_id
-        ]
+        ], key=lambda task: (task.task_date, task.sort_order, task.created_at))
 
     def save_session(self, session: StudySession) -> StudySession:
         self.sessions[session.id] = session

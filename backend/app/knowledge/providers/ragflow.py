@@ -111,10 +111,18 @@ class RAGFlowKnowledgeProvider:
         client: RAGFlowClient,
         dataset_id: str | None = None,
         dataset_name: str = "Universe OS Knowledge",
+        embedding_model: str = "",
+        llm_model: str = "",
+        rerank_model: str = "",
     ) -> None:
         self._client = client
         self._default_dataset_id = dataset_id
         self._dataset_name = dataset_name
+        self._models = {
+            "embedding": embedding_model or None,
+            "llm": llm_model or None,
+            "rerank": rerank_model or None,
+        }
         self._dataset_ids_by_scope: dict[str, str] = {}
 
     def health_check(self) -> dict[str, object]:
@@ -127,6 +135,11 @@ class RAGFlowKnowledgeProvider:
             "provider": self.name,
             "status": "ok",
             "datasetCount": len(response.get("data", [])) if isinstance(response.get("data"), list) else 0,
+            "modelConfiguration": {
+                key: {"configuredByUniverse": bool(value), "model": value}
+                for key, value in self._models.items()
+            },
+            "note": "Model execution is owned by RAGFlow; this endpoint reports only Universe-side labels and API reachability.",
         }
 
     def upload_document(self, *, user_id: str, document: Document) -> dict[str, object]:
@@ -193,7 +206,8 @@ class RAGFlowKnowledgeProvider:
             "datasetId": dataset_id,
             "documentId": document_id,
             "status": run,
-            "errorMessage": item.get("fail_reason") or item.get("error_message"),
+            "errorMessage": item.get("fail_reason") or item.get("error_message") or item.get("progress_msg"),
+            "progressMessage": item.get("progress_msg"),
             "raw": item,
         }
 

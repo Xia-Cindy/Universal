@@ -127,15 +127,16 @@ class SQLiteStudyRepository:
         with self._db.transaction() as db:
             db.execute(
                 """INSERT INTO daily_tasks
-                (id,user_id,goal_id,week_plan_id,subject,topic,task_date,estimated_minutes,priority,status,
+                (id,user_id,goal_id,week_plan_id,subject,topic,task_date,estimated_minutes,priority,sort_order,status,
                  completed_at,created_at,updated_at)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(id) DO UPDATE SET subject=excluded.subject,topic=excluded.topic,
                 task_date=excluded.task_date,estimated_minutes=excluded.estimated_minutes,priority=excluded.priority,
+                sort_order=excluded.sort_order,
                 status=excluded.status,completed_at=excluded.completed_at,updated_at=excluded.updated_at""",
                 (
                     task.id, task.user_id, task.goal_id, task.week_plan_id, task.subject, task.topic,
-                    payload["taskDate"], task.estimated_minutes, task.priority, task.status.value,
+                    payload["taskDate"], task.estimated_minutes, task.priority, task.sort_order, task.status.value,
                     payload["completedAt"], payload["createdAt"], payload["updatedAt"],
                 ),
             )
@@ -168,7 +169,7 @@ class SQLiteStudyRepository:
             "yearPlan": year,
             "monthPlans": sorted(months, key=lambda item: item.month),
             "weekPlans": sorted(weeks, key=lambda item: item.week_start),
-            "dailyTasks": sorted(tasks, key=lambda item: (item.task_date, item.created_at)),
+            "dailyTasks": sorted(tasks, key=lambda item: (item.task_date, item.sort_order, item.created_at)),
         }
 
     def list_year_plans_for_goal(self, user_id: str, goal_id: str) -> list[YearPlan]:
@@ -360,7 +361,8 @@ class SQLiteStudyRepository:
         return task_from_payload({
             "id": row["id"], "userId": row["user_id"], "goalId": row["goal_id"], "weekPlanId": row["week_plan_id"],
             "subject": row["subject"], "topic": row["topic"], "taskDate": row["task_date"],
-            "estimatedMinutes": row["estimated_minutes"], "priority": row["priority"], "status": row["status"],
+            "estimatedMinutes": row["estimated_minutes"], "priority": row["priority"],
+            "sortOrder": row["sort_order"], "status": row["status"],
             "completedAt": row["completed_at"], "createdAt": row["created_at"], "updatedAt": row["updated_at"],
         })
 

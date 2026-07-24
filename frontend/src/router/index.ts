@@ -19,11 +19,13 @@ import TechStackDetail from '../planets/work/tech-stack/TechStackDetail.vue'
 import WorkKnowledge from '../planets/work/knowledge/WorkKnowledge.vue'
 import WorkProjects from '../planets/work/projects/WorkProjects.vue'
 import DynamicResume from '../planets/work/resume/DynamicResume.vue'
+import Register from '../pages/Register.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'UniversePortal', component: UniversePortal },
+    { path: '/register', name: 'Register', component: Register },
     {
       path: '/study',
       component: StudyWorkspace,

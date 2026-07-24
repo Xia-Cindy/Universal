@@ -70,6 +70,68 @@ class PlanService:
             return None
         return self._serialize_plan(plan)
 
+    def create_plan_node(self, user_id: str, payload: dict) -> dict[str, object]:
+        """Create one node after validating the current Goal parent chain."""
+        goal = self._repository.get_active_goal(user_id)
+        if not goal:
+            raise ValueError("active goal is required before creating a plan node")
+        plan_type = payload.get("planType")
+        title = str(payload.get("title", "")).strip()
+        if not title:
+            raise ValueError("plan title is required")
+        if plan_type == "long_term":
+            self._repository.save_year_plan(
+                YearPlan(user_id=user_id, goal_id=goal.id, year=int(payload.get("year", local_today().year)), title=title)
+            )
+        elif plan_type == "monthly":
+            parent_id = payload.get("yearPlanId")
+            if not parent_id:
+                raise ValueError("monthly plan requires a long term parent")
+            parent = self._repository.get_year_plan(parent_id, user_id)
+            if parent.goal_id != goal.id:
+                raise ValueError("monthly plan parent does not belong to the current goal")
+            self._repository.save_month_plan(
+                MonthPlan(user_id=user_id, goal_id=goal.id, year_plan_id=parent.id,
+                          month=int(payload.get("month", local_today().month)), title=title,
+                          focus=str(payload.get("focus", "")).strip())
+            )
+        elif plan_type == "weekly":
+            parent_id = payload.get("monthPlanId")
+            if not parent_id:
+                raise ValueError("weekly plan requires a monthly parent")
+            parent = self._repository.get_month_plan(parent_id, user_id)
+            if parent.goal_id != goal.id:
+                raise ValueError("weekly plan parent does not belong to the current goal")
+            week_start = parse_local_date(payload.get("weekStart", local_today()))
+            self._repository.save_week_plan(
+                WeekPlan(user_id=user_id, goal_id=goal.id, month_plan_id=parent.id,
+                         week_start=week_start, week_end=week_start + timedelta(days=6), title=title,
+                         focus=str(payload.get("focus", "")).strip())
+            )
+        elif plan_type == "daily":
+            parent_id = payload.get("weekPlanId")
+            if not parent_id:
+                raise ValueError("daily task requires a weekly parent")
+            parent = self._repository.get_week_plan(parent_id, user_id)
+            if parent.goal_id != goal.id:
+                raise ValueError("daily task parent does not belong to the current goal")
+            subject = str(payload.get("subject", "")).strip()
+            topic = str(payload.get("topic", "")).strip()
+            if not subject or not topic:
+                raise ValueError("daily task requires subject and topic")
+            self._repository.save_daily_task(
+                DailyTask(user_id=user_id, goal_id=goal.id, week_plan_id=parent.id,
+                          subject=subject,
+                          topic=topic,
+                          task_date=parse_local_date(payload.get("taskDate", local_today())),
+                          estimated_minutes=int(payload.get("estimatedMinutes", goal.daily_available_minutes)),
+                          priority=str(payload.get("priority", "medium")),
+                          sort_order=int(payload.get("sortOrder", 0)))
+            )
+        else:
+            raise ValueError("planType must be long_term, monthly, weekly, or daily")
+        return self.get_current_plan(user_id) or {}
+
     def update_year_plan(self, user_id: str, plan_id: str, payload: dict) -> YearPlan:
         plan = self._repository.get_year_plan(plan_id, user_id)
         if "title" in payload:
@@ -107,6 +169,8 @@ class PlanService:
             task.estimated_minutes = int(payload["estimatedMinutes"])
         if "priority" in payload:
             task.priority = payload["priority"]
+        if "sortOrder" in payload:
+            task.sort_order = int(payload["sortOrder"])
         if "status" in payload:
             task.status = TaskStatus(payload["status"])
             if task.status == TaskStatus.COMPLETED and task.completed_at is None:

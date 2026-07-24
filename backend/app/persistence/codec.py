@@ -107,6 +107,7 @@ def task_from_payload(payload: dict[str, Any]) -> DailyTask:
         user_id=payload["userId"], goal_id=payload["goalId"], week_plan_id=payload["weekPlanId"],
         subject=payload["subject"], topic=payload["topic"], task_date=date.fromisoformat(payload["taskDate"]),
         estimated_minutes=int(payload["estimatedMinutes"]), priority=payload.get("priority", "medium"),
+        sort_order=int(payload.get("sortOrder", 0)),
         status=TaskStatus(payload.get("status", "pending")), id=payload["id"],
         completed_at=parse_datetime(payload["completedAt"]) if payload.get("completedAt") else None,
         created_at=parse_datetime(payload["createdAt"]), updated_at=parse_datetime(payload["updatedAt"]),

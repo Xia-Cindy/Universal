@@ -192,6 +192,7 @@ class DailyTask:
     task_date: date
     estimated_minutes: int
     priority: str = "medium"
+    sort_order: int = 0
     status: TaskStatus = TaskStatus.PENDING
     id: str = field(default_factory=_id)
     completed_at: datetime | None = None
@@ -209,6 +210,7 @@ class DailyTask:
             "taskDate": self.task_date.isoformat(),
             "estimatedMinutes": self.estimated_minutes,
             "priority": self.priority,
+            "sortOrder": self.sort_order,
             "status": self.status.value,
             "completedAt": self.completed_at.isoformat() if self.completed_at else None,
             "createdAt": self.created_at.isoformat(),

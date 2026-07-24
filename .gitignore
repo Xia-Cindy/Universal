@@ -12,3 +12,5 @@ docker/ragflow/ragflow-logs/
 docker/ragflow/data/
 .universe-os/
 database/*.sqlite3
+storage/objects/
+storage/backups/

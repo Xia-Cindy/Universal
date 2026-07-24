@@ -1,4 +1,6 @@
 from collections import Counter, defaultdict
+from base64 import b64decode, b64encode
+from copy import copy
 
 from backend.app.core.dates import local_now
 from backend.app.files import FileService, UnsupportedFileTypeError
@@ -6,6 +8,7 @@ from backend.app.knowledge.providers import KnowledgeProvider
 from backend.app.models import Concept, Document, DocumentChunk, DocumentStatus, DocumentType
 from backend.app.knowledge.repository import KnowledgeRepository
 from backend.app.services.evidence import evidence_source
+from backend.app.storage import ObjectStorage
 
 
 class KnowledgeService:
@@ -15,10 +18,12 @@ class KnowledgeService:
         repository: KnowledgeRepository | None = None,
         file_service: FileService | None = None,
         provider: KnowledgeProvider | None = None,
+        storage: ObjectStorage | None = None,
     ) -> None:
         self._repository = repository or KnowledgeRepository()
         self._file_service = file_service or FileService()
         self._provider = provider
+        self._storage = storage
 
     def create_document(self, user_id: str, payload: dict) -> Document:
         file_type = payload["fileType"]
@@ -40,6 +45,19 @@ class KnowledgeService:
             storage_path=payload.get("storagePath"),
             provider=self._provider.name if self._provider else "local",
         )
+        if self._storage and document.content:
+            object_key = f"{document.planet_type}/{user_id}/knowledge/{document.id}/{document.file_name}"
+            raw_content = (
+                b64decode(document.content)
+                if document.content_encoding == "base64"
+                else document.content.encode("utf-8")
+            )
+            document.storage_path = self._storage.put(
+                object_key,
+                raw_content,
+                content_type=_content_type(document.file_type.value),
+            )
+            document.content = ""
         return self._repository.save_document(document)
 
     def update_document(self, user_id: str, document_id: str, payload: dict) -> Document:
@@ -70,9 +88,12 @@ class KnowledgeService:
             document.updated_at = local_now()
             self._repository.save_document(document)
 
+            content = document.content
+            if not content and document.storage_path and self._storage:
+                content = self._storage.get(document.storage_path).decode("utf-8")
             text = self._file_service.extract_text(
                 file_type=document.file_type.value,
-                content=document.content,
+                content=content,
             )
             document.processing_status = DocumentStatus.CHUNKING
             document.updated_at = local_now()
@@ -143,7 +164,11 @@ class KnowledgeService:
                 document.error_message = None
             elif normalized_status in {"fail", "failed", "error", "4"}:
                 document.processing_status = DocumentStatus.FAILED
-                document.error_message = str(status.get("errorMessage") or "RAGFlow document processing failed")
+                document.error_message = str(
+                    status.get("errorMessage")
+                    or status.get("progressMessage")
+                    or "RAGFlow document processing failed"
+                )
             else:
                 document.processing_status = DocumentStatus.CHUNKING
             document.updated_at = local_now()
@@ -174,6 +199,8 @@ class KnowledgeService:
                 dataset_id=document.provider_dataset_id,
                 document_id=document.provider_document_id,
             )
+        if self._storage and document.storage_path:
+            self._storage.delete(document.storage_path)
         self._repository.delete_document(document.id, user_id)
         return {"id": document.id, "status": "deleted"}
 
@@ -192,7 +219,15 @@ class KnowledgeService:
                 provider_document_id = str(document.provider_document_id)
                 document.provider_status = document.provider_status or "uploaded"
             else:
-                upload = self._provider.upload_document(user_id=user_id, document=document)
+                provider_document = document
+                if not document.content and document.storage_path and self._storage:
+                    provider_document = copy(document)
+                    raw_content = self._storage.get(document.storage_path)
+                    if document.content_encoding == "base64":
+                        provider_document.content = b64encode(raw_content).decode("ascii")
+                    else:
+                        provider_document.content = raw_content.decode("utf-8")
+                upload = self._provider.upload_document(user_id=user_id, document=provider_document)
                 provider_dataset_id = str(upload["datasetId"])
                 provider_document_id = str(upload["documentId"])
                 document.provider_dataset_id = provider_dataset_id
@@ -360,3 +395,11 @@ class KnowledgeService:
         if goal_id:
             normalized.append(f"goal:{goal_id}")
         return list(dict.fromkeys(normalized))
+
+
+def _content_type(file_type: str) -> str:
+    return {
+        "txt": "text/plain",
+        "markdown": "text/markdown",
+        "pdf": "application/pdf",
+    }.get(file_type, "application/octet-stream")

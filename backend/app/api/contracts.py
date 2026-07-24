@@ -24,11 +24,19 @@ MILESTONE_1_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/study/home", "study_home", "milestone_1"),
 )
 
+AUTH_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("POST", "/api/auth/register/request", "request_registration", "auth_foundation"),
+    ApiContract("POST", "/api/auth/register/verify", "verify_registration", "auth_foundation"),
+    ApiContract("POST", "/api/auth/login", "login", "auth_foundation"),
+    ApiContract("GET", "/api/auth/me", "auth_me", "auth_foundation"),
+)
+
 MILESTONE_2_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("POST", "/api/study/goals", "create_goal", "milestone_2"),
     ApiContract("PATCH", "/api/study/goals/{goal_id}", "update_goal", "milestone_2"),
     ApiContract("GET", "/api/study/goals/active", "get_active_goal", "milestone_2"),
     ApiContract("POST", "/api/study/plans", "create_plan", "milestone_2"),
+    ApiContract("POST", "/api/study/plans/nodes", "create_plan_node", "plan_builder"),
     ApiContract("GET", "/api/study/plans/current", "get_current_plan", "milestone_2"),
     ApiContract("PATCH", "/api/study/plans/year/{plan_id}", "update_year_plan", "milestone_2"),
     ApiContract("PATCH", "/api/study/plans/month/{plan_id}", "update_month_plan", "milestone_2"),
@@ -186,6 +194,7 @@ def list_contracts() -> list[dict[str, str]]:
     return [
         contract.to_dict()
         for contract in (
+            *AUTH_CONTRACTS,
             *MILESTONE_1_CONTRACTS,
             *MILESTONE_2_CONTRACTS,
             *MILESTONE_3_CONTRACTS,
