@@ -275,6 +275,15 @@ RAGFlow-backed Knowledge copy remains experimental.
 The current Review loop stores Wrong Questions and creates 1/3/7/30-day Review
 items without requiring AI. Review completion is included in Study Analytics.
 
+## Account, persistence and authoring foundations
+
+- `/register` provides email verification registration. Development uses a console sender; production uses `EMAIL_BACKEND=smtp` and secret-managed SMTP settings.
+- `PERSISTENCE_BACKEND=postgres` enables the PostgreSQL repository adapter and migration runner. SQLite remains the local default.
+- Knowledge file bytes use `LocalObjectStorage` in development or an S3-compatible adapter in production. Database metadata and object storage are backed up separately.
+- `scripts/backup_sqlite.sh`, `scripts/backup_postgres.sh` and guarded `scripts/restore_postgres.sh` provide operational starting points; production still needs scheduled off-host retention and restore drills.
+- Study Plan now supports Goal-owned node creation and task reordering. It is a manual Plan Builder; automatic AI planning is intentionally not implemented.
+- Study Knowledge now uses the same rich inline authoring primitives as Work for headings, formatting, images, tables, code blocks and table operations while keeping the existing Knowledge API.
+
 ## Test
 
 Run the dependency-light foundation tests:

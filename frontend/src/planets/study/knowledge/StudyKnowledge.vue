@@ -85,12 +85,48 @@
       </label>
       <label class="wide-field">
         Body
-        <textarea
-          v-model="articleForm.body"
-          required
-          rows="12"
-          placeholder="# 第一章&#10;&#10;在这里写学习文章、章节笔记或知识卡片。保存后会进入 Knowledge 并生成 chunks。"
-        />
+        <input ref="imageInputRef" class="visually-hidden" type="file" accept="image/*" @change="insertSelectedImage" />
+        <input ref="colorInputRef" v-model="textColor" class="visually-hidden" type="color" @input="applyTextColor" />
+        <div class="article-inline-toolbar" aria-label="学习文章工具栏">
+          <div class="toolbar-group" aria-label="段落">
+            <button class="icon-tool-button" type="button" title="正文段落" @mousedown.prevent="insertParagraph">¶</button>
+            <button class="icon-tool-button" type="button" title="二级标题" @mousedown.prevent="insertHeading">H2</button>
+          </div>
+          <div class="toolbar-group" aria-label="文字格式">
+            <button class="icon-tool-button strong-tool" type="button" title="加粗" @mousedown.prevent="formatBold">B</button>
+            <button class="icon-tool-button color-tool" type="button" title="文字颜色" @mousedown.prevent="openTextColorPicker">
+              <span class="color-tool-dot" :style="{ background: textColor }"></span>A
+            </button>
+          </div>
+          <div class="toolbar-group" aria-label="插入正文内容">
+            <button class="icon-tool-button" type="button" title="插入图片" @mousedown.prevent="openImagePicker">▧</button>
+            <button class="icon-tool-button" type="button" title="插入表格" @mousedown.prevent="insertTable">▦</button>
+            <button class="icon-tool-button" type="button" title="插入代码块" @mousedown.prevent="insertCodeBlock">&lt;/&gt;</button>
+          </div>
+          <div class="toolbar-group" aria-label="对齐">
+            <button class="icon-tool-button" type="button" title="左对齐" @mousedown.prevent="alignSelection('left')">☰</button>
+            <button class="icon-tool-button" type="button" title="居中" @mousedown.prevent="alignSelection('center')">≡</button>
+            <button class="icon-tool-button" type="button" title="右对齐" @mousedown.prevent="alignSelection('right')">☷</button>
+          </div>
+          <div class="toolbar-group" aria-label="表格操作">
+            <button class="icon-tool-button" type="button" title="增加行" @mousedown.prevent="addTableRowAfter">R+</button>
+            <button class="icon-tool-button" type="button" title="删除行" @mousedown.prevent="deleteTableRow">R-</button>
+            <button class="icon-tool-button" type="button" title="增加列" @mousedown.prevent="addTableColumnAfter">C+</button>
+            <button class="icon-tool-button" type="button" title="删除列" @mousedown.prevent="deleteTableColumn">C-</button>
+            <button class="icon-tool-button" type="button" title="合并单元格" @mousedown.prevent="mergeTableCellRight">⇥</button>
+            <button class="icon-tool-button" type="button" title="拆分单元格" @mousedown.prevent="splitTableCell">⇤</button>
+          </div>
+        </div>
+        <div
+          ref="editorRef"
+          class="article-rich-editor"
+          contenteditable="true"
+          data-placeholder="像写文档一样写学习内容。图片、表格、代码块会插入到正文光标所在位置。"
+          @input="syncArticleBody"
+          @keyup="rememberSelection"
+          @mouseup="rememberSelection"
+          @paste="handleEditorPaste"
+        ></div>
       </label>
       <div class="knowledge-actions">
         <button type="submit" :disabled="!canSaveArticle">Save Article</button>
@@ -217,6 +253,11 @@ const articleTagsText = ref('')
 const isLoading = ref(false)
 const isUploading = ref(false)
 const isSavingArticle = ref(false)
+const editorRef = ref<HTMLElement | null>(null)
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const colorInputRef = ref<HTMLInputElement | null>(null)
+const savedRange = ref<Range | null>(null)
+const textColor = ref('#1f2937')
 let statusPollTimer: ReturnType<typeof setInterval> | null = null
 const articleForm = ref({
   title: '',
@@ -297,6 +338,7 @@ async function loadGoalContext() {
 }
 
 async function saveArticle() {
+  syncArticleBody()
   if (!canSaveArticle.value) {
     articleStatus.value = 'Fill title, subject, topic and body before saving.'
     return
@@ -328,6 +370,9 @@ async function saveArticle() {
       goalId: articleForm.value.goalId,
       body: '',
     }
+    if (editorRef.value) {
+      editorRef.value.innerHTML = ''
+    }
     articleTagsText.value = ''
     await loadDocuments()
     await selectDocument(document.id)
@@ -336,6 +381,218 @@ async function saveArticle() {
   } finally {
     isSavingArticle.value = false
   }
+}
+
+function insertParagraph() {
+  insertHtmlAtCursor('<p><br></p>')
+}
+
+function insertHeading() {
+  insertHtmlAtCursor('<h2>新章节</h2><p><br></p>')
+}
+
+function formatBold() {
+  restoreSelection()
+  document.execCommand('bold')
+  syncArticleBody()
+}
+
+function openImagePicker() {
+  rememberSelection()
+  imageInputRef.value?.click()
+}
+
+function openTextColorPicker() {
+  rememberSelection()
+  colorInputRef.value?.click()
+}
+
+function applyTextColor() {
+  restoreSelection()
+  document.execCommand('foreColor', false, textColor.value)
+  syncArticleBody()
+}
+
+async function insertSelectedImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) {
+    insertHtmlAtCursor(`<figure class="article-image-fragment"><img src="${escapeAttribute(await readImageAsDataUrl(file))}" alt="${escapeAttribute(file.name)}"><figcaption>${escapeHtml(file.name)}</figcaption></figure><p><br></p>`)
+  }
+  input.value = ''
+}
+
+function insertTable(rows = 3, columns = 3) {
+  const body = Array.from({ length: rows }, () =>
+    `<tr>${Array.from({ length: columns }, () => '<td contenteditable="true"><br></td>').join('')}</tr>`,
+  ).join('')
+  insertHtmlAtCursor(`<table class="article-table-fragment"><tbody>${body}</tbody></table><p><br></p>`)
+}
+
+function insertCodeBlock() {
+  insertHtmlAtCursor('<pre class="article-code-fragment"><code contenteditable="true">plain text</code></pre><p><br></p>')
+}
+
+function alignSelection(align: 'left' | 'center' | 'right') {
+  restoreSelection()
+  const cell = closestSelectedElement('td') as HTMLElement | null
+  if (cell) {
+    cell.style.textAlign = align
+  } else {
+    document.execCommand(align === 'left' ? 'justifyLeft' : align === 'center' ? 'justifyCenter' : 'justifyRight')
+  }
+  syncArticleBody()
+}
+
+function addTableRowAfter() {
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  if (!cell || !row) return
+  const newRow = document.createElement('tr')
+  const count = Array.from(row.children).reduce((sum, item) => sum + ((item as HTMLTableCellElement).colSpan || 1), 0)
+  for (let index = 0; index < count; index += 1) newRow.appendChild(createEditableCell())
+  row.after(newRow)
+  syncArticleBody()
+}
+
+function deleteTableRow() {
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  const table = row?.closest('table')
+  if (!row || !table) return
+  if (table.querySelectorAll('tr').length <= 1) table.remove()
+  else row.remove()
+  syncArticleBody()
+}
+
+function addTableColumnAfter() {
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  const table = row?.closest('table')
+  if (!cell || !row || !table) return
+  const index = Array.from(row.children).indexOf(cell)
+  table.querySelectorAll('tr').forEach((tableRow) => tableRow.children[index]?.after(createEditableCell()))
+  syncArticleBody()
+}
+
+function deleteTableColumn() {
+  const cell = currentTableCell()
+  const row = cell?.parentElement as HTMLTableRowElement | null
+  const table = row?.closest('table')
+  if (!cell || !row || !table) return
+  const index = Array.from(row.children).indexOf(cell)
+  table.querySelectorAll('tr').forEach((tableRow) => tableRow.children[index]?.remove())
+  syncArticleBody()
+}
+
+function mergeTableCellRight() {
+  const cell = currentTableCell()
+  const next = cell?.nextElementSibling as HTMLTableCellElement | null
+  if (!cell || !next) return
+  cell.colSpan = (cell.colSpan || 1) + (next.colSpan || 1)
+  next.remove()
+  syncArticleBody()
+}
+
+function splitTableCell() {
+  const cell = currentTableCell()
+  const span = cell?.colSpan || 1
+  if (!cell || span <= 1) return
+  cell.colSpan = 1
+  for (let index = 1; index < span; index += 1) cell.after(createEditableCell())
+  syncArticleBody()
+}
+
+function currentTableCell() {
+  return closestSelectedElement('td') as HTMLTableCellElement | null
+}
+
+function closestSelectedElement(selector: string) {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount || !editorRef.value) return null
+  let node: Node | null = selection.getRangeAt(0).startContainer
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentElement
+  const found = (node as Element | null)?.closest(selector) || null
+  return found && editorRef.value.contains(found) ? found : null
+}
+
+function createEditableCell() {
+  const cell = document.createElement('td')
+  cell.contentEditable = 'true'
+  cell.innerHTML = '<br>'
+  return cell
+}
+
+function rememberSelection() {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount || !editorRef.value) return
+  const range = selection.getRangeAt(0)
+  if (editorRef.value.contains(range.commonAncestorContainer)) savedRange.value = range.cloneRange()
+}
+
+function restoreSelection() {
+  if (!editorRef.value) return
+  editorRef.value.focus()
+  const selection = window.getSelection()
+  if (!selection) return
+  selection.removeAllRanges()
+  const range = savedRange.value || document.createRange()
+  if (!savedRange.value) {
+    range.selectNodeContents(editorRef.value)
+    range.collapse(false)
+  }
+  selection.addRange(range)
+}
+
+function insertHtmlAtCursor(html: string) {
+  restoreSelection()
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount || !editorRef.value) return
+  const range = selection.getRangeAt(0)
+  const fragment = range.createContextualFragment(html)
+  const lastNode = fragment.lastChild
+  range.deleteContents()
+  range.insertNode(fragment)
+  if (lastNode) {
+    const nextRange = document.createRange()
+    nextRange.setStartAfter(lastNode)
+    nextRange.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(nextRange)
+    savedRange.value = nextRange.cloneRange()
+  }
+  syncArticleBody()
+}
+
+function handleEditorPaste(event: ClipboardEvent) {
+  const image = Array.from(event.clipboardData?.items || []).find((item) => item.type.startsWith('image/'))
+  if (!image) return
+  event.preventDefault()
+  const file = image.getAsFile()
+  if (file) readImageAsDataUrl(file).then((data) => insertHtmlAtCursor(`<figure class="article-image-fragment"><img src="${escapeAttribute(data)}" alt="pasted image"></figure><p><br></p>`))
+}
+
+function syncArticleBody() {
+  articleForm.value.body = editorRef.value?.innerHTML || ''
+}
+
+function readImageAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+function escapeHtml(value: string) {
+  const container = document.createElement('div')
+  container.textContent = value
+  return container.innerHTML
+}
+
+function escapeAttribute(value: string) {
+  return escapeHtml(value).replace(/"/g, '&quot;')
 }
 
 async function uploadDocument() {

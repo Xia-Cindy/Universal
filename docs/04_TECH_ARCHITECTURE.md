@@ -1624,6 +1624,18 @@ Not changed:
 - 在有效 embedding provider key/model 配置前，不把 RAGFlow-backed Knowledge 描述为已可用生产能力。
 - Citation / source click-through 仍属于下一阶段统一 Evidence 合同，不在本节提前宣称完成。
 
+## 30. Current Platform Foundation Status
+
+本轮实现状态：
+
+- 增加 `PostgresPersistence` 与 Study、Knowledge、Memory、Work repository adapter；通过 `PERSISTENCE_BACKEND=postgres` 和同一组 repository contract 接入，未重写 Planet service。
+- 增加本地/S3-compatible ObjectStorage boundary，Knowledge 文档元数据继续保存在数据库，文件内容按环境进入对象存储。
+- 增加 SQLite/PostgreSQL backup、受保护的 PostgreSQL restore 脚本；生产排程、异地保留、加密和恢复演练仍需由部署环境完成。
+- 增加邮箱验证码注册和 SMTP sender boundary；AI Core、Agent、Tutor 不依赖认证实现。
+- Plan Builder 已支持 Goal -> Long Term -> Monthly -> Weekly -> Daily 的父级校验、节点创建和同日任务排序。自动规划仍未实现。
+- Study Knowledge 已从 Markdown-only textarea 升级为正文编辑器，支持标题、加粗、颜色、图片、表格、代码块、对齐、行列操作、合并和拆分单元格。
+- RAGFlow embedding、LLM、rerank 仍由 RAGFlow 管理；Universe health endpoint 只报告 API 可达性和可选标签，不伪造模型运行成功。真实 TXT、Markdown、PDF processed acceptance 仍必须通过 runtime samples。
+
 ## 29. Citation / Evidence 与 Review Loop
 
 已完成：

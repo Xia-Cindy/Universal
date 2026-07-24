@@ -22,6 +22,82 @@
           <RouterLink class="secondary-action" to="/study/goals">Switch Goal</RouterLink>
         </section>
 
+        <section class="home-section plan-builder-section" aria-labelledby="plan-builder-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Plan Builder</p>
+              <h3 id="plan-builder-title">按路线添加计划节点</h3>
+            </div>
+            <span>所有节点必须挂在当前 Goal 下</span>
+          </div>
+          <form class="plan-node-form" @submit.prevent="addPlanNode">
+            <label>
+              层级
+              <select v-model="nodeForm.planType">
+                <option value="long_term">长期计划</option>
+                <option value="monthly">月计划</option>
+                <option value="weekly">周计划</option>
+                <option value="daily">每日任务</option>
+              </select>
+            </label>
+            <label class="wide-field">
+              标题
+              <input v-model="nodeForm.title" required placeholder="例如：完成操作系统内存章节" />
+            </label>
+            <label v-if="nodeForm.planType === 'monthly'">
+              所属长期计划
+              <select v-model="nodeForm.yearPlanId" required>
+                <option value="" disabled>选择长期计划</option>
+                <option v-for="plan in workspace.plans.longTermPlans" :key="plan.id" :value="plan.id">{{ plan.title }}</option>
+              </select>
+            </label>
+            <label v-if="nodeForm.planType === 'weekly'">
+              所属月计划
+              <select v-model="nodeForm.monthPlanId" required>
+                <option value="" disabled>选择月计划</option>
+                <option v-for="plan in workspace.plans.monthlyPlans" :key="plan.id" :value="plan.id">{{ plan.title }}</option>
+              </select>
+            </label>
+            <label v-if="nodeForm.planType === 'daily'">
+              所属周计划
+              <select v-model="nodeForm.weekPlanId" required>
+                <option value="" disabled>选择周计划</option>
+                <option v-for="plan in workspace.plans.weeklyPlans" :key="plan.id" :value="plan.id">{{ plan.title }}</option>
+              </select>
+            </label>
+            <label v-if="nodeForm.planType === 'daily'">
+              日期
+              <input v-model="nodeForm.taskDate" type="date" required />
+            </label>
+            <label v-if="nodeForm.planType === 'daily'">
+              分钟
+              <input v-model.number="nodeForm.estimatedMinutes" type="number" min="1" required />
+            </label>
+            <label v-if="nodeForm.planType === 'daily'">
+              科目
+              <input v-model="nodeForm.subject" required placeholder="科目" />
+            </label>
+            <label v-if="nodeForm.planType === 'daily'">
+              优先级
+              <select v-model="nodeForm.priority">
+                <option value="high">高</option>
+                <option value="medium">中</option>
+                <option value="low">低</option>
+              </select>
+            </label>
+            <label v-if="['monthly', 'weekly'].includes(nodeForm.planType)" class="wide-field">
+              重点
+              <input v-model="nodeForm.focus" placeholder="这一层要推进什么？" />
+            </label>
+            <label v-if="nodeForm.planType === 'daily'" class="wide-field">
+              主题
+              <input v-model="nodeForm.topic" required placeholder="具体要完成的学习内容" />
+            </label>
+            <button type="submit" :disabled="isSaving">添加到路线</button>
+          </form>
+          <p class="surface-copy">{{ status }}</p>
+        </section>
+
         <div v-if="!hasPlan" class="plan-empty-state">
           <h3>创建一条计划结构</h3>
           <p>
@@ -176,6 +252,8 @@
                 <RouterLink v-else class="secondary-action" to="/study/analytics">
                   View Progress
                 </RouterLink>
+                <button type="button" class="secondary-action" @click="moveTask(task, -1)">上移</button>
+                <button type="button" class="secondary-action" @click="moveTask(task, 1)">下移</button>
               </div>
               <div class="task-edit-panel">
                 <p class="eyebrow">编辑任务</p>
@@ -223,6 +301,7 @@ import { computed, onMounted, ref } from 'vue'
 import {
   completeTask,
   createPlan,
+  createPlanNode,
   fetchStudyWorkspace,
   updateTask,
   updateMonthPlan,
@@ -289,13 +368,28 @@ const planEdit = ref({
   weekTitle: '',
   weekFocus: '',
 })
+const nodeForm = ref({
+  planType: 'long_term',
+  title: '',
+  focus: '',
+  yearPlanId: '',
+  monthPlanId: '',
+  weekPlanId: '',
+  taskDate: new Date().toISOString().slice(0, 10),
+  subject: '',
+  topic: '',
+  estimatedMinutes: 30,
+  priority: 'medium',
+})
 const hasPlan = computed(() => workspace.value.planSummary.hasPlan)
 const currentLongTermPlan = computed(() => workspace.value.plans.longTermPlans[0])
 const currentMonthlyPlan = computed(() => workspace.value.plans.monthlyPlans[0])
 const currentWeeklyPlan = computed(() => workspace.value.plans.weeklyPlans[0])
 const sortedTasks = computed(() =>
   [...workspace.value.plans.dailyTasks].sort((left, right) =>
-    `${left.taskDate}-${left.id}`.localeCompare(`${right.taskDate}-${right.id}`),
+    `${left.taskDate}-${String(left.sortOrder ?? 0).padStart(5, '0')}-${left.id}`.localeCompare(
+      `${right.taskDate}-${String(right.sortOrder ?? 0).padStart(5, '0')}-${right.id}`,
+    ),
   ),
 )
 const calendarDays = computed(() => buildCalendarDays(sortedTasks.value))
@@ -338,10 +432,53 @@ async function createPlanStructure() {
   }
 }
 
+async function addPlanNode() {
+  isSaving.value = true
+  try {
+    await createPlanNode({
+      planType: nodeForm.value.planType,
+      title: nodeForm.value.title,
+      focus: nodeForm.value.focus,
+      yearPlanId: nodeForm.value.yearPlanId || undefined,
+      monthPlanId: nodeForm.value.monthPlanId || undefined,
+      weekPlanId: nodeForm.value.weekPlanId || undefined,
+      taskDate: nodeForm.value.taskDate,
+      subject: nodeForm.value.subject,
+      topic: nodeForm.value.topic,
+      estimatedMinutes: nodeForm.value.estimatedMinutes,
+      priority: nodeForm.value.priority,
+      sortOrder: workspace.value.plans.dailyTasks.length,
+    })
+    status.value = 'Plan node added to the current Goal route.'
+    nodeForm.value.title = ''
+    nodeForm.value.focus = ''
+    nodeForm.value.subject = ''
+    nodeForm.value.topic = ''
+    await loadWorkspace()
+  } finally {
+    isSaving.value = false
+  }
+}
+
 async function saveTask(task: DailyTask) {
   const updated = await updateTask(task.id, task)
   Object.assign(task, updated)
   status.value = 'Task saved inside the current Goal.'
+}
+
+async function moveTask(task: DailyTask, direction: -1 | 1) {
+  const sameDay = sortedTasks.value.filter((item) => item.taskDate === task.taskDate)
+  const index = sameDay.findIndex((item) => item.id === task.id)
+  const target = sameDay[index + direction]
+  if (!target) return
+  const currentOrder = task.sortOrder ?? index
+  const targetOrder = target.sortOrder ?? index + direction
+  await Promise.all([
+    updateTask(task.id, { sortOrder: targetOrder }),
+    updateTask(target.id, { sortOrder: currentOrder }),
+  ])
+  status.value = 'Task order updated.'
+  await loadWorkspace()
 }
 
 function buildCalendarDays(tasks: DailyTask[]) {
