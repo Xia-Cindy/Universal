@@ -22,12 +22,16 @@ from backend.app.models import (
     PlanStatus,
     PlanType,
     ResumeVersion,
+    ReviewItem,
+    ReviewStatus,
     SessionStatus,
     StudyGoal,
     StudySession,
     TaskStatus,
     TechStack,
     WeekPlan,
+    WrongQuestion,
+    WrongQuestionStatus,
     WorkArticle,
     WorkLearningRecord,
     WorkProject,
@@ -126,6 +130,29 @@ def event_from_payload(payload: dict[str, Any]) -> LearningEvent:
         user_id=payload["userId"], event_type=payload["eventType"], summary=payload["summary"],
         metadata=payload.get("metadata", {}), id=payload["id"],
         created_at=parse_datetime(payload["createdAt"]),
+    )
+
+
+def wrong_question_from_payload(payload: dict[str, Any]) -> WrongQuestion:
+    return WrongQuestion(
+        user_id=payload["userId"], goal_id=payload["goalId"], question=payload["question"],
+        correct_answer=payload.get("correctAnswer", ""), explanation=payload.get("explanation", ""),
+        subject=payload.get("subject", ""), topic=payload.get("topic", ""),
+        status=WrongQuestionStatus(payload.get("status", "learning")),
+        source_event_id=payload.get("sourceEventId"), id=payload["id"],
+        created_at=parse_datetime(payload["createdAt"]), updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
+def review_item_from_payload(payload: dict[str, Any]) -> ReviewItem:
+    return ReviewItem(
+        user_id=payload["userId"], wrong_question_id=payload["wrongQuestionId"],
+        stage=int(payload["stage"]), interval_days=int(payload["intervalDays"]),
+        due_date=date.fromisoformat(payload["dueDate"]),
+        status=ReviewStatus(payload.get("status", "pending")), result=payload.get("result"),
+        completed_at=parse_datetime(payload["completedAt"]) if payload.get("completedAt") else None,
+        id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
     )
 
 

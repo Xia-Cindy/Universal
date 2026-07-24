@@ -43,6 +43,17 @@ class SessionStatus(StrEnum):
     FINISHED = "finished"
 
 
+class WrongQuestionStatus(StrEnum):
+    LEARNING = "learning"
+    MASTERED = "mastered"
+
+
+class ReviewStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
+
+
 def _id() -> str:
     return str(uuid4())
 
@@ -256,4 +267,66 @@ class LearningEvent:
             "summary": self.summary,
             "metadata": self.metadata,
             "createdAt": self.created_at.isoformat(),
+        }
+
+
+@dataclass
+class WrongQuestion:
+    user_id: str
+    goal_id: str
+    question: str
+    correct_answer: str
+    explanation: str
+    subject: str
+    topic: str
+    status: WrongQuestionStatus = WrongQuestionStatus.LEARNING
+    source_event_id: str | None = None
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "goalId": self.goal_id,
+            "question": self.question,
+            "correctAnswer": self.correct_answer,
+            "explanation": self.explanation,
+            "subject": self.subject,
+            "topic": self.topic,
+            "status": self.status.value,
+            "sourceEventId": self.source_event_id,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class ReviewItem:
+    user_id: str
+    wrong_question_id: str
+    stage: int
+    interval_days: int
+    due_date: date
+    status: ReviewStatus = ReviewStatus.PENDING
+    result: str | None = None
+    completed_at: datetime | None = None
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "wrongQuestionId": self.wrong_question_id,
+            "stage": self.stage,
+            "intervalDays": self.interval_days,
+            "dueDate": self.due_date.isoformat(),
+            "status": self.status.value,
+            "result": self.result,
+            "completedAt": self.completed_at.isoformat() if self.completed_at else None,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
         }

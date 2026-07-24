@@ -3,15 +3,23 @@ from collections import Counter, defaultdict
 from backend.app.ai import AICoreService, AIRequest
 from backend.app.models import TaskStatus
 from backend.app.planets.study.repository import StudyRepository
+from backend.app.planets.study.review import ReviewService
 from backend.app.users.service import UserProfile
 
 
 class StudyAnalyticsService:
     """Analytics module facade for Study Intelligence foundation."""
 
-    def __init__(self, *, repository: StudyRepository, ai_core: AICoreService) -> None:
+    def __init__(
+        self,
+        *,
+        repository: StudyRepository,
+        ai_core: AICoreService,
+        review: ReviewService | None = None,
+    ) -> None:
         self._repository = repository
         self._ai_core = ai_core
+        self._review = review
 
     def analytics(
         self,
@@ -90,10 +98,18 @@ class StudyAnalyticsService:
             "learningEvents": len(learning_events),
             "subjectMinutes": dict(sorted(subject_minutes.items())),
             "subjectCompletion": subject_completion,
+            "review": self._review.summary(user.id) if self._review else {
+                "wrongQuestionCount": 0,
+                "reviewQueueCount": 0,
+                "dueReviewCount": 0,
+                "completedReviewCount": 0,
+            },
         }
         data_quality = self._data_quality(tasks=tasks, sessions=sessions)
         learning_insights = self._learning_insights(progress, weak_areas, memory_context)
         recommended_actions = self._recommended_actions(tasks, weak_areas)
+        if progress["review"]["dueReviewCount"]:
+            recommended_actions.insert(0, f"完成 {progress['review']['dueReviewCount']} 个到期复习项。")
         report_summary = (
             "学习数据已经足够生成基础分析。"
             if data_quality["state"] == "ready"

@@ -5,6 +5,8 @@ from datetime import date
 from backend.app.models import (
     DailyTask,
     LearningEvent,
+    ReviewItem,
+    WrongQuestion,
     MonthPlan,
     PlanStatus,
     SessionStatus,
@@ -17,12 +19,14 @@ from backend.app.models import (
 from backend.app.persistence.codec import (
     dumps,
     event_from_payload,
+    review_item_from_payload,
     goal_from_payload,
     month_plan_from_payload,
     session_from_payload,
     task_from_payload,
     week_plan_from_payload,
     year_plan_from_payload,
+    wrong_question_from_payload,
 )
 from backend.app.persistence.sqlite import SQLitePersistence
 
@@ -231,6 +235,65 @@ class SQLiteStudyRepository:
             "summary": row["summary"], "metadata": __import__("json").loads(row["metadata"]),
             "createdAt": row["created_at"],
         }) for row in rows]
+
+    def save_wrong_question(self, question: WrongQuestion) -> WrongQuestion:
+        payload = question.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO wrong_questions(id,user_id,goal_id,payload,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at""",
+                (question.id, question.user_id, question.goal_id, dumps(payload), payload["createdAt"], payload["updatedAt"]),
+            )
+        return question
+
+    def get_wrong_question(self, question_id: str, user_id: str) -> WrongQuestion:
+        row = self._db.connection.execute("SELECT payload FROM wrong_questions WHERE id = ?", (question_id,)).fetchone()
+        if not row:
+            raise KeyError(question_id)
+        question = wrong_question_from_payload(__import__("json").loads(row["payload"]))
+        if question.user_id != user_id:
+            raise PermissionError("Wrong question does not belong to user")
+        return question
+
+    def list_wrong_questions(self, user_id: str, goal_id: str | None = None) -> list[WrongQuestion]:
+        query = "SELECT payload FROM wrong_questions WHERE user_id = ?"
+        params: list[object] = [user_id]
+        if goal_id:
+            query += " AND goal_id = ?"
+            params.append(goal_id)
+        query += " ORDER BY created_at DESC"
+        rows = self._db.connection.execute(query, params).fetchall()
+        return [wrong_question_from_payload(__import__("json").loads(row["payload"])) for row in rows]
+
+    def save_review_item(self, item: ReviewItem) -> ReviewItem:
+        payload = item.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO review_items(id,user_id,wrong_question_id,due_date,payload,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET due_date=excluded.due_date,
+                   payload=excluded.payload, updated_at=excluded.updated_at""",
+                (item.id, item.user_id, item.wrong_question_id, payload["dueDate"], dumps(payload), payload["createdAt"], payload["updatedAt"]),
+            )
+        return item
+
+    def get_review_item(self, item_id: str, user_id: str) -> ReviewItem:
+        row = self._db.connection.execute("SELECT payload FROM review_items WHERE id = ?", (item_id,)).fetchone()
+        if not row:
+            raise KeyError(item_id)
+        item = review_item_from_payload(__import__("json").loads(row["payload"]))
+        if item.user_id != user_id:
+            raise PermissionError("Review item does not belong to user")
+        return item
+
+    def list_review_items(self, user_id: str, wrong_question_id: str | None = None) -> list[ReviewItem]:
+        query = "SELECT payload FROM review_items WHERE user_id = ?"
+        params: list[object] = [user_id]
+        if wrong_question_id:
+            query += " AND wrong_question_id = ?"
+            params.append(wrong_question_id)
+        query += " ORDER BY due_date, created_at"
+        rows = self._db.connection.execute(query, params).fetchall()
+        return [review_item_from_payload(__import__("json").loads(row["payload"])) for row in rows]
 
     def _save_plan(self, plan, *, parent_id: str | None = None, year: int | None = None, month: int | None = None, week_start: str | None = None, week_end: str | None = None) -> None:
         payload = plan.to_dict()

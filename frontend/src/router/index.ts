@@ -8,6 +8,7 @@ import StudyGoalCreate from '../planets/study/goals/StudyGoalCreate.vue'
 import StudyPlan from '../planets/study/plan/StudyPlan.vue'
 import StudySession from '../planets/study/session/StudySession.vue'
 import StudyPlaceholder from '../planets/study/placeholder/StudyPlaceholder.vue'
+import StudyReview from '../planets/study/review/StudyReview.vue'
 import StudyTutor from '../planets/study/tutor/StudyTutor.vue'
 import StudyKnowledge from '../planets/study/knowledge/StudyKnowledge.vue'
 import StudyAnalytics from '../planets/study/analytics/StudyAnalytics.vue'
@@ -36,11 +37,8 @@ export const router = createRouter({
         { path: 'knowledge', name: 'StudyKnowledge', component: StudyKnowledge },
         { path: 'tutor', name: 'StudyTutor', component: StudyTutor },
         { path: 'analytics', name: 'StudyAnalytics', component: StudyAnalytics },
-        {
-          path: ':section(review)',
-          name: 'StudyPlaceholder',
-          component: StudyPlaceholder,
-        },
+        { path: 'review', name: 'StudyReview', component: StudyReview },
+        { path: ':section', name: 'StudyPlaceholder', component: StudyPlaceholder },
       ],
     },
     {

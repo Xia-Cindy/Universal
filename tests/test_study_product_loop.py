@@ -98,6 +98,7 @@ class StudyProductLoopTests(unittest.TestCase):
         self.assertEqual(finished["state"], "finished")
         self.assertEqual(finished["session"]["durationMinutes"], 30)
         self.assertEqual(finished_again["session"]["durationMinutes"], 30)
+        self.assertEqual(self.api.study_repository.get_task(task["id"], "local-user").status.value, "completed")
         self.assertEqual(len(self.api.list_study_records()), 1)
         self.assertEqual(len(self.api.study_repository.list_learning_events("local-user")), 1)
 

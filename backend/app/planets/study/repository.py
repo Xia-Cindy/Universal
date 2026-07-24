@@ -11,6 +11,8 @@ from backend.app.models import (
     TaskStatus,
     WeekPlan,
     YearPlan,
+    ReviewItem,
+    WrongQuestion,
 )
 
 from backend.app.persistence.study import SQLiteStudyRepository
@@ -34,6 +36,8 @@ class StudyRepository:
         self.sessions: dict[str, StudySession] = {}
         self.learning_events: dict[str, LearningEvent] = {}
         self.current_goal_ids: dict[tuple[str, str], str] = {}
+        self.wrong_questions: dict[str, WrongQuestion] = {}
+        self.review_items: dict[str, ReviewItem] = {}
 
     def save_goal(self, goal: StudyGoal) -> StudyGoal:
         self.goals[goal.id] = goal
@@ -203,3 +207,35 @@ class StudyRepository:
             key=lambda event: event.created_at,
             reverse=True,
         )
+
+    def save_wrong_question(self, question: WrongQuestion) -> WrongQuestion:
+        self.wrong_questions[question.id] = question
+        return question
+
+    def get_wrong_question(self, question_id: str, user_id: str) -> WrongQuestion:
+        question = self.wrong_questions[question_id]
+        if question.user_id != user_id:
+            raise PermissionError("Wrong question does not belong to user")
+        return question
+
+    def list_wrong_questions(self, user_id: str, goal_id: str | None = None) -> list[WrongQuestion]:
+        questions = [item for item in self.wrong_questions.values() if item.user_id == user_id]
+        if goal_id:
+            questions = [item for item in questions if item.goal_id == goal_id]
+        return sorted(questions, key=lambda item: item.created_at, reverse=True)
+
+    def save_review_item(self, item: ReviewItem) -> ReviewItem:
+        self.review_items[item.id] = item
+        return item
+
+    def get_review_item(self, item_id: str, user_id: str) -> ReviewItem:
+        item = self.review_items[item_id]
+        if item.user_id != user_id:
+            raise PermissionError("Review item does not belong to user")
+        return item
+
+    def list_review_items(self, user_id: str, wrong_question_id: str | None = None) -> list[ReviewItem]:
+        items = [item for item in self.review_items.values() if item.user_id == user_id]
+        if wrong_question_id:
+            items = [item for item in items if item.wrong_question_id == wrong_question_id]
+        return sorted(items, key=lambda item: (item.due_date, item.stage, item.created_at))

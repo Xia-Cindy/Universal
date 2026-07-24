@@ -37,12 +37,23 @@ class StudyExecutionService:
         was_finished = existing.status == SessionStatus.FINISHED
         session = self._sessions.finish_session(user_id, session_id, payload)
         if not was_finished:
+            self._complete_task_for_session(user_id, session)
             self._record_learning_activity(user_id, session)
             self._write_session_memory(user_id, session)
         return {
             "state": "finished",
             "session": session.to_dict(),
         }
+
+    def _complete_task_for_session(self, user_id: str, session) -> None:
+        if not session.task_id:
+            return
+        task = self._repository.get_task(session.task_id, user_id)
+        if task.status != TaskStatus.COMPLETED:
+            task.status = TaskStatus.COMPLETED
+            task.completed_at = session.end_time or local_now()
+            task.updated_at = task.completed_at
+            self._repository.save_daily_task(task)
 
     def _record_learning_activity(self, user_id: str, session) -> None:
         self._repository.save_learning_event(
