@@ -6,7 +6,10 @@
         <h2 id="tech-stack-title">技术栈目录</h2>
         <p class="surface-copy">像浏览技术频道一样管理能力：分类、技术栈、文章、笔记和社区动态都从这里进入。</p>
       </div>
-      <button type="button" @click="showCreate = true">Add Tech Stack</button>
+      <div class="knowledge-actions">
+        <RouterLink v-if="articleEntryRoute" class="primary-action" :to="articleEntryRoute">写文章</RouterLink>
+        <button type="button" @click="showCreate = true">Add Tech Stack</button>
+      </div>
     </header>
 
     <div v-if="showCreate" class="modal-backdrop" role="presentation" @click.self="showCreate = false">
@@ -231,6 +234,10 @@ const selectedStack = computed(() =>
     ? null
     : techStackList.value.find((stack) => stack.id === selectedStackId.value) || null,
 )
+const articleEntryRoute = computed(() => {
+  const stack = selectedStack.value || techStackList.value[0]
+  return stack ? `/work/tech-stack/${stack.id}?mode=write` : ''
+})
 const communityTopic = computed(() => selectedStack.value?.name || 'java')
 const contentItems = computed(() => [
   ...articles.value.map((article) => ({

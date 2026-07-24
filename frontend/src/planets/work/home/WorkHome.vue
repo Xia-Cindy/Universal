@@ -9,6 +9,13 @@
       <RouterLink class="primary-action" :to="home.primaryAction.route">
         {{ home.primaryAction.label }}
       </RouterLink>
+      <RouterLink
+        v-if="home.techStacks.length"
+        class="secondary-action"
+        :to="`/work/tech-stack/${home.techStacks[0].id}?mode=write`"
+      >
+        写文章
+      </RouterLink>
     </div>
 
     <div class="progress-snapshot">

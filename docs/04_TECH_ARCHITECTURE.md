@@ -1634,6 +1634,7 @@ Not changed:
 - 增加邮箱验证码注册和 SMTP sender boundary；AI Core、Agent、Tutor 不依赖认证实现。
 - Plan Builder 已支持 Goal -> Long Term -> Monthly -> Weekly -> Daily 的父级校验、节点创建和同日任务排序。自动规划仍未实现。
 - Study Knowledge 已从 Markdown-only textarea 升级为正文编辑器，支持标题、加粗、颜色、图片、表格、代码块、对齐、行列操作、合并和拆分单元格。
+- Work Tech Stack 详情默认展示文章/笔记库；Work Home、技术栈目录和详情页提供显式写文章入口，只有用户主动进入后才展开同类正文编辑器。
 - RAGFlow embedding、LLM、rerank 仍由 RAGFlow 管理；Universe health endpoint 只报告 API 可达性和可选标签，不伪造模型运行成功。真实 TXT、Markdown、PDF processed acceptance 仍必须通过 runtime samples。
 
 ## 29. Citation / Evidence 与 Review Loop

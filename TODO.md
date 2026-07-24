@@ -184,6 +184,7 @@
 - [x] Add Study Knowledge Write Article mode that saves goal-linked markdown articles through the existing Knowledge API.
 - [x] Add Tech Stack update and archive actions.
 - [x] Refine Tech Stack article writing into a focused editor with an auto-generated left outline.
+- [x] Restore an explicit Work `写文章` entry and keep the Tech Stack editor closed by default.
 - [x] Add compact title-level article tools that insert images, editable tables and code snippets directly into the article body, plus pasted image/table handling, bold text, text color, table row/column operations and cell merge/split.
 - [x] Keep AI Core, Retrieval, RAGFlow and Memory architecture unchanged.
 - [x] Keep Work Agent and autonomous resume generation out of scope.

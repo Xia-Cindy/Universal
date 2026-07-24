@@ -10,6 +10,9 @@
           <p class="surface-copy">{{ detail.techStack.description || detail.techStack.category }}</p>
         </div>
         <div class="knowledge-actions">
+          <button class="primary-action" type="button" @click="showArticleEditor = !showArticleEditor">
+            {{ showArticleEditor ? '关闭写作' : '写文章' }}
+          </button>
           <button class="secondary-action" type="button" @click="showStackEditor = !showStackEditor">
             {{ showStackEditor ? 'Close Edit' : 'Edit Stack' }}
           </button>
@@ -53,7 +56,31 @@
         </form>
       </section>
 
-      <form class="article-writing-room" @submit.prevent="submitArticle">
+      <section v-if="!showArticleEditor" class="home-section stack-article-library" aria-labelledby="stack-article-library-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Knowledge & Notes</p>
+            <h3 id="stack-article-library-title">文章与笔记</h3>
+          </div>
+          <button class="primary-action" type="button" @click="showArticleEditor = true">写文章</button>
+        </div>
+        <div v-if="detail.articles.length" class="goal-list">
+          <article v-for="article in detail.articles" :key="article.id" class="knowledge-document">
+            <span class="status-pill">{{ article.articleType === 'note' ? '笔记' : '知识' }}</span>
+            <h4>{{ article.title }}</h4>
+            <p class="surface-copy">{{ article.summary || article.content.slice(0, 160) }}</p>
+            <div class="tech-tag-row">
+              <span v-for="tag in article.tags || []" :key="tag">{{ tag }}</span>
+            </div>
+          </article>
+        </div>
+        <div v-else class="knowledge-state">
+          <strong>这个技术栈还没有文章。</strong>
+          <span>把学习内容整理成知识或笔记，之后可以继续沉淀为项目证据。</span>
+        </div>
+      </section>
+
+      <form v-if="showArticleEditor" class="article-writing-room" @submit.prevent="submitArticle">
         <aside class="article-outline-panel" aria-label="文章目录">
           <div class="section-heading">
             <h3>目录</h3>
@@ -84,6 +111,13 @@
           </div>
 
           <input v-model="articleForm.title" class="article-title-input" required placeholder="输入文章标题" />
+          <label class="article-type-field">
+            文章类型
+            <select v-model="articleForm.articleType">
+              <option value="knowledge">知识</option>
+              <option value="note">笔记</option>
+            </select>
+          </label>
 
           <div class="article-inline-toolbar" aria-label="写作工具栏">
             <div class="toolbar-group" aria-label="段落">
@@ -140,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createWorkArticle, deleteTechStack, fetchTechStackDetail, updateTechStack } from '../../../services/api'
 
@@ -151,6 +185,7 @@ const articleStatus = ref('Draft is local until saved.')
 const stackStatus = ref('Update name, category, proficiency, tags or description.')
 const stackTagsText = ref('')
 const showStackEditor = ref(false)
+const showArticleEditor = ref(false)
 const selectedHeading = ref('')
 const editorRef = ref<HTMLElement | null>(null)
 const imageInputRef = ref<HTMLInputElement | null>(null)
@@ -159,6 +194,7 @@ const savedRange = ref<Range | null>(null)
 const textColor = ref('#1f2937')
 const articleForm = ref({
   title: '',
+  articleType: 'knowledge',
   contentHtml: '',
 })
 const stackForm = ref({
@@ -177,8 +213,16 @@ const articleOutline = computed(() =>
 )
 
 onMounted(async () => {
+  showArticleEditor.value = route.query.mode === 'write'
   await loadDetail()
 })
+
+watch(
+  () => [route.params.techStackId, route.query.mode],
+  () => {
+    showArticleEditor.value = route.query.mode === 'write'
+  },
+)
 
 async function loadDetail() {
   const rawDetail = await fetchTechStackDetail(String(route.params.techStackId))
@@ -221,13 +265,13 @@ async function submitArticle() {
   const content = composeArticleContent()
   await createWorkArticle(String(route.params.techStackId), {
     title: articleForm.value.title,
-    articleType: 'knowledge',
+    articleType: articleForm.value.articleType,
     summary: firstParagraph(editorRef.value?.innerText || ''),
     content: `<h1>${escapeHtml(articleForm.value.title)}</h1>\n${content}`.trim(),
     tags: stackTags.value,
   })
   articleStatus.value = 'Article saved.'
-  articleForm.value = { title: '', contentHtml: '' }
+  articleForm.value = { title: '', articleType: 'knowledge', contentHtml: '' }
   if (editorRef.value) {
     editorRef.value.innerHTML = ''
   }
