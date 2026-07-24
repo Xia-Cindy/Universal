@@ -507,6 +507,27 @@ textarea {
   max-width: 340px;
 }
 
+.knowledge-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 4px;
+}
+
+.knowledge-mode-tabs button {
+  background: transparent;
+  border: 1px solid #d5dee4;
+  color: #5b6877;
+  min-height: 34px;
+  padding: 0.45rem 0.68rem;
+}
+
+.knowledge-mode-tabs button.selected {
+  background: #e4f5f4;
+  border-color: rgba(11, 138, 136, 0.24);
+  color: #0b6f70;
+}
+
 .knowledge-form label,
 .knowledge-filter label {
   color: rgba(238, 247, 248, 0.76);

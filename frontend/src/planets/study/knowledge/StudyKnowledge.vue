@@ -3,6 +3,11 @@
     <p class="eyebrow">Knowledge</p>
     <h2 id="knowledge-title">Knowledge Space</h2>
 
+    <div class="knowledge-mode-tabs" aria-label="Knowledge input mode">
+      <button type="button" :class="{ selected: inputMode === 'upload' }" @click="inputMode = 'upload'">Upload File</button>
+      <button type="button" :class="{ selected: inputMode === 'article' }" @click="inputMode = 'article'">Write Article</button>
+    </div>
+
     <div class="knowledge-filter">
       <label>
         Goal filter
@@ -16,7 +21,7 @@
       </label>
     </div>
 
-    <form class="knowledge-form" @submit.prevent="uploadDocument">
+    <form v-if="inputMode === 'upload'" class="knowledge-form" @submit.prevent="uploadDocument">
       <label class="wide-field">
         File
         <input accept=".txt,.md,.markdown,.pdf" required type="file" @change="selectFile" />
@@ -49,6 +54,47 @@
       <div class="knowledge-actions">
         <button type="submit" :disabled="!canUpload">Upload</button>
         <span>{{ uploadHint }}</span>
+      </div>
+    </form>
+
+    <form v-else class="knowledge-form study-article-writer" @submit.prevent="saveArticle">
+      <label class="wide-field">
+        Article title
+        <input v-model="articleForm.title" required placeholder="写一篇学习文章" />
+      </label>
+      <label>
+        Subject
+        <input v-model="articleForm.subject" required placeholder="computer systems" />
+      </label>
+      <label>
+        Topic
+        <input v-model="articleForm.topic" required placeholder="memory hierarchy" />
+      </label>
+      <label>
+        Goal link
+        <select v-model="articleForm.goalId">
+          <option :value="null">Independent Knowledge</option>
+          <option v-for="goal in goals" :key="goal.id" :value="goal.id">
+            {{ goal.goalName }}
+          </option>
+        </select>
+      </label>
+      <label>
+        Tags
+        <input v-model="articleTagsText" placeholder="chapter, note, csapp" />
+      </label>
+      <label class="wide-field">
+        Body
+        <textarea
+          v-model="articleForm.body"
+          required
+          rows="12"
+          placeholder="# 第一章&#10;&#10;在这里写学习文章、章节笔记或知识卡片。保存后会进入 Knowledge 并生成 chunks。"
+        />
+      </label>
+      <div class="knowledge-actions">
+        <button type="submit" :disabled="!canSaveArticle">Save Article</button>
+        <span>{{ articleStatus }}</span>
       </div>
     </form>
 
@@ -153,9 +199,20 @@ const goalFilter = ref('all')
 const selectedFileName = ref('')
 const documents = ref<KnowledgeDocument[]>([])
 const selectedDocument = ref<KnowledgeDocumentDetail | null>(null)
+const inputMode = ref<'upload' | 'article'>('upload')
 const statusMessage = ref('Upload txt, markdown, or PDF metadata.')
+const articleStatus = ref('Write an article and save it into Study Knowledge.')
+const articleTagsText = ref('')
 const isLoading = ref(false)
 const isUploading = ref(false)
+const isSavingArticle = ref(false)
+const articleForm = ref({
+  title: '',
+  subject: '',
+  topic: '',
+  goalId: null as string | null,
+  body: '',
+})
 const canUpload = computed(
   () =>
     !isUploading.value &&
@@ -173,6 +230,14 @@ const uploadHint = computed(() => {
   }
   return 'Choose file + Subject + Topic to upload.'
 })
+const canSaveArticle = computed(
+  () =>
+    !isSavingArticle.value &&
+    Boolean(articleForm.value.title.trim()) &&
+    Boolean(articleForm.value.subject.trim()) &&
+    Boolean(articleForm.value.topic.trim()) &&
+    Boolean(articleForm.value.body.trim()),
+)
 
 onMounted(loadDocuments)
 onMounted(loadGoalContext)
@@ -208,8 +273,51 @@ async function loadGoalContext() {
   goals.value = workspace.goals
   if (workspace.currentGoal && !form.value.goalId) {
     form.value.goalId = workspace.currentGoal.id
+    articleForm.value.goalId = workspace.currentGoal.id
     goalFilter.value = workspace.currentGoal.id
     await loadDocuments()
+  }
+}
+
+async function saveArticle() {
+  if (!canSaveArticle.value) {
+    articleStatus.value = 'Fill title, subject, topic and body before saving.'
+    return
+  }
+  isSavingArticle.value = true
+  try {
+    const title = articleForm.value.title.trim()
+    const document = await createKnowledgeDocument({
+      fileName: `${slugify(title)}.md`,
+      fileType: 'markdown',
+      subject: articleForm.value.subject.trim(),
+      topic: articleForm.value.topic.trim(),
+      goalId: articleForm.value.goalId,
+      planetType: 'study',
+      tags: splitTags(articleTagsText.value),
+      content: `# ${title}\n\n${articleForm.value.body.trim()}`,
+      contentEncoding: 'text',
+      storagePath: `study-article:${title}`,
+    })
+    selectedDocument.value = await processKnowledgeDocument(document.id)
+    articleStatus.value =
+      selectedDocument.value.document.processingStatus === 'processed'
+        ? 'Article saved into Knowledge and processed.'
+        : 'Article saved, but processing needs attention.'
+    articleForm.value = {
+      title: '',
+      subject: '',
+      topic: '',
+      goalId: articleForm.value.goalId,
+      body: '',
+    }
+    articleTagsText.value = ''
+    await loadDocuments()
+    await selectDocument(document.id)
+  } catch (error) {
+    articleStatus.value = error instanceof Error ? error.message : 'Article save failed.'
+  } finally {
+    isSavingArticle.value = false
   }
 }
 
@@ -291,6 +399,22 @@ function detectFileType(fileName: string): KnowledgeDocumentPayload['fileType'] 
     return 'pdf'
   }
   return null
+}
+
+function splitTags(value: string) {
+  return value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+}
+
+function slugify(value: string) {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return slug || `study-article-${Date.now()}`
 }
 
 function displayStatus(status: KnowledgeDocument['processingStatus']) {
