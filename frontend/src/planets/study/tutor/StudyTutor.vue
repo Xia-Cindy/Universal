@@ -9,6 +9,13 @@
 
     <form class="tutor-form" @submit.prevent="askTutor">
       <label>
+        Knowledge scope
+        <select v-model="scope">
+          <option value="current_goal">Current Goal Knowledge</option>
+          <option value="all_study">All Study Knowledge</option>
+        </select>
+      </label>
+      <label>
         Question
         <textarea
           v-model="question"
@@ -32,12 +39,18 @@
       <p>{{ response.suggestedNextAction }}</p>
       <h3>Knowledge sources</h3>
       <p>{{ response.sourceNotice }}</p>
-      <div v-if="response.groundingChunks?.length" class="grounding-list">
-        <article v-for="chunk in response.groundingChunks" :key="chunk.chunkId" class="chunk-item">
-          <strong>{{ chunk.metadata?.subject }} / {{ chunk.metadata?.topic }}</strong>
-          <p>{{ chunk.content }}</p>
-          <small>Score {{ chunk.score }}</small>
+      <div v-if="response.sources?.length" class="grounding-list">
+        <article v-for="source in response.sources" :key="source.sourceId" class="chunk-item">
+          <strong>{{ source.title }}</strong>
+          <p>{{ source.quote }}</p>
+          <small>Score {{ source.score }}</small>
+          <a v-if="source.sourceUrl" :href="source.sourceUrl">Open source</a>
         </article>
+      </div>
+      <p v-else class="knowledge-state">No prepared Knowledge source matched this question.</p>
+      <div class="knowledge-actions">
+        <button type="button" :disabled="isSaving" @click="saveAnswer">Save as Learning Event</button>
+        <span>{{ saveStatus }}</span>
       </div>
       <h3>Related learning event</h3>
       <p>{{ response.relatedLearningEvent?.summary }}</p>
@@ -47,16 +60,39 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { askStudyTutor } from '../../../services/api'
+import { askStudyTutor, saveTutorAnswerEvent, type EvidenceSource } from '../../../services/api'
 
 const question = ref('')
 const response = ref<any>(null)
+const scope = ref('current_goal')
+const isSaving = ref(false)
+const saveStatus = ref('')
 const canAsk = computed(() => question.value.trim().length > 0)
 
 async function askTutor() {
   if (!canAsk.value) {
     return
   }
-  response.value = await askStudyTutor(question.value.trim())
+  saveStatus.value = ''
+  response.value = await askStudyTutor(question.value.trim(), scope.value)
+}
+
+async function saveAnswer() {
+  if (!response.value || isSaving.value) {
+    return
+  }
+  isSaving.value = true
+  try {
+    await saveTutorAnswerEvent({
+      question: question.value.trim(),
+      answer: response.value.answer,
+      sources: (response.value.sources || []) as EvidenceSource[],
+    })
+    saveStatus.value = 'Saved to Learning Events.'
+  } catch (error) {
+    saveStatus.value = error instanceof Error ? error.message : 'Unable to save Learning Event.'
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>

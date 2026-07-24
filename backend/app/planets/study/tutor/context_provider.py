@@ -1,4 +1,5 @@
 from backend.app.ai import AIContext
+from backend.app.services.evidence import evidence_sources
 
 
 class StudyTutorContextProvider:
@@ -16,6 +17,7 @@ class StudyTutorContextProvider:
         grounding_chunks = retrieval_result.get("results", [])
         retrieval_invoked = bool(retrieval_result.get("available"))
         knowledge_sources_available = bool(grounding_chunks)
+        sources = evidence_sources(grounding_chunks)
         next_task = tasks[0] if tasks else None
         goal_name = goal.get("goalName", "your active learning goal")
         task_text = (
@@ -34,7 +36,7 @@ class StudyTutorContextProvider:
                 f"Knowledge chunk(s) and {memory_count} memory item(s). "
                 f"Top match score: {top_chunk['score']}."
             )
-            source_notice = "Knowledge grounding used retrieved chunks; no citation system is active yet."
+            source_notice = "Knowledge sources are shown below. Open a source to inspect the original chunk."
         else:
             answer = (
                 f"For {goal_name}, focus on the next concrete learning action."
@@ -78,6 +80,7 @@ class StudyTutorContextProvider:
                         "memoryContext": memory_context,
                         "sourceNotice": source_notice,
                         "groundingChunks": grounding_chunks,
+                        "sources": sources,
                     },
                 },
             }

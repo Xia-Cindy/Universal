@@ -15,6 +15,8 @@ class RetrieverTool:
                 query=payload["query"],
                 limit=payload.get("limit", 5),
                 document_id=payload.get("documentId"),
+                goal_id=payload.get("goalId"),
+                planet_type=payload.get("planetType"),
             )
         )
         return {

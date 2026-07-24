@@ -64,6 +64,10 @@ class RetrievalService:
         filters = {"userId": query.user_id}
         if query.document_id:
             filters["documentId"] = query.document_id
+        if query.goal_id:
+            filters["goalId"] = query.goal_id
+        if query.planet_type:
+            filters["planetType"] = query.planet_type
         matches = self._vector_store.search(
             query_vector=embedding.vector,
             limit=query.limit,
@@ -95,6 +99,10 @@ class RetrievalService:
             documents = [self._knowledge_repository.get_document(query.document_id, query.user_id)]
         else:
             documents = self._knowledge_repository.list_documents(query.user_id)
+        if query.goal_id:
+            documents = [document for document in documents if document.goal_id == query.goal_id]
+        if query.planet_type:
+            documents = [document for document in documents if document.planet_type == query.planet_type]
         provider_documents = [
             document
             for document in documents
@@ -207,6 +215,8 @@ class RetrievalService:
                 "chunkId": chunk.id,
                 "content": chunk.content,
                 "metadata": chunk.metadata,
+                "goalId": chunk.metadata.get("goalId"),
+                "planetType": chunk.metadata.get("planetType", "study"),
             },
         )
         record.embedding_provider = embedding.provider

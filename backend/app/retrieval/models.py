@@ -66,6 +66,8 @@ class RetrievalQuery:
     query: str
     limit: int = 5
     document_id: str | None = None
+    goal_id: str | None = None
+    planet_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -86,4 +88,3 @@ class RetrievalResult:
             "score": self.score,
             "identifiers": self.identifiers,
         }
-
