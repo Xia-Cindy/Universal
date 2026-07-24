@@ -179,6 +179,7 @@
 - [x] Add inline CSDN article reading inside Work Planet without requiring a jump to CSDN.
 - [x] Keep category switching usable while Community articles are loading.
 - [x] Remove duplicated Tech Stack directory card after the second-row stack selector and align selected tabs with the system teal colorway.
+- [x] Remove the redundant `Open Stack` summary card because the second-row stack selector already defines the current stack context.
 - [x] Add Tech Stack update and archive actions.
 - [x] Refine Tech Stack article writing into a focused editor with an auto-generated left outline.
 - [x] Add compact title-level article tools that insert images, editable tables and code snippets directly into the article body, plus pasted image/table handling, bold text, text color, table row/column operations and cell merge/split.

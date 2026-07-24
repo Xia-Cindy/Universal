@@ -114,24 +114,6 @@
 
     <div v-else-if="techStacks.length" class="tech-nav-layout tech-stack-list-layout">
       <div class="tech-feed">
-        <article v-for="stack in visibleTechStacks" :key="stack.id" class="tech-feed-item">
-          <div class="tech-feed-main">
-            <span class="status-pill">{{ stack.proficiency }}</span>
-            <h3>{{ stack.name }}</h3>
-            <p>{{ stack.description || '补充这个技术栈的学习资料、项目证据和简历表达。' }}</p>
-            <div class="tech-meta-row">
-              <span>{{ stack.category }}</span>
-              <span>{{ (stack.tags || []).length }} tags</span>
-              <span>{{ stack.status }}</span>
-            </div>
-            <div class="tech-tag-row">
-              <span v-for="tag in stack.tags || []" :key="tag">{{ tag }}</span>
-              <span v-if="!(stack.tags || []).length">No tags yet</span>
-            </div>
-          </div>
-          <RouterLink class="secondary-action" :to="`/work/tech-stack/${stack.id}`">Open Stack</RouterLink>
-        </article>
-
         <section class="tech-content-stream" aria-labelledby="tech-content-title">
           <div class="section-heading">
             <h3 id="tech-content-title">技术内容流</h3>

@@ -246,6 +246,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn("查看内容", directory)
         self.assertIn("fetchCSDNCommunityArticleDetail", directory)
         self.assertNotIn('aria-label="Tech stack directory"', directory)
+        self.assertNotIn("Open Stack", directory)
 
     def test_work_tech_stack_detail_has_management_and_article_builder(self):
         detail = (PROJECT_ROOT / "frontend/src/planets/work/tech-stack/TechStackDetail.vue").read_text()
