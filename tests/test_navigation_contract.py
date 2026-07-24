@@ -23,6 +23,17 @@ class NavigationContractTests(unittest.TestCase):
 
         self.assertEqual(enterable, ["study", "work"])
 
+    def test_universe_home_starfield_has_alternating_motion(self):
+        styles = Path("frontend/src/styles.css").read_text()
+
+        self.assertIn(".portal-shell::before", styles)
+        self.assertIn(".portal-shell::after", styles)
+        self.assertIn("animation: universe-stars-up", styles)
+        self.assertIn("animation: universe-stars-down", styles)
+        self.assertIn("@keyframes universe-stars-up", styles)
+        self.assertIn("@keyframes universe-stars-down", styles)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", styles)
+
 
 if __name__ == "__main__":
     unittest.main()
