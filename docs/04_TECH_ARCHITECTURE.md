@@ -1586,4 +1586,27 @@ Not changed:
 
 ---
 
+# 27. Shared Persistence Foundation
+
+## 状态
+
+已完成本地开发 persistence foundation。
+
+## 已实现
+
+- 增加 shared SQLite connection、事务边界和 migration runner。
+- 生产 API 默认使用 `database/universe.sqlite3`。
+- Study、Knowledge、Memory、Work repository 继续保持原有 service contract，底层可切换为 SQLite adapter。
+- `current_goal` 的唯一来源为 `user_planet_context(user_id, planet_type, current_goal_id)`。
+- 多个 Study Goal 可以同时保持 active，Goal switch 只更新 Study Planet context。
+- User、Goal、Plan、Task、Session、Learning Event、Document、Chunk、Memory、Work records 可以跨 API 重启读取。
+- 增加 restart persistence integration tests。
+
+## 约束与未完成项
+
+- SQLite 是本地开发实现，不是最终生产数据库。
+- PostgreSQL adapter 仍需使用相同 repository interfaces 补齐。
+- Retrieval 的 in-memory vector store 不属于本阶段持久化范围；RAGFlow provider 通过后续 runtime acceptance 负责生产检索状态。
+- Session finish 的跨 Task、Learning Event、Memory、Analytics 统一 application transaction 仍是下一阶段工作。
+
 # End

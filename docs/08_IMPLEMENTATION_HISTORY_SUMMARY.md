@@ -935,3 +935,23 @@ Goal
 1. 运行完整 backend/frontend 验证。
 2. 提交当前已完成的 Study Workspace polish 与 RAGFlow provider adapter。
 3. 再进入生产 RAGFlow runtime validation 或 Milestone 7.9 Plan Builder。
+
+---
+
+# 27. Shared Persistence Foundation
+
+已完成本地共享持久化基础：
+
+- 新增 shared SQLite persistence、schema migration runner 和 transaction boundary。
+- 生产 API 默认使用 `database/universe.sqlite3`，该文件被 Git 忽略。
+- Study、Knowledge、Memory、Work repository 通过 adapter 共享同一个 persistence connection。
+- 新增 `user_planet_context`，作为 Study `current_goal` 的唯一来源。
+- Goal switch 不再依赖 Memory 中的 `active_goal_id`，也不会归档其他 active Goal。
+- 新增 restart integration tests，覆盖 Goal、Plan、Task、Session、Document、Memory 的重启读取。
+
+本阶段仍未完成：
+
+- PostgreSQL adapter。
+- Session finish 的统一 application transaction。
+- RAGFlow runtime acceptance、status polling、retry、delete sync 和 Citation。
+- Wrong Questions 与 Review 闭环。

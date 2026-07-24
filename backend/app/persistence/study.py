@@ -1,0 +1,310 @@
+from __future__ import annotations
+
+from datetime import date
+
+from backend.app.models import (
+    DailyTask,
+    LearningEvent,
+    MonthPlan,
+    PlanStatus,
+    SessionStatus,
+    StudyGoal,
+    StudySession,
+    TaskStatus,
+    WeekPlan,
+    YearPlan,
+)
+from backend.app.persistence.codec import (
+    dumps,
+    event_from_payload,
+    goal_from_payload,
+    month_plan_from_payload,
+    session_from_payload,
+    task_from_payload,
+    week_plan_from_payload,
+    year_plan_from_payload,
+)
+from backend.app.persistence.sqlite import SQLitePersistence
+
+
+class SQLiteStudyRepository:
+    """SQLite implementation of the existing StudyRepository contract."""
+
+    def __init__(self, persistence: SQLitePersistence) -> None:
+        self._db = persistence
+
+    def save_goal(self, goal: StudyGoal) -> StudyGoal:
+        payload = goal.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO study_goals
+                (id,user_id,goal_name,goal_type,exam_name,deadline,description,subjects,
+                 current_level,daily_available_minutes,priority,status,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET
+                goal_name=excluded.goal_name,goal_type=excluded.goal_type,exam_name=excluded.exam_name,
+                deadline=excluded.deadline,description=excluded.description,subjects=excluded.subjects,
+                current_level=excluded.current_level,daily_available_minutes=excluded.daily_available_minutes,
+                priority=excluded.priority,status=excluded.status,updated_at=excluded.updated_at""",
+                (
+                    goal.id, goal.user_id, goal.goal_name, goal.goal_type.value, goal.exam_name,
+                    payload["deadline"], goal.description, dumps(payload["subjects"]), goal.current_level,
+                    goal.daily_available_minutes, goal.priority, goal.status.value, payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+        return goal
+
+    def get_goal(self, goal_id: str, user_id: str) -> StudyGoal:
+        row = self._db.connection.execute(
+            "SELECT * FROM study_goals WHERE id = ?", (goal_id,)
+        ).fetchone()
+        if not row or row["user_id"] != user_id:
+            raise PermissionError("Goal does not belong to user")
+        return self._goal_row(row)
+
+    def get_active_goal(self, user_id: str) -> StudyGoal | None:
+        row = self._db.connection.execute(
+            """SELECT g.* FROM user_planet_context c
+               JOIN study_goals g ON g.id = c.current_goal_id
+               WHERE c.user_id = ? AND c.planet_type = 'study'""",
+            (user_id,),
+        ).fetchone()
+        if row and row["status"] == "active":
+            return self._goal_row(row)
+        row = self._db.connection.execute(
+            "SELECT * FROM study_goals WHERE user_id = ? AND status = 'active' ORDER BY updated_at DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        if not row:
+            return None
+        goal = self._goal_row(row)
+        self.set_current_goal(user_id, goal.id)
+        return goal
+
+    def set_current_goal(self, user_id: str, goal_id: str) -> StudyGoal:
+        goal = self.get_goal(goal_id, user_id)
+        if goal.status.value != "active":
+            raise ValueError("Cannot switch to an archived goal")
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO user_planet_context(user_id,planet_type,current_goal_id,updated_at)
+                   VALUES(?, 'study', ?, ?)
+                   ON CONFLICT(user_id,planet_type) DO UPDATE SET
+                   current_goal_id=excluded.current_goal_id,updated_at=excluded.updated_at""",
+                (user_id, goal.id, goal.updated_at.isoformat()),
+            )
+        return goal
+
+    def list_goals(self, user_id: str) -> list[StudyGoal]:
+        rows = self._db.connection.execute(
+            "SELECT * FROM study_goals WHERE user_id = ? ORDER BY updated_at DESC", (user_id,)
+        ).fetchall()
+        return [self._goal_row(row) for row in rows]
+
+    def save_year_plan(self, plan: YearPlan) -> YearPlan:
+        self._save_plan(plan, year=plan.year)
+        return plan
+
+    def save_month_plan(self, plan: MonthPlan) -> MonthPlan:
+        self._save_plan(plan, parent_id=plan.year_plan_id, month=plan.month)
+        return plan
+
+    def save_week_plan(self, plan: WeekPlan) -> WeekPlan:
+        self._save_plan(
+            plan,
+            parent_id=plan.month_plan_id,
+            week_start=plan.week_start.isoformat(),
+            week_end=plan.week_end.isoformat(),
+        )
+        return plan
+
+    def save_daily_task(self, task: DailyTask) -> DailyTask:
+        payload = task.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO daily_tasks
+                (id,user_id,goal_id,week_plan_id,subject,topic,task_date,estimated_minutes,priority,status,
+                 completed_at,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET subject=excluded.subject,topic=excluded.topic,
+                task_date=excluded.task_date,estimated_minutes=excluded.estimated_minutes,priority=excluded.priority,
+                status=excluded.status,completed_at=excluded.completed_at,updated_at=excluded.updated_at""",
+                (
+                    task.id, task.user_id, task.goal_id, task.week_plan_id, task.subject, task.topic,
+                    payload["taskDate"], task.estimated_minutes, task.priority, task.status.value,
+                    payload["completedAt"], payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+        return task
+
+    def get_year_plan(self, plan_id: str, user_id: str) -> YearPlan:
+        return year_plan_from_payload(self._plan_payload(plan_id, user_id, "long_term"))
+
+    def get_month_plan(self, plan_id: str, user_id: str) -> MonthPlan:
+        return month_plan_from_payload(self._plan_payload(plan_id, user_id, "monthly"))
+
+    def get_week_plan(self, plan_id: str, user_id: str) -> WeekPlan:
+        return week_plan_from_payload(self._plan_payload(plan_id, user_id, "weekly"))
+
+    def get_task(self, task_id: str, user_id: str) -> DailyTask:
+        row = self._db.connection.execute("SELECT * FROM daily_tasks WHERE id = ?", (task_id,)).fetchone()
+        if not row or row["user_id"] != user_id:
+            raise PermissionError("Task does not belong to user")
+        return self._task_row(row)
+
+    def get_current_plan(self, user_id: str, goal_id: str) -> dict[str, object] | None:
+        year_rows = self._plan_rows(user_id, goal_id, "long_term")
+        if not year_rows:
+            return None
+        year = year_plan_from_payload(self._plan_payload(year_rows[-1]["id"], user_id, "long_term"))
+        months = [month_plan_from_payload(self._plan_payload(row["id"], user_id, "monthly")) for row in self._plan_rows(user_id, goal_id, "monthly")]
+        weeks = [week_plan_from_payload(self._plan_payload(row["id"], user_id, "weekly")) for row in self._plan_rows(user_id, goal_id, "weekly")]
+        tasks = [self._task_row(row) for row in self._task_rows(user_id, goal_id)]
+        return {
+            "yearPlan": year,
+            "monthPlans": sorted(months, key=lambda item: item.month),
+            "weekPlans": sorted(weeks, key=lambda item: item.week_start),
+            "dailyTasks": sorted(tasks, key=lambda item: (item.task_date, item.created_at)),
+        }
+
+    def list_year_plans_for_goal(self, user_id: str, goal_id: str) -> list[YearPlan]:
+        return [year_plan_from_payload(self._plan_payload(row["id"], user_id, "long_term")) for row in self._plan_rows(user_id, goal_id, "long_term")]
+
+    def list_month_plans_for_goal(self, user_id: str, goal_id: str) -> list[MonthPlan]:
+        return [month_plan_from_payload(self._plan_payload(row["id"], user_id, "monthly")) for row in self._plan_rows(user_id, goal_id, "monthly")]
+
+    def list_week_plans_for_goal(self, user_id: str, goal_id: str) -> list[WeekPlan]:
+        return [week_plan_from_payload(self._plan_payload(row["id"], user_id, "weekly")) for row in self._plan_rows(user_id, goal_id, "weekly")]
+
+    def list_tasks_for_date(self, user_id: str, goal_id: str, task_date: date) -> list[DailyTask]:
+        return [self._task_row(row) for row in self._task_rows(user_id, goal_id, task_date)]
+
+    def list_tasks_for_goal(self, user_id: str, goal_id: str) -> list[DailyTask]:
+        return [self._task_row(row) for row in self._task_rows(user_id, goal_id)]
+
+    def save_session(self, session: StudySession) -> StudySession:
+        payload = session.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO study_sessions
+                (id,user_id,task_id,subject,topic,start_time,end_time,duration_minutes,notes,feeling,status,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(id) DO UPDATE SET end_time=excluded.end_time,duration_minutes=excluded.duration_minutes,
+                notes=excluded.notes,feeling=excluded.feeling,status=excluded.status,updated_at=excluded.updated_at""",
+                (
+                    session.id, session.user_id, session.task_id, session.subject, session.topic,
+                    payload["startTime"], payload["endTime"], session.duration_minutes, session.notes,
+                    session.feeling, session.status.value, payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+        return session
+
+    def get_session(self, session_id: str, user_id: str) -> StudySession:
+        row = self._db.connection.execute("SELECT * FROM study_sessions WHERE id = ?", (session_id,)).fetchone()
+        if not row or row["user_id"] != user_id:
+            raise PermissionError("Session does not belong to user")
+        return self._session_row(row)
+
+    def list_finished_sessions(self, user_id: str) -> list[StudySession]:
+        rows = self._db.connection.execute(
+            "SELECT * FROM study_sessions WHERE user_id = ? AND status = 'finished' ORDER BY start_time DESC",
+            (user_id,),
+        ).fetchall()
+        return [self._session_row(row) for row in rows]
+
+    def save_learning_event(self, event: LearningEvent) -> LearningEvent:
+        payload = event.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO learning_events(id,user_id,event_type,summary,metadata,created_at)
+                   VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING""",
+                (event.id, event.user_id, event.event_type, event.summary, dumps(event.metadata), payload["createdAt"]),
+            )
+        return event
+
+    def list_learning_events(self, user_id: str) -> list[LearningEvent]:
+        rows = self._db.connection.execute(
+            "SELECT * FROM learning_events WHERE user_id = ? ORDER BY created_at DESC", (user_id,)
+        ).fetchall()
+        return [event_from_payload({
+            "id": row["id"], "userId": row["user_id"], "eventType": row["event_type"],
+            "summary": row["summary"], "metadata": __import__("json").loads(row["metadata"]),
+            "createdAt": row["created_at"],
+        }) for row in rows]
+
+    def _save_plan(self, plan, *, parent_id: str | None = None, year: int | None = None, month: int | None = None, week_start: str | None = None, week_end: str | None = None) -> None:
+        payload = plan.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO study_plans
+                (id,user_id,goal_id,plan_type,parent_id,year,month,week_start,week_end,title,focus,status,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                title=excluded.title,focus=excluded.focus,status=excluded.status,updated_at=excluded.updated_at""",
+                (
+                    plan.id, plan.user_id, plan.goal_id, plan.plan_type.value, parent_id, year, month,
+                    week_start, week_end, plan.title, getattr(plan, "focus", ""), plan.status.value,
+                    payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+
+    def _plan_payload(self, plan_id: str, user_id: str, plan_type: str) -> dict:
+        row = self._db.connection.execute("SELECT * FROM study_plans WHERE id = ?", (plan_id,)).fetchone()
+        if not row or row["user_id"] != user_id or row["plan_type"] != plan_type:
+            raise PermissionError("Plan does not belong to user")
+        return self._plan_row_payload(row)
+
+    def _plan_rows(self, user_id: str, goal_id: str, plan_type: str):
+        return self._db.connection.execute(
+            "SELECT * FROM study_plans WHERE user_id = ? AND goal_id = ? AND plan_type = ? ORDER BY created_at",
+            (user_id, goal_id, plan_type),
+        ).fetchall()
+
+    def _task_rows(self, user_id: str, goal_id: str, task_date: date | None = None):
+        if task_date:
+            return self._db.connection.execute(
+                "SELECT * FROM daily_tasks WHERE user_id = ? AND goal_id = ? AND task_date = ? ORDER BY task_date, created_at",
+                (user_id, goal_id, task_date.isoformat()),
+            ).fetchall()
+        return self._db.connection.execute(
+            "SELECT * FROM daily_tasks WHERE user_id = ? AND goal_id = ? ORDER BY task_date, created_at",
+            (user_id, goal_id),
+        ).fetchall()
+
+    def _goal_row(self, row) -> StudyGoal:
+        return goal_from_payload({
+            "id": row["id"], "userId": row["user_id"], "goalName": row["goal_name"],
+            "goalType": row["goal_type"], "examName": row["exam_name"], "deadline": row["deadline"],
+            "description": row["description"], "subjects": __import__("json").loads(row["subjects"]),
+            "currentLevel": row["current_level"], "dailyAvailableMinutes": row["daily_available_minutes"],
+            "priority": row["priority"], "status": row["status"], "createdAt": row["created_at"], "updatedAt": row["updated_at"],
+        })
+
+    def _plan_row_payload(self, row) -> dict:
+        base = {
+            "id": row["id"], "userId": row["user_id"], "goalId": row["goal_id"],
+            "planType": row["plan_type"], "title": row["title"], "focus": row["focus"],
+            "status": row["status"], "createdAt": row["created_at"], "updatedAt": row["updated_at"],
+        }
+        if row["plan_type"] == "long_term":
+            base["year"] = row["year"]
+        elif row["plan_type"] == "monthly":
+            base.update({"yearPlanId": row["parent_id"], "month": row["month"]})
+        else:
+            base.update({"monthPlanId": row["parent_id"], "weekStart": row["week_start"], "weekEnd": row["week_end"]})
+        return base
+
+    def _task_row(self, row) -> DailyTask:
+        return task_from_payload({
+            "id": row["id"], "userId": row["user_id"], "goalId": row["goal_id"], "weekPlanId": row["week_plan_id"],
+            "subject": row["subject"], "topic": row["topic"], "taskDate": row["task_date"],
+            "estimatedMinutes": row["estimated_minutes"], "priority": row["priority"], "status": row["status"],
+            "completedAt": row["completed_at"], "createdAt": row["created_at"], "updatedAt": row["updated_at"],
+        })
+
+    def _session_row(self, row) -> StudySession:
+        return session_from_payload({
+            "id": row["id"], "userId": row["user_id"], "taskId": row["task_id"], "subject": row["subject"],
+            "topic": row["topic"], "startTime": row["start_time"], "endTime": row["end_time"],
+            "durationMinutes": row["duration_minutes"], "notes": row["notes"], "feeling": row["feeling"],
+            "status": row["status"], "createdAt": row["created_at"], "updatedAt": row["updated_at"],
+        })

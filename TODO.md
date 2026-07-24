@@ -190,7 +190,10 @@
 
 ## Later Milestones
 
-- [ ] Connect Study services to PostgreSQL adapters.
+- [x] Add shared SQLite persistence behind the existing repository boundaries.
+- [x] Add migration runner and persist Study, Knowledge, Memory and Work records.
+- [x] Persist one `current_goal` per user and Study Planet in `user_planet_context`.
+- [ ] Add PostgreSQL adapter using the same repository interfaces.
 - [ ] Connect Knowledge services to PostgreSQL adapters and object/file storage.
 - [ ] Run production RAGFlow runtime validation with a real API key and embedding model configured.
 - [ ] Add provider status polling and retry handling.

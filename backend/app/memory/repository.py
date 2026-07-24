@@ -1,5 +1,9 @@
 from backend.app.models import MemoryEntry
 
+from backend.app.persistence.memory import SQLiteMemoryRepository
+
+__all__ = ["MemoryRepository", "SQLiteMemoryRepository"]
+
 
 class MemoryRepository:
     def __init__(self) -> None:

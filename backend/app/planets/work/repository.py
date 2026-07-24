@@ -1,5 +1,9 @@
 from backend.app.models import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
 
+from backend.app.persistence.work import SQLiteWorkRepository
+
+__all__ = ["WorkRepository", "SQLiteWorkRepository"]
+
 
 class WorkRepository:
     def __init__(self) -> None:

@@ -13,6 +13,10 @@ from backend.app.models import (
     YearPlan,
 )
 
+from backend.app.persistence.study import SQLiteStudyRepository
+
+__all__ = ["StudyRepository", "SQLiteStudyRepository"]
+
 
 class StudyRepository:
     """In-memory Study repository boundary for Milestone 2.
@@ -29,9 +33,11 @@ class StudyRepository:
         self.daily_tasks: dict[str, DailyTask] = {}
         self.sessions: dict[str, StudySession] = {}
         self.learning_events: dict[str, LearningEvent] = {}
+        self.current_goal_ids: dict[tuple[str, str], str] = {}
 
     def save_goal(self, goal: StudyGoal) -> StudyGoal:
         self.goals[goal.id] = goal
+        self.current_goal_ids.setdefault((goal.user_id, "study"), goal.id)
         return goal
 
     def get_goal(self, goal_id: str, user_id: str) -> StudyGoal:
@@ -41,12 +47,24 @@ class StudyRepository:
         return goal
 
     def get_active_goal(self, user_id: str) -> StudyGoal | None:
-        active_goals = [
-            goal for goal in self.goals.values() if goal.user_id == user_id and goal.status.value == "active"
-        ]
+        current_goal_id = self.current_goal_ids.get((user_id, "study"))
+        if current_goal_id:
+            goal = self.goals.get(current_goal_id)
+            if goal and goal.user_id == user_id and goal.status.value == "active":
+                return goal
+        active_goals = [goal for goal in self.goals.values() if goal.user_id == user_id and goal.status.value == "active"]
         if not active_goals:
             return None
-        return sorted(active_goals, key=lambda goal: goal.updated_at, reverse=True)[0]
+        goal = sorted(active_goals, key=lambda item: item.updated_at, reverse=True)[0]
+        self.current_goal_ids[(user_id, "study")] = goal.id
+        return goal
+
+    def set_current_goal(self, user_id: str, goal_id: str) -> StudyGoal:
+        goal = self.get_goal(goal_id, user_id)
+        if goal.status.value != "active":
+            raise ValueError("Cannot switch to an archived goal")
+        self.current_goal_ids[(user_id, "study")] = goal.id
+        return goal
 
     def list_goals(self, user_id: str) -> list[StudyGoal]:
         return sorted(

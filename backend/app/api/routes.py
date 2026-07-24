@@ -1,8 +1,10 @@
 from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
 from backend.app.core.settings import settings
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
+from backend.app.knowledge.repository import SQLiteKnowledgeRepository
 from backend.app.knowledge.providers import RAGFlowClient, RAGFlowKnowledgeProvider
 from backend.app.memory import MemoryService
+from backend.app.memory.repository import SQLiteMemoryRepository
 from backend.app.models import MemoryScope
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.analytics import StudyAnalystContextProvider, StudyAnalyticsService
@@ -11,12 +13,14 @@ from backend.app.planets.study.execution import StudyExecutionService
 from backend.app.planets.study.goals import GoalService
 from backend.app.planets.study.onboarding import StudyOnboardingService
 from backend.app.planets.study.plans import PlanService
-from backend.app.planets.study.repository import StudyRepository
+from backend.app.planets.study.repository import SQLiteStudyRepository, StudyRepository
 from backend.app.planets.study.sessions import SessionService
 from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.planets.study.workspace import StudyWorkspaceService
 from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
+from backend.app.planets.work.repository import SQLiteWorkRepository
+from backend.app.persistence import SQLitePersistence
 from backend.app.retrieval import RetrievalQuery, RetrievalService, RetrieverTool
 from backend.app.universe import UniverseService
 from backend.app.users import UserService
@@ -25,13 +29,20 @@ from backend.app.users import UserService
 class ApiFacade:
     """Dependency-light API facade used by tests and optional web adapters."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, database_path: str | None = None) -> None:
         self.registry = create_default_registry()
         self.universe = UniverseService(self.registry)
-        self.users = UserService(settings.default_user_id)
-        self.memory = MemoryService()
-        self.study_repository = StudyRepository()
-        self.knowledge_repository = KnowledgeRepository()
+        self.persistence = SQLitePersistence(database_path) if database_path else None
+        self.users = UserService(settings.default_user_id, persistence=self.persistence)
+        self.memory = MemoryService(
+            repository=SQLiteMemoryRepository(self.persistence) if self.persistence else None,
+        )
+        self.study_repository = (
+            SQLiteStudyRepository(self.persistence) if self.persistence else StudyRepository()
+        )
+        self.knowledge_repository = (
+            SQLiteKnowledgeRepository(self.persistence) if self.persistence else KnowledgeRepository()
+        )
         self.knowledge_provider = self._create_knowledge_provider()
         self.knowledge = KnowledgeService(
             repository=self.knowledge_repository,
@@ -106,7 +117,9 @@ class ApiFacade:
             repository=self.study_repository,
             ai_core=self.ai_core,
         )
-        self.work_repository = WorkRepository()
+        self.work_repository = (
+            SQLiteWorkRepository(self.persistence) if self.persistence else WorkRepository()
+        )
         self.work = WorkService(self.work_repository)
         self.work_community = CSDNCommunityService()
 
@@ -456,4 +469,4 @@ class ApiFacade:
         )
 
 
-api = ApiFacade()
+api = ApiFacade(database_path=settings.database_path if settings.persistence_backend == "sqlite" else None)

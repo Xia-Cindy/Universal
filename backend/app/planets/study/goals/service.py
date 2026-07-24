@@ -2,7 +2,7 @@ from datetime import date
 
 from backend.app.core.dates import local_today, local_now, parse_local_date
 from backend.app.memory import MemoryService
-from backend.app.models import GoalType, MemoryScope, StudyGoal
+from backend.app.models import GoalType, StudyGoal
 from backend.app.planets.study.repository import StudyRepository
 
 
@@ -29,13 +29,7 @@ class GoalService:
             priority=payload.get("priority", "medium"),
         )
         self._repository.save_goal(goal)
-        self._memory.add(
-            user_id=user_id,
-            scope=MemoryScope.PLANET,
-            planet_type="study",
-            key="active_goal_id",
-            value={"goal_id": goal.id, "goal_type": goal.goal_type.value},
-        )
+        self._repository.set_current_goal(user_id, goal.id)
         return goal
 
     def list_goals(self, user_id: str) -> list[StudyGoal]:
@@ -69,16 +63,7 @@ class GoalService:
 
     def switch_goal(self, user_id: str, goal_id: str) -> StudyGoal:
         goal = self._repository.get_goal(goal_id, user_id)
-        goal.status = type(goal.status).ACTIVE
-        goal.updated_at = local_now()
-        self._repository.save_goal(goal)
-        self._memory.add(
-            user_id=user_id,
-            scope=MemoryScope.PLANET,
-            planet_type="study",
-            key="active_goal_id",
-            value={"goal_id": goal.id, "goal_type": goal.goal_type.value},
-        )
+        self._repository.set_current_goal(user_id, goal.id)
         return goal
 
     def get_active_goal(self, user_id: str) -> StudyGoal | None:

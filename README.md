@@ -212,6 +212,11 @@ http://127.0.0.1:5173
 
 The Vite dev server proxies `/api` requests to `http://127.0.0.1:8000`, so the browser can use Universe Portal, Study onboarding, Plan, Session, Knowledge, Tutor and Analytics from the frontend.
 
+The local API now uses one shared SQLite database at `database/universe.sqlite3` by
+default. Repository-backed Study, Knowledge, Memory and Work records survive a
+backend restart. The file is ignored by Git and is local development data. Set
+`PERSISTENCE_BACKEND=memory` only for an explicitly ephemeral run.
+
 Backend API docs are available at:
 
 ```text
@@ -250,6 +255,10 @@ If `RAGFLOW_DATASET_ID` is empty, Universe asks RAGFlow to create a dataset name
 Without those environment variables, Knowledge uses the local txt/markdown path and keeps PDF uploads as metadata-only.
 
 Full installation notes live in `docs/06_RAGFLOW_INSTALLATION.md`.
+
+RAGFlow remains experimental until runtime health, real-key document processing,
+status polling, retry, deletion synchronization and citation click-through have
+all passed the integration checklist.
 
 ## Test
 

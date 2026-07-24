@@ -1,5 +1,9 @@
 from backend.app.models import Concept, Document, DocumentChunk
 
+from backend.app.persistence.knowledge import SQLiteKnowledgeRepository
+
+__all__ = ["KnowledgeRepository", "SQLiteKnowledgeRepository"]
+
 
 class KnowledgeRepository:
     def __init__(self) -> None:

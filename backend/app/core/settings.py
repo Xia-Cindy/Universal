@@ -12,6 +12,8 @@ class Settings:
     ragflow_api_key: str = getenv("RAGFLOW_API_KEY", "")
     ragflow_dataset_id: str = getenv("RAGFLOW_DATASET_ID", "")
     ragflow_dataset_name: str = getenv("RAGFLOW_DATASET_NAME", "Universe OS Knowledge")
+    persistence_backend: str = getenv("PERSISTENCE_BACKEND", "sqlite")
+    database_path: str = getenv("UNIVERSE_DATABASE_PATH", "database/universe.sqlite3")
 
 
 settings = Settings()
