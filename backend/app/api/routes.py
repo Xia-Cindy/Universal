@@ -428,8 +428,17 @@ class ApiFacade:
 
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
+        payload = dict(payload)
         if payload.get("goalId"):
-            self.study_repository.get_goal(payload["goalId"], user.id)
+            goal = self.study_repository.get_goal(payload["goalId"], user.id)
+            payload["scopeName"] = goal.goal_name
+        if payload.get("planetType") == "work" and payload.get("techStackId"):
+            try:
+                tech_stack = self.work_repository.get_tech_stack(payload["techStackId"], user.id)
+            except KeyError:
+                tech_stack = None
+            if tech_stack:
+                payload["scopeName"] = tech_stack.name
         return self.knowledge.create_document(user.id, payload).to_dict()
 
     def knowledge_overview(self) -> dict[str, object]:
@@ -484,6 +493,23 @@ class ApiFacade:
 
     def update_knowledge_document(self, document_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
+        payload = dict(payload)
+        if "goalId" in payload:
+            if payload["goalId"]:
+                goal = self.study_repository.get_goal(payload["goalId"], user.id)
+                payload["scopeName"] = goal.goal_name
+            else:
+                payload["scopeName"] = None
+        if payload.get("planetType") == "work" and "techStackId" in payload:
+            if payload["techStackId"]:
+                try:
+                    tech_stack = self.work_repository.get_tech_stack(payload["techStackId"], user.id)
+                except KeyError:
+                    tech_stack = None
+                if tech_stack:
+                    payload["scopeName"] = tech_stack.name
+            else:
+                payload["scopeName"] = None
         return self.knowledge.update_document(user.id, document_id, payload).to_dict()
 
     def prepare_document_embeddings(self, document_id: str) -> dict[str, object]:

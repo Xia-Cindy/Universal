@@ -39,6 +39,7 @@ class KnowledgeService:
             goal_id=goal_id,
             planet_type=payload.get("planetType", "study"),
             tech_stack_id=payload.get("techStackId"),
+            scope_name=payload.get("scopeName"),
             tags=tuple(tags),
             content=payload.get("content", ""),
             content_encoding=payload.get("contentEncoding", "text"),
@@ -68,11 +69,16 @@ class KnowledgeService:
             document.topic = payload["topic"]
         if "goalId" in payload:
             document.goal_id = payload["goalId"]
+            document.scope_name = payload.get("scopeName")
             document.tags = tuple(self._normalize_tags(document.tags, goal_id=document.goal_id))
         if "planetType" in payload:
             document.planet_type = payload["planetType"]
+            if document.planet_type == "work" and "techStackId" not in payload:
+                document.scope_name = None
         if "techStackId" in payload:
             document.tech_stack_id = payload["techStackId"]
+            if "scopeName" in payload:
+                document.scope_name = payload["scopeName"]
         if "tags" in payload:
             document.tags = tuple(self._normalize_tags(payload["tags"], goal_id=document.goal_id))
         document.updated_at = local_now()
@@ -85,6 +91,7 @@ class KnowledgeService:
         try:
             document.processing_status = DocumentStatus.PARSING
             document.error_message = None
+            document.provider_error_code = None
             document.updated_at = local_now()
             self._repository.save_document(document)
 
@@ -152,6 +159,7 @@ class KnowledgeService:
                 document_id=document.provider_document_id,
             )
             document.provider_status = str(status.get("status") or "unknown")
+            document.provider_error_code = status.get("errorCode")
             normalized_status = document.provider_status.lower()
             if normalized_status in {"done", "success", "processed", "complete", "completed", "3"}:
                 chunks = self._provider.list_document_chunks(
@@ -162,9 +170,10 @@ class KnowledgeService:
                 self._cache_provider_chunks(user_id, document, chunks)
                 document.processing_status = DocumentStatus.PROCESSED if chunks else DocumentStatus.CHUNKING
                 document.error_message = None
+                document.provider_error_code = None
             elif normalized_status in {"fail", "failed", "error", "4"}:
                 document.processing_status = DocumentStatus.FAILED
-                document.error_message = str(
+                document.error_message = _provider_error_message(
                     status.get("errorMessage")
                     or status.get("progressMessage")
                     or "RAGFlow document processing failed"
@@ -177,6 +186,7 @@ class KnowledgeService:
         except (RuntimeError, ValueError) as exc:
             document.processing_status = DocumentStatus.FAILED
             document.provider_status = "failed"
+            document.provider_error_code = _provider_error_code(str(exc))
             document.error_message = str(exc)
             document.updated_at = local_now()
             self._repository.save_document(document)
@@ -186,6 +196,7 @@ class KnowledgeService:
         document = self._repository.get_document(document_id, user_id)
         document.processing_status = DocumentStatus.UPLOADED
         document.error_message = None
+        document.provider_error_code = None
         document.provider_status = None
         document.updated_at = local_now()
         self._repository.save_document(document)
@@ -210,6 +221,7 @@ class KnowledgeService:
                 raise ValueError("RAGFlow processing requires document content or a stored file payload")
             document.processing_status = DocumentStatus.PARSING
             document.error_message = None
+            document.provider_error_code = None
             document.provider = self._provider.name
             document.updated_at = local_now()
             self._repository.save_document(document)
@@ -403,3 +415,23 @@ def _content_type(file_type: str) -> str:
         "markdown": "text/markdown",
         "pdf": "application/pdf",
     }.get(file_type, "application/octet-stream")
+
+
+def _provider_error_message(value: object) -> str:
+    message = str(value)
+    if "InvalidApiKey" in message or "Invalid API-key" in message:
+        return (
+            "RAGFlow embedding provider rejected its API key (InvalidApiKey). "
+            "Check the selected embedding model provider credentials in RAGFlow."
+        )
+    if "bind embedding model" in message.lower():
+        return f"RAGFlow could not bind the embedding model: {message}"
+    return message
+
+
+def _provider_error_code(message: str) -> str | None:
+    if "InvalidApiKey" in message or "Invalid API-key" in message:
+        return "RAGFLOW_EMBEDDING_INVALID_API_KEY"
+    if "bind embedding model" in message.lower():
+        return "RAGFLOW_EMBEDDING_MODEL_BIND_FAILED"
+    return None

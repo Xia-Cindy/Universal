@@ -1636,6 +1636,8 @@ Not changed:
 - Study Knowledge 已从 Markdown-only textarea 升级为正文编辑器，支持标题、加粗、颜色、图片、表格、代码块、对齐、行列操作、合并和拆分单元格。
 - Work Tech Stack 详情默认展示文章/笔记库；Work Home、技术栈目录和详情页提供显式写文章入口，只有用户主动进入后才展开同类正文编辑器。
 - RAGFlow embedding、LLM、rerank 仍由 RAGFlow 管理；Universe health endpoint 只报告 API 可达性和可选标签，不伪造模型运行成功。真实 TXT、Markdown、PDF processed acceptance 仍必须通过 runtime samples。
+- RAGFlow dataset scope implementation status：Study 使用 `Universe OS Knowledge / Study / {goal name} ({goal id prefix})`，Work 使用 `Universe OS Knowledge / Work / {tech stack name} ({tech stack id prefix})`；上传前会按完整名称查找并复用已有 dataset，避免服务重启或重复上传生成重复作用域。
+- RAGFlow 异步失败状态会保留 `providerErrorCode`；当前 `InvalidApiKey` 映射为 `RAGFLOW_EMBEDDING_INVALID_API_KEY`，UI 明确提示需要检查 RAGFlow 中选定 embedding model 的 provider 凭证。该修复不绕过 RAGFlow，也不把外部凭证写入 Universe。
 
 ## 29. Citation / Evidence 与 Review Loop
 

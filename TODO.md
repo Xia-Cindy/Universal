@@ -199,6 +199,7 @@
 - [x] Add SQLite/PostgreSQL backup and guarded PostgreSQL restore scripts.
 - [x] Add email verification registration with SMTP production boundary and console development sender.
 - [ ] Run production RAGFlow runtime validation with a real API key and embedding model configured; current blocker is an invalid RAGFlow embedding-provider key.
+- [x] Keep Study Goal and Work Tech Stack dataset scopes readable, isolated and reusable across provider restarts; surface the provider error code when embedding binding fails.
 - [x] Add provider status polling and retry handling.
 - [x] Synchronize provider document deletion with RAGFlow.
 - [x] Add stable Citation / Evidence source contract, source quote preview, Knowledge click-through and saved Tutor Learning Events.

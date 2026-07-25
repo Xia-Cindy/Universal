@@ -67,6 +67,7 @@ export interface KnowledgeDocumentPayload {
   goalId?: string | null
   planetType?: string
   techStackId?: string | null
+  scopeName?: string | null
   tags?: string[]
   subject: string
   topic: string
@@ -93,6 +94,7 @@ export interface KnowledgeDocument {
   providerDatasetId?: string | null
   providerDocumentId?: string | null
   providerStatus?: string | null
+  providerErrorCode?: string | null
   processingStatus: KnowledgeDocumentStatus
   errorMessage?: string | null
   createdAt: string

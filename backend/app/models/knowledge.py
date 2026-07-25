@@ -35,6 +35,7 @@ class Document:
     goal_id: str | None = None
     planet_type: str = "study"
     tech_stack_id: str | None = None
+    scope_name: str | None = None
     tags: tuple[str, ...] = ()
     content: str = ""
     content_encoding: str = "text"
@@ -43,6 +44,7 @@ class Document:
     provider_dataset_id: str | None = None
     provider_document_id: str | None = None
     provider_status: str | None = None
+    provider_error_code: str | None = None
     processing_status: DocumentStatus = DocumentStatus.UPLOADED
     error_message: str | None = None
     id: str = field(default_factory=_id)
@@ -60,6 +62,7 @@ class Document:
             "topic": self.topic,
             "planetType": self.planet_type,
             "techStackId": self.tech_stack_id,
+            "scopeName": self.scope_name,
             "tags": list(self.tags),
             "storagePath": self.storage_path,
             "contentEncoding": self.content_encoding,
@@ -67,6 +70,7 @@ class Document:
             "providerDatasetId": self.provider_dataset_id,
             "providerDocumentId": self.provider_document_id,
             "providerStatus": self.provider_status,
+            "providerErrorCode": self.provider_error_code,
             "processingStatus": self.processing_status.value,
             "errorMessage": self.error_message,
             "createdAt": self.created_at.isoformat(),

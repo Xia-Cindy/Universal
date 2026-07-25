@@ -174,6 +174,7 @@
             </button>
           </div>
           <p v-if="document.errorMessage" class="error-text">{{ document.errorMessage }}</p>
+          <small v-if="document.providerErrorCode" class="error-code">{{ document.providerErrorCode }}</small>
         </article>
       </div>
 
