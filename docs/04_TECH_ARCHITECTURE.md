@@ -1655,4 +1655,12 @@ Not changed:
 - 真实 RAGFlow processed 文档和跨 provider 稳定位置引用的 runtime acceptance。
 - 跨 repository 的 PostgreSQL unit-of-work transaction。
 
+## 31. Study Wordbook
+
+- Wordbook 是 Study Planet 的领域数据，不复制共享 Knowledge、Memory 或 AI Core。
+- `WordEntry` 归属用户，可选关联当前 Study Goal；保存语言、单词、释义、音标、标签、词组、例句与个人笔记。
+- `WordbookService` 通过 Study repository 提供按 Goal / 语言 / 标签筛选、手动创建、TXT/CSV 批量导入、同 scope 去重、详情读取与更新。
+- SQLite 与 PostgreSQL migration 各自创建 `study_word_entries`，保持当前 repository adapter contract。
+- Study Workspace 通过 `/study/wordbook` 提供列表与详情编辑；前端不直接处理持久化或 RAGFlow。
+
 # End

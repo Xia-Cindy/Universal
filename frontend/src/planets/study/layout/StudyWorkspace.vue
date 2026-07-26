@@ -63,6 +63,7 @@ const navigation = [
   { label: 'Home', route: '/study' },
   { label: 'Plan', route: '/study/plan' },
   { label: 'Knowledge', route: '/study/knowledge' },
+  { label: 'Wordbook', route: '/study/wordbook' },
   { label: 'Tutor', route: '/study/tutor' },
   { label: 'Review', route: '/study/review' },
   { label: 'Analytics', route: '/study/analytics' },

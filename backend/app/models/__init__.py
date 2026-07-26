@@ -18,6 +18,8 @@ from backend.app.models.study import (
     WrongQuestion,
     WrongQuestionStatus,
     WeekPlan,
+    WordEntry,
+    WordEntrySource,
     YearPlan,
 )
 from backend.app.models.work import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
@@ -52,6 +54,8 @@ __all__ = [
     "WrongQuestionStatus",
     "TechStack",
     "WeekPlan",
+    "WordEntry",
+    "WordEntrySource",
     "WorkArticle",
     "WorkLearningRecord",
     "WorkProject",

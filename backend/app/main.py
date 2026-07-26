@@ -253,6 +253,26 @@ def create_app():
     def get_tutor_history():
         return api.get_tutor_history()
 
+    @app.get("/api/study/wordbook/entries")
+    def list_wordbook_entries(goalId: str | None = None, language: str | None = None, tag: str | None = None):
+        return api.list_wordbook_entries(goal_id=goalId, language=language, tag=tag)
+
+    @app.post("/api/study/wordbook/entries")
+    def create_wordbook_entry(payload: dict):
+        return api.create_wordbook_entry(payload)
+
+    @app.get("/api/study/wordbook/entries/{entry_id}")
+    def get_wordbook_entry(entry_id: str):
+        return api.get_wordbook_entry(entry_id)
+
+    @app.patch("/api/study/wordbook/entries/{entry_id}")
+    def update_wordbook_entry(entry_id: str, payload: dict):
+        return api.update_wordbook_entry(entry_id, payload)
+
+    @app.post("/api/study/wordbook/import")
+    def import_wordbook_entries(payload: dict):
+        return api.import_wordbook_entries(payload)
+
     @app.post("/api/study/tutor/events")
     def save_tutor_answer_event(payload: dict):
         return api.save_tutor_answer_event(payload)

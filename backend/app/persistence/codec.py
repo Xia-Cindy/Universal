@@ -30,6 +30,8 @@ from backend.app.models import (
     TaskStatus,
     TechStack,
     WeekPlan,
+    WordEntry,
+    WordEntrySource,
     WrongQuestion,
     WrongQuestionStatus,
     WorkArticle,
@@ -152,6 +154,19 @@ def review_item_from_payload(payload: dict[str, Any]) -> ReviewItem:
         due_date=date.fromisoformat(payload["dueDate"]),
         status=ReviewStatus(payload.get("status", "pending")), result=payload.get("result"),
         completed_at=parse_datetime(payload["completedAt"]) if payload.get("completedAt") else None,
+        id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
+def word_entry_from_payload(payload: dict[str, Any]) -> WordEntry:
+    return WordEntry(
+        user_id=payload["userId"], word=payload["word"], normalized_word=payload["normalizedWord"],
+        language=payload.get("language", "English"),
+        meaning=payload.get("meaning", ""), pronunciation=payload.get("pronunciation", ""),
+        goal_id=payload.get("goalId"), tags=tuple(payload.get("tags", [])),
+        phrases=tuple(payload.get("phrases", [])), examples=tuple(payload.get("examples", [])),
+        notes=payload.get("notes", ""), source=WordEntrySource(payload.get("source", "manual")),
         id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
         updated_at=parse_datetime(payload["updatedAt"]),
     )

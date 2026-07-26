@@ -116,6 +116,43 @@ export interface KnowledgeDocumentDetail {
   chunks: KnowledgeChunk[]
 }
 
+export interface WordEntry {
+  id: string
+  userId: string
+  goalId?: string | null
+  word: string
+  normalizedWord: string
+  language: string
+  meaning: string
+  pronunciation: string
+  tags: string[]
+  phrases: string[]
+  examples: string[]
+  notes: string
+  source: 'manual' | 'import'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WordEntryPayload {
+  word: string
+  language?: string
+  meaning?: string
+  pronunciation?: string
+  goalId?: string | null
+  tags?: string[]
+  phrases?: string[]
+  examples?: string[]
+  notes?: string
+}
+
+export interface WordbookImportResult {
+  imported: WordEntry[]
+  importedCount: number
+  skipped: string[]
+  skippedCount: number
+}
+
 export interface EvidenceSource {
   sourceId: string
   documentId: string
@@ -314,6 +351,15 @@ async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
   return fetch(input, { ...init, headers })
+}
+
+async function errorMessage(response: Response, fallback: string) {
+  try {
+    const payload = await response.json()
+    return typeof payload?.detail === 'string' ? payload.detail : fallback
+  } catch {
+    return fallback
+  }
 }
 
 export async function fetchPlanets(): Promise<{ planets: PlanetSummary[] }> {
@@ -778,6 +824,60 @@ export async function fetchKnowledgeOverview() {
   if (!response.ok) {
     throw new Error('Unable to load Knowledge overview')
   }
+  return response.json()
+}
+
+export async function fetchWordbookEntries(
+  filters: { goalId?: string; language?: string; tag?: string } = {},
+): Promise<WordEntry[]> {
+  const params = new URLSearchParams()
+  if (filters.goalId) params.set('goalId', filters.goalId)
+  if (filters.language) params.set('language', filters.language)
+  if (filters.tag) params.set('tag', filters.tag)
+  const query = params.toString()
+  const response = await apiFetch(`${API_BASE}/study/wordbook/entries${query ? `?${query}` : ''}`)
+  if (!response.ok) throw new Error('Unable to load Wordbook entries')
+  return response.json()
+}
+
+export async function fetchWordbookEntry(entryId: string): Promise<WordEntry> {
+  const response = await apiFetch(`${API_BASE}/study/wordbook/entries/${entryId}`)
+  if (!response.ok) throw new Error('Unable to load this word')
+  return response.json()
+}
+
+export async function createWordbookEntry(payload: WordEntryPayload): Promise<WordEntry> {
+  const response = await apiFetch(`${API_BASE}/study/wordbook/entries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response, 'Unable to add word'))
+  return response.json()
+}
+
+export async function updateWordbookEntry(entryId: string, payload: Partial<WordEntryPayload>): Promise<WordEntry> {
+  const response = await apiFetch(`${API_BASE}/study/wordbook/entries/${entryId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response, 'Unable to save word details'))
+  return response.json()
+}
+
+export async function importWordbookEntries(payload: {
+  fileName: string
+  content: string
+  goalId?: string | null
+  language?: string
+}): Promise<WordbookImportResult> {
+  const response = await apiFetch(`${API_BASE}/study/wordbook/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response, 'Unable to import Wordbook entries'))
   return response.json()
 }
 

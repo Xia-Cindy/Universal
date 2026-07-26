@@ -43,3 +43,4 @@
 - RAGFlow configuration diagnostics now expose optional Universe-side embedding/LLM/rerank labels without moving provider logic into AI Core. Real processed-file acceptance remains dependent on RAGFlow runtime validation.
 - RAGFlow scope handling now resolves readable, isolated dataset names from Study Goal and Work Tech Stack records, reuses exact existing datasets, and exposes actionable embedding-provider error codes for failed processing.
 - RAGFlow-backed Knowledge and Tutor polish: provider PDF uploads now enter the same preparation loop as TXT/Markdown, retrieval accepts only processed documents in the active Universe scope, and Knowledge/Tutor present lifecycle status plus exact-passage Evidence navigation.
+- Study Wordbook: added durable Goal-aware vocabulary entries, language and tag filters, manual and TXT/CSV bulk import, duplicate handling, word-detail tags/phrases/example sentences/notes, Study API contracts, and a focused Study Workspace route.

@@ -7,6 +7,7 @@ from backend.app.models import (
     LearningEvent,
     ReviewItem,
     WrongQuestion,
+    WordEntry,
     MonthPlan,
     PlanStatus,
     SessionStatus,
@@ -27,6 +28,7 @@ from backend.app.persistence.codec import (
     week_plan_from_payload,
     year_plan_from_payload,
     wrong_question_from_payload,
+    word_entry_from_payload,
 )
 from backend.app.persistence.sqlite import SQLitePersistence
 
@@ -295,6 +297,72 @@ class SQLiteStudyRepository:
         query += " ORDER BY due_date, created_at"
         rows = self._db.connection.execute(query, params).fetchall()
         return [review_item_from_payload(__import__("json").loads(row["payload"])) for row in rows]
+
+    def save_word_entry(self, entry: WordEntry) -> WordEntry:
+        payload = entry.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO study_word_entries(id,user_id,goal_id,normalized_word,language,payload,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET goal_id=excluded.goal_id,
+                   normalized_word=excluded.normalized_word,language=excluded.language,payload=excluded.payload,updated_at=excluded.updated_at""",
+                (
+                    entry.id, entry.user_id, entry.goal_id, entry.normalized_word, entry.language, dumps(payload),
+                    payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+        return entry
+
+    def get_word_entry(self, entry_id: str, user_id: str) -> WordEntry:
+        row = self._db.connection.execute(
+            "SELECT payload FROM study_word_entries WHERE id = ?", (entry_id,)
+        ).fetchone()
+        if not row:
+            raise KeyError(entry_id)
+        entry = word_entry_from_payload(__import__("json").loads(row["payload"]))
+        if entry.user_id != user_id:
+            raise PermissionError("Word entry does not belong to user")
+        return entry
+
+    def list_word_entries(
+        self,
+        user_id: str,
+        goal_id: str | None = None,
+        language: str | None = None,
+        tag: str | None = None,
+    ) -> list[WordEntry]:
+        query = "SELECT payload FROM study_word_entries WHERE user_id = ?"
+        params: list[object] = [user_id]
+        if goal_id:
+            query += " AND goal_id = ?"
+            params.append(goal_id)
+        query += " ORDER BY normalized_word, created_at"
+        rows = self._db.connection.execute(query, params).fetchall()
+        entries = [word_entry_from_payload(__import__("json").loads(row["payload"])) for row in rows]
+        if language:
+            entries = [entry for entry in entries if entry.language == language]
+        if tag:
+            entries = [entry for entry in entries if tag in entry.tags]
+        return entries
+
+    def find_word_entry(
+        self,
+        user_id: str,
+        normalized_word: str,
+        goal_id: str | None = None,
+        language: str | None = None,
+    ) -> WordEntry | None:
+        query = "SELECT payload FROM study_word_entries WHERE user_id = ? AND normalized_word = ?"
+        params: list[object] = [user_id, normalized_word]
+        if goal_id is None:
+            query += " AND goal_id IS NULL"
+        else:
+            query += " AND goal_id = ?"
+            params.append(goal_id)
+        if language:
+            query += " AND language = ?"
+            params.append(language)
+        row = self._db.connection.execute(query, params).fetchone()
+        return word_entry_from_payload(__import__("json").loads(row["payload"])) if row else None
 
     def _save_plan(self, plan, *, parent_id: str | None = None, year: int | None = None, month: int | None = None, week_start: str | None = None, week_end: str | None = None) -> None:
         payload = plan.to_dict()

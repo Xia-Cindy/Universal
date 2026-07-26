@@ -203,6 +203,7 @@
 - [x] Add provider status polling and retry handling.
 - [x] Synchronize provider document deletion with RAGFlow.
 - [x] Add stable Citation / Evidence source contract, source quote preview, Knowledge click-through and saved Tutor Learning Events.
+- [x] Add Study Wordbook with manual entry, TXT/CSV batch import, scope-local duplicate handling, and editable tags/phrases/examples/notes.
 - [ ] Backfill existing local documents into RAGFlow when original content is available.
 - [x] Productize Plan Builder with Goal-owned long-term, monthly, weekly and daily node creation plus task ordering.
 - [ ] Implement full Goal-aware Knowledge Space UI modes: exam isolation, reading bookshelf and knowledge cards.

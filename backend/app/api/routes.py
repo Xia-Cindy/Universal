@@ -19,6 +19,7 @@ from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.planets.study.workspace import StudyWorkspaceService
 from backend.app.planets.study.review import ReviewService
+from backend.app.planets.study.wordbook import WordbookService
 from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
 from backend.app.planets.work.repository import SQLiteWorkRepository
 from backend.app.persistence import (
@@ -140,6 +141,7 @@ class ApiFacade:
             memory=self.memory,
         )
         self.study_review = ReviewService(self.study_repository)
+        self.study_wordbook = WordbookService(self.study_repository)
         self.study_tutor = TutorService(
             repository=self.study_repository,
             ai_core=self.ai_core,
@@ -426,6 +428,37 @@ class ApiFacade:
         user = self.users.current_user()
         return self.study_tutor.history(user=user)
 
+    def list_wordbook_entries(
+        self,
+        *,
+        goal_id: str | None = None,
+        language: str | None = None,
+        tag: str | None = None,
+    ) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        if goal_id:
+            self.study_repository.get_goal(goal_id, user.id)
+        return self.study_wordbook.list_entries(user.id, goal_id=goal_id, language=language, tag=tag)
+
+    def get_wordbook_entry(self, entry_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_wordbook.get_entry(user.id, entry_id)
+
+    def create_wordbook_entry(self, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = self._with_wordbook_goal(payload, user.id)
+        return self.study_wordbook.create_entry(user.id, payload)
+
+    def update_wordbook_entry(self, entry_id: str, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = self._with_wordbook_goal(payload, user.id, default_current_goal=False)
+        return self.study_wordbook.update_entry(user.id, entry_id, payload)
+
+    def import_wordbook_entries(self, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = self._with_wordbook_goal(payload, user.id)
+        return self.study_wordbook.import_entries(user.id, payload)
+
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         payload = dict(payload)
@@ -440,6 +473,21 @@ class ApiFacade:
             if tech_stack:
                 payload["scopeName"] = tech_stack.name
         return self.knowledge.create_document(user.id, payload).to_dict()
+
+    def _with_wordbook_goal(
+        self,
+        payload: dict[str, object],
+        user_id: str,
+        *,
+        default_current_goal: bool = True,
+    ) -> dict[str, object]:
+        normalized = dict(payload)
+        if "goalId" not in normalized and default_current_goal:
+            goal = self.study_repository.get_active_goal(user_id)
+            normalized["goalId"] = goal.id if goal else None
+        if normalized.get("goalId"):
+            self.study_repository.get_goal(str(normalized["goalId"]), user_id)
+        return normalized
 
     def knowledge_overview(self) -> dict[str, object]:
         user = self.users.current_user()

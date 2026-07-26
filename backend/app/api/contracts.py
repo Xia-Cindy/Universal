@@ -145,6 +145,14 @@ MILESTONE_8_REVIEW_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("POST", "/api/study/review/items/{review_id}/complete", "complete_review_item", "milestone_8_review"),
 )
 
+WORD_BOOK_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("GET", "/api/study/wordbook/entries", "list_wordbook_entries", "study_wordbook"),
+    ApiContract("POST", "/api/study/wordbook/entries", "create_wordbook_entry", "study_wordbook"),
+    ApiContract("GET", "/api/study/wordbook/entries/{entry_id}", "get_wordbook_entry", "study_wordbook"),
+    ApiContract("PATCH", "/api/study/wordbook/entries/{entry_id}", "update_wordbook_entry", "study_wordbook"),
+    ApiContract("POST", "/api/study/wordbook/import", "import_wordbook_entries", "study_wordbook"),
+)
+
 MILESTONE_10_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/work/home", "work_home", "milestone_10"),
     ApiContract("POST", "/api/work/knowledge/documents", "create_work_knowledge_document", "milestone_10"),
@@ -206,6 +214,7 @@ def list_contracts() -> list[dict[str, str]]:
             *MILESTONE_7_5_CONTRACTS,
             *MILESTONE_7_6_CONTRACTS,
             *MILESTONE_8_REVIEW_CONTRACTS,
+            *WORD_BOOK_CONTRACTS,
             *MILESTONE_10_CONTRACTS,
         )
     ]

@@ -13,6 +13,7 @@ from backend.app.models import (
     YearPlan,
     ReviewItem,
     WrongQuestion,
+    WordEntry,
 )
 
 from backend.app.persistence.study import SQLiteStudyRepository
@@ -38,6 +39,7 @@ class StudyRepository:
         self.current_goal_ids: dict[tuple[str, str], str] = {}
         self.wrong_questions: dict[str, WrongQuestion] = {}
         self.review_items: dict[str, ReviewItem] = {}
+        self.word_entries: dict[str, WordEntry] = {}
 
     def save_goal(self, goal: StudyGoal) -> StudyGoal:
         self.goals[goal.id] = goal
@@ -239,3 +241,48 @@ class StudyRepository:
         if wrong_question_id:
             items = [item for item in items if item.wrong_question_id == wrong_question_id]
         return sorted(items, key=lambda item: (item.due_date, item.stage, item.created_at))
+
+    def save_word_entry(self, entry: WordEntry) -> WordEntry:
+        self.word_entries[entry.id] = entry
+        return entry
+
+    def get_word_entry(self, entry_id: str, user_id: str) -> WordEntry:
+        entry = self.word_entries[entry_id]
+        if entry.user_id != user_id:
+            raise PermissionError("Word entry does not belong to user")
+        return entry
+
+    def list_word_entries(
+        self,
+        user_id: str,
+        goal_id: str | None = None,
+        language: str | None = None,
+        tag: str | None = None,
+    ) -> list[WordEntry]:
+        entries = [entry for entry in self.word_entries.values() if entry.user_id == user_id]
+        if goal_id:
+            entries = [entry for entry in entries if entry.goal_id == goal_id]
+        if language:
+            entries = [entry for entry in entries if entry.language == language]
+        if tag:
+            entries = [entry for entry in entries if tag in entry.tags]
+        return sorted(entries, key=lambda entry: (entry.word.casefold(), entry.created_at))
+
+    def find_word_entry(
+        self,
+        user_id: str,
+        normalized_word: str,
+        goal_id: str | None = None,
+        language: str | None = None,
+    ) -> WordEntry | None:
+        return next(
+            (
+                entry
+                for entry in self.word_entries.values()
+                if entry.user_id == user_id
+                and entry.normalized_word == normalized_word
+                and entry.goal_id == goal_id
+                and (language is None or entry.language == language)
+            ),
+            None,
+        )
