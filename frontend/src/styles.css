@@ -1452,6 +1452,84 @@ textarea {
   padding-left: 1.2rem;
 }
 
+.knowledge-intro,
+.tutor-intro {
+  color: #5b6877;
+  line-height: 1.55;
+  margin: 0.8rem 0 0;
+  max-width: 720px;
+}
+
+.provider-progress {
+  background: #f4f8f9;
+  border-left: 3px solid #0b8a88;
+  display: grid;
+  gap: 4px;
+  margin: 14px 0;
+  padding: 12px 14px;
+}
+
+.provider-progress strong {
+  color: #131923;
+}
+
+.provider-progress span {
+  color: #5b6877;
+  line-height: 1.45;
+}
+
+.provider-failed,
+.status-failed {
+  border-color: #b8324f;
+}
+
+.status-failed {
+  background: #fff0f2;
+  color: #b8324f;
+}
+
+.provider-parsing,
+.provider-chunking {
+  border-color: #d78c1f;
+}
+
+.tutor-error {
+  margin: 0 0 16px;
+}
+
+.tutor-reasoning {
+  border-top: 1px solid #d5dee4;
+  color: #5b6877;
+  margin-top: 18px;
+  padding-top: 14px;
+}
+
+.tutor-reasoning summary {
+  color: #0b6f70;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.evidence-heading {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.evidence-list blockquote {
+  border-left: 3px solid #95d3d1;
+  color: #5b6877;
+  line-height: 1.5;
+  margin: 12px 0;
+  padding-left: 12px;
+}
+
+.evidence-list a {
+  color: #0b6f70;
+  font-weight: 800;
+}
+
 .study-form,
 .knowledge-form,
 .task-edit,

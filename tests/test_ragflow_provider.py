@@ -2,7 +2,7 @@ import unittest
 
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.knowledge.providers import RAGFlowKnowledgeProvider
-from backend.app.models import Document, DocumentType
+from backend.app.models import Document, DocumentStatus, DocumentType
 from backend.app.retrieval import RetrievalQuery, RetrievalService
 
 
@@ -167,6 +167,7 @@ class RAGFlowProviderTests(unittest.TestCase):
                 provider="ragflow",
                 provider_dataset_id="dataset-1",
                 provider_document_id="provider-doc-1",
+                processing_status=DocumentStatus.PROCESSED,
             )
         )
         retrieval = RetrievalService(knowledge_repository=repository, knowledge_provider=provider)
@@ -180,6 +181,43 @@ class RAGFlowProviderTests(unittest.TestCase):
         self.assertEqual(result["results"][0]["metadata"]["providerDocumentId"], "provider-doc-1")
         self.assertEqual(provider.search_calls[0]["datasetIds"], ["dataset-1"])
         self.assertEqual(provider.search_calls[0]["documentIds"], ["provider-doc-1"])
+
+    def test_retrieval_excludes_unprocessed_provider_documents_from_evidence(self):
+        provider = FakeKnowledgeProvider()
+        repository = KnowledgeRepository()
+        repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="still-indexing.pdf",
+                file_type=DocumentType.PDF,
+                subject="systems",
+                topic="memory",
+                provider="ragflow",
+                provider_dataset_id="dataset-1",
+                provider_document_id="provider-doc-pending",
+                processing_status=DocumentStatus.CHUNKING,
+            )
+        )
+        ready = repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="ready.md",
+                file_type=DocumentType.MARKDOWN,
+                subject="systems",
+                topic="memory",
+                provider="ragflow",
+                provider_dataset_id="dataset-1",
+                provider_document_id="provider-doc-ready",
+                processing_status=DocumentStatus.PROCESSED,
+            )
+        )
+
+        RetrievalService(knowledge_repository=repository, knowledge_provider=provider).search(
+            RetrievalQuery(user_id="local-user", query="memory", limit=3)
+        )
+
+        self.assertEqual(provider.search_calls[0]["documentIds"], ["provider-doc-ready"])
+        self.assertEqual(ready.provider_document_id, "provider-doc-ready")
 
     def test_ragflow_adapter_normalizes_api_responses(self):
         client = StubRAGFlowClient()

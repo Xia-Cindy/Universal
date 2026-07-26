@@ -198,7 +198,7 @@
 - [x] Connect Knowledge services to PostgreSQL adapters and local/S3 object storage boundaries.
 - [x] Add SQLite/PostgreSQL backup and guarded PostgreSQL restore scripts.
 - [x] Add email verification registration with SMTP production boundary and console development sender.
-- [ ] Run production RAGFlow runtime validation with a real API key and embedding model configured; current blocker is an invalid RAGFlow embedding-provider key.
+- [ ] Run RAGFlow runtime acceptance with fresh TXT, Markdown and PDF samples now that the embedding-provider key issue is resolved; record processed status, chunk preview and Tutor retrieval evidence.
 - [x] Keep Study Goal and Work Tech Stack dataset scopes readable, isolated and reusable across provider restarts; surface the provider error code when embedding binding fails.
 - [x] Add provider status polling and retry handling.
 - [x] Synchronize provider document deletion with RAGFlow.
@@ -210,5 +210,5 @@
 - [ ] Add richer Dynamic Resume editor, version comparison and user confirmation flow.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
 - [x] Implement Wrong Questions, 1/3/7/30 Review queue, idempotent completion and Analytics summary integration.
-- [ ] Complete real RAGFlow TXT/Markdown/PDF processed acceptance after fixing the embedding provider key/model.
+- [ ] Complete real RAGFlow TXT/Markdown/PDF processed acceptance and cross-provider source-position verification.
 - [ ] Add production PostgreSQL unit-of-work transaction for atomic Session finish across Task, Event and Memory.

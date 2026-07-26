@@ -195,9 +195,9 @@ class RAGFlowKnowledgeProvider:
         data = response.get("data", [])
         if isinstance(data, dict):
             documents = data.get("docs", [])
-            item = documents[0] if isinstance(documents, list) and documents else {}
+            item = _matching_document(documents, document_id)
         else:
-            item = data[0] if isinstance(data, list) and data else data
+            item = _matching_document(data, document_id) if isinstance(data, list) else data
         if not isinstance(item, dict):
             raise RAGFlowAPIError("RAGFlow did not return document status")
         run = str(item.get("run") or item.get("status") or "unknown").lower()
@@ -379,6 +379,16 @@ class RAGFlowKnowledgeProvider:
 def _display_scope_name(value: str | None, *, fallback: str) -> str:
     normalized = " ".join((value or "").split()).strip()
     return normalized[:120] or fallback
+
+
+def _matching_document(items: object, document_id: str) -> dict[str, object]:
+    """Return the requested document even if a provider ignores the id query filter."""
+    if not isinstance(items, list):
+        return {}
+    for item in items:
+        if isinstance(item, dict) and str(item.get("id") or item.get("document_id") or "") == document_id:
+            return item
+    return items[0] if items and isinstance(items[0], dict) else {}
 
 
 def _ragflow_error_code(message: str) -> str | None:

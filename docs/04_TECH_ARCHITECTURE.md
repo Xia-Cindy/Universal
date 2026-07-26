@@ -1615,14 +1615,15 @@ Not changed:
 
 - `KnowledgeProvider` 提供 health check、document status、retry 和 delete boundary。
 - RAGFlow-backed Knowledge 文档支持异步 status refresh；Study Knowledge UI 在 `parsing` / `chunking` 状态下轮询。
+- RAGFlow-backed PDF 与 TXT/Markdown 走同一处理入口；只有 `local` provider 的 PDF 保持 metadata-only，避免把旧的本地限制误用到已配置的 provider。
 - Provider 删除会先同步删除 RAGFlow document，再删除 Universe metadata 和本地 chunk preview。
-- RAGFlow health endpoint 在本地 runtime 可访问，mocked provider tests 与完整 backend/frontend checks 已通过。
+- Provider retrieval 只提交当前 Universe scope 内、已 `processed` 的 provider document id，避免处于索引中、失败或陈旧的 provider 文档成为 Tutor Evidence。
 
 当前未通过的外部验收：
 
-- RAGFlow API 可访问，但其 embedding model provider 返回 `InvalidApiKey`，因此真实 TXT、Markdown、PDF 尚未完成 `processed` 验收。
-- 在有效 embedding provider key/model 配置前，不把 RAGFlow-backed Knowledge 描述为已可用生产能力。
-- Citation / source click-through 仍属于下一阶段统一 Evidence 合同，不在本节提前宣称完成。
+- 已确认此前的 embedding provider key 问题在部署配置中修复；Universe 不缓存该配置结论，仍须以新的 TXT、Markdown、PDF runtime sample 确认状态能到达 `processed`。
+- Runtime sample 完成前，不把 RAGFlow-backed Knowledge 描述为已完成生产验收。
+- Citation / source click-through 使用统一 Evidence 合同；跨 provider 的位置语义仍需在真实 runtime sample 中确认。
 
 ## 30. Current Platform Foundation Status
 
@@ -1637,7 +1638,7 @@ Not changed:
 - Work Tech Stack 详情默认展示文章/笔记库；Work Home、技术栈目录和详情页提供显式写文章入口，只有用户主动进入后才展开同类正文编辑器。
 - RAGFlow embedding、LLM、rerank 仍由 RAGFlow 管理；Universe health endpoint 只报告 API 可达性和可选标签，不伪造模型运行成功。真实 TXT、Markdown、PDF processed acceptance 仍必须通过 runtime samples。
 - RAGFlow dataset scope implementation status：Study 使用 `Universe OS Knowledge / Study / {goal name} ({goal id prefix})`，Work 使用 `Universe OS Knowledge / Work / {tech stack name} ({tech stack id prefix})`；上传前会按完整名称查找并复用已有 dataset，避免服务重启或重复上传生成重复作用域。
-- RAGFlow 异步失败状态会保留 `providerErrorCode`；当前 `InvalidApiKey` 映射为 `RAGFLOW_EMBEDDING_INVALID_API_KEY`，UI 明确提示需要检查 RAGFlow 中选定 embedding model 的 provider 凭证。该修复不绕过 RAGFlow，也不把外部凭证写入 Universe。
+- RAGFlow 异步失败状态会保留 `providerErrorCode`；包括 `InvalidApiKey` 在内的历史或新错误都会在 UI 显示可执行的 retry / provider 检查提示。该处理不绕过 RAGFlow，也不把外部凭证写入 Universe。
 
 ## 29. Citation / Evidence 与 Review Loop
 
@@ -1651,7 +1652,7 @@ Not changed:
 
 未完成：
 
-- 真实 RAGFlow processed 文档和跨 provider 稳定位置引用。
+- 真实 RAGFlow processed 文档和跨 provider 稳定位置引用的 runtime acceptance。
 - 跨 repository 的 PostgreSQL unit-of-work transaction。
 
 # End
