@@ -138,15 +138,21 @@ async function loadEntries() {
   isLoading.value = true
   try {
     const baseFilter = { ...scopeFilter(), ...(languageFilter.value === 'all' ? {} : { language: languageFilter.value }) }
-    scopeEntries.value = await fetchWordbookEntries(baseFilter)
+    const scoped = await fetchWordbookEntries(baseFilter)
+    scopeEntries.value = filterIndependentEntries(scoped)
     if (tagFilter.value !== 'all' && !availableTags.value.includes(tagFilter.value)) tagFilter.value = 'all'
-    entries.value = await fetchWordbookEntries({ ...baseFilter, ...(tagFilter.value === 'all' ? {} : { tag: tagFilter.value }) })
+    const filtered = await fetchWordbookEntries({ ...baseFilter, ...(tagFilter.value === 'all' ? {} : { tag: tagFilter.value }) })
+    entries.value = filterIndependentEntries(filtered)
     if (!entries.value.some((entry) => entry.id === selectedEntry.value?.id)) selectEntry(entries.value[0] || null)
   } catch (error) {
-    statusMessage.value = error instanceof Error ? error.message : 'Unable to load Wordbook.'
+    statusMessage.value = wordbookErrorMessage(error, 'Unable to load Wordbook.')
   } finally {
     isLoading.value = false
   }
+}
+
+function filterIndependentEntries(items: WordEntry[]) {
+  return goalFilter.value === 'independent' ? items.filter((entry) => !entry.goalId) : items
 }
 
 function scopeFilter() {
@@ -177,9 +183,8 @@ async function addWord() {
     newTags.value = ''
     activeTool.value = null
     statusMessage.value = `${entry.word} is now in your Wordbook.`
-    await loadEntries()
-    selectEntry(entry)
-  } catch (error) { statusMessage.value = error instanceof Error ? error.message : 'Unable to add word.' } finally { isSaving.value = false }
+    await revealEntry(entry)
+  } catch (error) { statusMessage.value = wordbookErrorMessage(error, 'Unable to add word.') } finally { isSaving.value = false }
 }
 
 async function selectImportFile(event: Event) {
@@ -200,9 +205,9 @@ async function importFile() {
     importStatus.value = `${result.importedCount} added${result.skippedCount ? ` · ${result.skippedCount} already existed` : ''}.`
     activeTool.value = null
     statusMessage.value = result.importedCount ? 'Your imported words are ready for details.' : 'Every word in this file already exists here.'
-    await loadEntries()
-    if (result.imported[0]) selectEntry(result.imported[0])
-  } catch (error) { importStatus.value = error instanceof Error ? error.message : 'Unable to import this list.' } finally { isImporting.value = false }
+    if (result.imported[0]) await revealEntry(result.imported[0])
+    else await loadEntries()
+  } catch (error) { importStatus.value = wordbookErrorMessage(error, 'Unable to import this list.') } finally { isImporting.value = false }
 }
 
 function selectEntry(entry: WordEntry | null) {
@@ -216,9 +221,23 @@ async function saveDetail() {
   try {
     const updated = await updateWordbookEntry(selectedEntry.value.id, { word: detailDraft.value.word, meaning: detailDraft.value.meaning, pronunciation: detailDraft.value.pronunciation, language: detailDraft.value.language, tags: splitComma(detailDraft.value.tags), phrases: splitLines(detailDraft.value.phrases), examples: splitLines(detailDraft.value.examples), notes: detailDraft.value.notes })
     statusMessage.value = `${updated.word} detail saved.`
-    await loadEntries()
-    selectEntry(updated)
-  } catch (error) { statusMessage.value = error instanceof Error ? error.message : 'Unable to save this word.' } finally { isSaving.value = false }
+    await revealEntry(updated)
+  } catch (error) { statusMessage.value = wordbookErrorMessage(error, 'Unable to save this word.') } finally { isSaving.value = false }
+}
+
+async function revealEntry(entry: WordEntry) {
+  languageFilter.value = entry.language
+  tagFilter.value = 'all'
+  goalFilter.value = entry.goalId ? (entry.goalId === currentGoalId.value ? 'current' : entry.goalId) : 'independent'
+  await loadEntries()
+  selectEntry(entry)
+}
+
+function wordbookErrorMessage(error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : fallback
+  return message === 'Not Found'
+    ? 'The running backend does not include Wordbook yet. Restart the backend, then try again.'
+    : message
 }
 
 function selectedGoalId() { const goalId = goalFilter.value === 'current' ? currentGoalId.value : goalFilter.value; return goalFilter.value === 'all' || goalFilter.value === 'independent' ? null : goalId || null }

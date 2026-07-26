@@ -217,10 +217,23 @@ http://127.0.0.1:5173
 
 The Vite dev server proxies `/api` requests to `http://127.0.0.1:8000`, so the browser can use Universe Portal, Study onboarding, Plan, Session, Knowledge, Tutor and Analytics from the frontend.
 
-The local API now uses one shared SQLite database at `database/universe.sqlite3` by
-default. Repository-backed Study, Knowledge, Memory and Work records survive a
-backend restart. The file is ignored by Git and is local development data. Set
-`PERSISTENCE_BACKEND=memory` only for an explicitly ephemeral run.
+Universe runtime uses PostgreSQL. Start the local PostgreSQL + pgvector service
+and load its environment before starting the API:
+
+```bash
+cp docker/universe.env.example docker/universe.env
+# Set a local secret in both UNIVERSE_POSTGRES_PASSWORD and DATABASE_URL.
+docker-compose --env-file docker/universe.env -f docker/universe-postgres.compose.yml up -d
+set -a
+. docker/universe.env
+set +a
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+
+Repository-backed Study, Knowledge, Memory and Work records survive backend
+restart through PostgreSQL migrations. SQLite is available only for explicit
+local compatibility runs with `PERSISTENCE_BACKEND=sqlite`; `memory` is for
+ephemeral tests or demos.
 
 Backend API docs are available at:
 
@@ -278,7 +291,7 @@ items without requiring AI. Review completion is included in Study Analytics.
 ## Account, persistence and authoring foundations
 
 - `/register` provides email verification registration. Development uses a console sender; production uses `EMAIL_BACKEND=smtp` and secret-managed SMTP settings.
-- `PERSISTENCE_BACKEND=postgres` enables the PostgreSQL repository adapter and migration runner. SQLite remains the local default.
+- PostgreSQL is the default runtime adapter and migration runner. SQLite is an explicit local compatibility adapter only.
 - Knowledge file bytes use `LocalObjectStorage` in development or an S3-compatible adapter in production. Database metadata and object storage are backed up separately.
 - `scripts/backup_sqlite.sh`, `scripts/backup_postgres.sh` and guarded `scripts/restore_postgres.sh` provide operational starting points; production still needs scheduled off-host retention and restore drills.
 - Study Plan now supports Goal-owned node creation and task reordering. It is a manual Plan Builder; automatic AI planning is intentionally not implemented.

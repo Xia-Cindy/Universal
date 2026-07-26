@@ -1595,7 +1595,7 @@ Not changed:
 ## 已实现
 
 - 增加 shared SQLite connection、事务边界和 migration runner。
-- 生产 API 默认使用 `database/universe.sqlite3`。
+- SQLite 仅保留为显式本地开发/测试 adapter；Universe runtime 使用 PostgreSQL。
 - Study、Knowledge、Memory、Work repository 继续保持原有 service contract，底层可切换为 SQLite adapter。
 - `current_goal` 的唯一来源为 `user_planet_context(user_id, planet_type, current_goal_id)`。
 - 多个 Study Goal 可以同时保持 active，Goal switch 只更新 Study Planet context。

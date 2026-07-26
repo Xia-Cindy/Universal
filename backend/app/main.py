@@ -1,5 +1,6 @@
 from backend.app.api.contracts import list_contracts
 from backend.app.api.routes import api
+from backend.app.core.settings import settings
 
 
 def create_app():
@@ -18,6 +19,12 @@ def create_app():
             "status": "fastapi_not_installed",
             "contracts": list_contracts(),
         }
+
+    if settings.persistence_backend == "postgres" and not settings.database_url:
+        raise RuntimeError(
+            "DATABASE_URL is required for the default PostgreSQL runtime. "
+            "Copy docker/universe.env.example, configure it, then load it before starting the API."
+        )
 
     app = FastAPI(title="Universe OS API")
 

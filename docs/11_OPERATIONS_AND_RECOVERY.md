@@ -2,8 +2,8 @@
 
 ## Persistence
 
-- Local development defaults to SQLite at `UNIVERSE_DATABASE_PATH`.
-- Production should set `PERSISTENCE_BACKEND=postgres` and `DATABASE_URL`.
+- Universe runtime defaults to PostgreSQL and requires `DATABASE_URL`.
+- SQLite is available only when a local developer explicitly sets `PERSISTENCE_BACKEND=sqlite` and `UNIVERSE_DATABASE_PATH`.
 - Both paths use the repository interfaces; Planet services do not know which adapter is active.
 - File content uses local object storage in development and S3-compatible storage when `OBJECT_STORAGE_BACKEND=s3`.
 

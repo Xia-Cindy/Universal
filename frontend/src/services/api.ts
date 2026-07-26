@@ -836,13 +836,13 @@ export async function fetchWordbookEntries(
   if (filters.tag) params.set('tag', filters.tag)
   const query = params.toString()
   const response = await apiFetch(`${API_BASE}/study/wordbook/entries${query ? `?${query}` : ''}`)
-  if (!response.ok) throw new Error('Unable to load Wordbook entries')
+  if (!response.ok) throw new Error(await errorMessage(response, 'Unable to load Wordbook entries'))
   return response.json()
 }
 
 export async function fetchWordbookEntry(entryId: string): Promise<WordEntry> {
   const response = await apiFetch(`${API_BASE}/study/wordbook/entries/${entryId}`)
-  if (!response.ok) throw new Error('Unable to load this word')
+  if (!response.ok) throw new Error(await errorMessage(response, 'Unable to load this word'))
   return response.json()
 }
 

@@ -39,23 +39,39 @@ from backend.app.users import AuthService, ConsoleEmailSender, SMTPEmailSender, 
 class ApiFacade:
     """Dependency-light API facade used by tests and optional web adapters."""
 
-    def __init__(self, *, database_path: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        database_path: str | None = None,
+        persistence_backend: str | None = None,
+        database_url: str | None = None,
+    ) -> None:
         self.registry = create_default_registry()
         self.universe = UniverseService(self.registry)
-        if settings.persistence_backend == "postgres":
-            if not settings.database_url:
+        backend = persistence_backend or ("sqlite" if database_path else "memory")
+        if backend == "postgres":
+            database_url = database_url or settings.database_url
+            if not database_url:
                 raise ValueError("DATABASE_URL is required when PERSISTENCE_BACKEND=postgres")
-            self.persistence = PostgresPersistence(settings.database_url)
+            self.persistence = PostgresPersistence(database_url)
             study_repository = PostgresStudyRepository(self.persistence)
             knowledge_repository = PostgresKnowledgeRepository(self.persistence)
             memory_repository = PostgresMemoryRepository(self.persistence)
             work_repository = PostgresWorkRepository(self.persistence)
-        else:
+        elif backend == "sqlite":
             self.persistence = SQLitePersistence(database_path) if database_path else None
             study_repository = SQLiteStudyRepository(self.persistence) if self.persistence else StudyRepository()
             knowledge_repository = SQLiteKnowledgeRepository(self.persistence) if self.persistence else KnowledgeRepository()
             memory_repository = SQLiteMemoryRepository(self.persistence) if self.persistence else None
             work_repository = SQLiteWorkRepository(self.persistence) if self.persistence else WorkRepository()
+        elif backend == "memory":
+            self.persistence = None
+            study_repository = StudyRepository()
+            knowledge_repository = KnowledgeRepository()
+            memory_repository = None
+            work_repository = WorkRepository()
+        else:
+            raise ValueError("PERSISTENCE_BACKEND must be postgres, sqlite, or memory")
         self.users = UserService(settings.default_user_id, persistence=self.persistence)
         email_sender = (
             SMTPEmailSender(
@@ -658,4 +674,15 @@ class ApiFacade:
         return self.study_review.complete(user.id, review_id, payload)
 
 
-api = ApiFacade(database_path=settings.database_path if settings.persistence_backend == "sqlite" else None)
+# Service tests import this module without a runtime database. The ASGI factory
+# rejects a missing PostgreSQL configuration before it can serve requests; this
+# dependency-light facade keeps unit tests independent of external services.
+api = (
+    ApiFacade(persistence_backend="memory")
+    if settings.persistence_backend == "postgres" and not settings.database_url
+    else ApiFacade(
+        database_path=settings.database_path if settings.persistence_backend == "sqlite" else None,
+        persistence_backend=settings.persistence_backend,
+        database_url=settings.database_url,
+    )
+)

@@ -957,7 +957,7 @@ Goal
 已完成本地共享持久化基础：
 
 - 新增 shared SQLite persistence、schema migration runner 和 transaction boundary。
-- 生产 API 默认使用 `database/universe.sqlite3`，该文件被 Git 忽略。
+- 当时的生产 API 曾默认使用 `database/universe.sqlite3`；现已改为 PostgreSQL runtime，SQLite 仅保留为显式本地兼容 adapter。
 - Study、Knowledge、Memory、Work repository 通过 adapter 共享同一个 persistence connection。
 - 新增 `user_planet_context`，作为 Study `current_goal` 的唯一来源。
 - Goal switch 不再依赖 Memory 中的 `active_goal_id`，也不会归档其他 active Goal。

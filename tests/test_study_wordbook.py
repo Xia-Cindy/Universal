@@ -1,9 +1,11 @@
 import tempfile
 import unittest
+import sqlite3
 from pathlib import Path
 
 from backend.app.api.contracts import list_contracts
 from backend.app.api.routes import ApiFacade
+from backend.app.persistence.sqlite import SQLitePersistence
 
 
 class StudyWordbookTests(unittest.TestCase):
@@ -90,6 +92,41 @@ class StudyWordbookTests(unittest.TestCase):
 
         self.assertEqual(restored["word"], "context")
         self.assertEqual(restored["meaning"], "上下文")
+
+    def test_sqlite_backfills_language_for_database_with_original_wordbook_schema(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "wordbook.sqlite3")
+            connection = sqlite3.connect(path)
+            connection.executescript(
+                """
+                CREATE TABLE schema_migrations (version TEXT PRIMARY KEY);
+                INSERT INTO schema_migrations(version) VALUES ('004_study_wordbook.sql');
+                CREATE TABLE study_word_entries (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    goal_id TEXT,
+                    normalized_word TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                """
+            )
+            connection.close()
+
+            persistence = SQLitePersistence(path)
+            columns = {
+                row["name"]
+                for row in persistence.connection.execute("PRAGMA table_info(study_word_entries)")
+            }
+            applied = {
+                row["version"]
+                for row in persistence.connection.execute("SELECT version FROM schema_migrations")
+            }
+            persistence.close()
+
+        self.assertIn("language", columns)
+        self.assertIn("005_study_wordbook_language_backfill.sql", applied)
 
     def test_wordbook_contracts_are_declared(self):
         names = {item["name"] for item in list_contracts()}

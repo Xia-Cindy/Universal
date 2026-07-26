@@ -44,3 +44,5 @@
 - RAGFlow scope handling now resolves readable, isolated dataset names from Study Goal and Work Tech Stack records, reuses exact existing datasets, and exposes actionable embedding-provider error codes for failed processing.
 - RAGFlow-backed Knowledge and Tutor polish: provider PDF uploads now enter the same preparation loop as TXT/Markdown, retrieval accepts only processed documents in the active Universe scope, and Knowledge/Tutor present lifecycle status plus exact-passage Evidence navigation.
 - Study Wordbook: added durable Goal-aware vocabulary entries, language and tag filters, manual and TXT/CSV bulk import, duplicate handling, word-detail tags/phrases/example sentences/notes, Study API contracts, and a focused Study Workspace route.
+- Wordbook save and list reliability: repaired legacy Wordbook language migrations, return saved words to their language/scope view, and surface backend errors instead of leaving an empty list.
+- PostgreSQL runtime baseline: PostgreSQL is now the default backend persistence configuration, with a local pgvector Compose profile and a forward-compatible Wordbook migration; SQLite remains an explicit development/test adapter.
