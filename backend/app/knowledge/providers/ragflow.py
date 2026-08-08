@@ -195,19 +195,22 @@ class RAGFlowKnowledgeProvider:
         data = response.get("data", [])
         if isinstance(data, dict):
             documents = data.get("docs", [])
-            item = documents[0] if isinstance(documents, list) and documents else {}
+            item = _matching_document(documents, document_id)
         else:
-            item = data[0] if isinstance(data, list) and data else data
+            item = _matching_document(data, document_id) if isinstance(data, list) else data
         if not isinstance(item, dict):
             raise RAGFlowAPIError("RAGFlow did not return document status")
         run = str(item.get("run") or item.get("status") or "unknown").lower()
+        progress_message = item.get("progress_msg")
+        error_message = item.get("fail_reason") or item.get("error_message") or progress_message
         return {
             "provider": self.name,
             "datasetId": dataset_id,
             "documentId": document_id,
             "status": run,
-            "errorMessage": item.get("fail_reason") or item.get("error_message") or item.get("progress_msg"),
-            "progressMessage": item.get("progress_msg"),
+            "errorMessage": error_message,
+            "errorCode": _ragflow_error_code(str(error_message or "")),
+            "progressMessage": progress_message,
             "raw": item,
         }
 
@@ -239,13 +242,27 @@ class RAGFlowKnowledgeProvider:
         document_id: str,
         limit: int = 30,
     ) -> list[dict[str, object]]:
-        response = self._client.request_json(
-            "GET",
-            f"/api/v1/datasets/{dataset_id}/documents/{document_id}/chunks",
-            query={"page": 1, "page_size": limit},
-        )
-        data = response.get("data", {})
-        chunks = data.get("chunks", []) if isinstance(data, dict) else []
+        chunks: list[dict[str, object]] = []
+        page = 1
+        page_size = min(max(limit, 1), 100)
+        total: int | None = None
+        while len(chunks) < limit:
+            response = self._client.request_json(
+                "GET",
+                f"/api/v1/datasets/{dataset_id}/documents/{document_id}/chunks",
+                query={"page": page, "page_size": page_size},
+            )
+            data = response.get("data", {})
+            raw_chunks = data.get("chunks", []) if isinstance(data, dict) else []
+            if not isinstance(raw_chunks, list) or not raw_chunks:
+                break
+            chunks.extend(chunk for chunk in raw_chunks if isinstance(chunk, dict))
+            if isinstance(data, dict) and isinstance(data.get("total"), int):
+                total = data["total"]
+            if total is None or len(chunks) >= total or len(raw_chunks) < page_size:
+                break
+            page += 1
+        chunks = chunks[:limit]
         return [
             {
                 "chunkId": chunk.get("id"),
@@ -313,6 +330,10 @@ class RAGFlowKnowledgeProvider:
             return self._default_dataset_id
         if scope_key in self._dataset_ids_by_scope:
             return self._dataset_ids_by_scope[scope_key]
+        existing = self._find_dataset(dataset_name)
+        if existing:
+            self._dataset_ids_by_scope[scope_key] = existing
+            return existing
         response = self._client.request_json(
             "POST",
             "/api/v1/datasets",
@@ -325,18 +346,36 @@ class RAGFlowKnowledgeProvider:
         self._dataset_ids_by_scope[scope_key] = dataset_id
         return dataset_id
 
+    def _find_dataset(self, dataset_name: str) -> str | None:
+        response = self._client.request_json(
+            "GET",
+            "/api/v1/datasets",
+            query={"page": 1, "page_size": 100},
+        )
+        data = response.get("data", [])
+        if isinstance(data, dict):
+            data = data.get("docs") or data.get("datasets") or data.get("items") or []
+        if not isinstance(data, list):
+            return None
+        for item in data:
+            if isinstance(item, dict) and item.get("name") == dataset_name and item.get("id"):
+                return str(item["id"])
+        return None
+
     def _dataset_scope(self, document: Document | None = None) -> tuple[str, str]:
         if document and document.goal_id:
             goal_id = str(document.goal_id)
+            goal_name = _display_scope_name(document.scope_name, fallback=goal_id[:8])
             return (
                 f"study-goal:{goal_id}",
-                f"{self._dataset_name} / Study Goal {goal_id[:8]}",
+                f"{self._dataset_name} / Study / {goal_name} ({goal_id[:8]})",
             )
         if document and document.planet_type == "work" and document.tech_stack_id:
             tech_stack_id = str(document.tech_stack_id)
+            tech_stack_name = _display_scope_name(document.scope_name, fallback=tech_stack_id[:8])
             return (
                 f"work-tech-stack:{tech_stack_id}",
-                f"{self._dataset_name} / Work Tech Stack {tech_stack_id[:8]}",
+                f"{self._dataset_name} / Work / {tech_stack_name} ({tech_stack_id[:8]})",
             )
         if document and document.planet_type == "work":
             return ("work", f"{self._dataset_name} / Work")
@@ -349,3 +388,26 @@ class RAGFlowKnowledgeProvider:
         if isinstance(value, dict):
             return value
         return {}
+
+
+def _display_scope_name(value: str | None, *, fallback: str) -> str:
+    normalized = " ".join((value or "").split()).strip()
+    return normalized[:120] or fallback
+
+
+def _matching_document(items: object, document_id: str) -> dict[str, object]:
+    """Return the requested document even if a provider ignores the id query filter."""
+    if not isinstance(items, list):
+        return {}
+    for item in items:
+        if isinstance(item, dict) and str(item.get("id") or item.get("document_id") or "") == document_id:
+            return item
+    return items[0] if items and isinstance(items[0], dict) else {}
+
+
+def _ragflow_error_code(message: str) -> str | None:
+    if "InvalidApiKey" in message or "Invalid API-key" in message:
+        return "RAGFLOW_EMBEDDING_INVALID_API_KEY"
+    if "bind embedding model" in message.lower():
+        return "RAGFLOW_EMBEDDING_MODEL_BIND_FAILED"
+    return None

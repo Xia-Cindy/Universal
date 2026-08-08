@@ -12,6 +12,8 @@ from backend.app.models import (
     DocumentChunk,
     DocumentStatus,
     DocumentType,
+    KnowledgeAnnotation,
+    KnowledgeAnnotationType,
     GoalStatus,
     GoalType,
     LearningEvent,
@@ -30,6 +32,8 @@ from backend.app.models import (
     TaskStatus,
     TechStack,
     WeekPlan,
+    WordEntry,
+    WordEntrySource,
     WrongQuestion,
     WrongQuestionStatus,
     WorkArticle,
@@ -45,12 +49,29 @@ def dumps(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-def loads(value: str) -> Any:
-    return json.loads(value)
+def loads(value: Any) -> Any:
+    """Decode SQLite JSON text while preserving native PostgreSQL JSONB values."""
+
+    if isinstance(value, (str, bytes, bytearray)):
+        return json.loads(value)
+    return value
 
 
-def _date(value: str | None) -> date | None:
-    return date.fromisoformat(value) if value else None
+def _date(value: str | date | None) -> date | None:
+    """Accept SQLite ISO text and native PostgreSQL DATE values."""
+
+    if not value:
+        return None
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(value)
+
+
+def _required_date(value: str | date | None) -> date:
+    parsed = _date(value)
+    if parsed is None:
+        raise ValueError("date value is required")
+    return parsed
 
 
 def goal_from_payload(payload: dict[str, Any]) -> StudyGoal:
@@ -94,7 +115,7 @@ def month_plan_from_payload(payload: dict[str, Any]) -> MonthPlan:
 def week_plan_from_payload(payload: dict[str, Any]) -> WeekPlan:
     return WeekPlan(
         user_id=payload["userId"], goal_id=payload["goalId"], month_plan_id=payload["monthPlanId"],
-        week_start=date.fromisoformat(payload["weekStart"]), week_end=date.fromisoformat(payload["weekEnd"]),
+        week_start=_required_date(payload["weekStart"]), week_end=_required_date(payload["weekEnd"]),
         title=payload["title"], focus=payload.get("focus", ""),
         plan_type=PlanType(payload.get("planType", "weekly")),
         status=PlanStatus(payload.get("status", "active")), id=payload["id"],
@@ -105,7 +126,7 @@ def week_plan_from_payload(payload: dict[str, Any]) -> WeekPlan:
 def task_from_payload(payload: dict[str, Any]) -> DailyTask:
     return DailyTask(
         user_id=payload["userId"], goal_id=payload["goalId"], week_plan_id=payload["weekPlanId"],
-        subject=payload["subject"], topic=payload["topic"], task_date=date.fromisoformat(payload["taskDate"]),
+        subject=payload["subject"], topic=payload["topic"], task_date=_required_date(payload["taskDate"]),
         estimated_minutes=int(payload["estimatedMinutes"]), priority=payload.get("priority", "medium"),
         sort_order=int(payload.get("sortOrder", 0)),
         status=TaskStatus(payload.get("status", "pending")), id=payload["id"],
@@ -149,9 +170,26 @@ def review_item_from_payload(payload: dict[str, Any]) -> ReviewItem:
     return ReviewItem(
         user_id=payload["userId"], wrong_question_id=payload["wrongQuestionId"],
         stage=int(payload["stage"]), interval_days=int(payload["intervalDays"]),
-        due_date=date.fromisoformat(payload["dueDate"]),
+        due_date=_required_date(payload["dueDate"]),
         status=ReviewStatus(payload.get("status", "pending")), result=payload.get("result"),
         completed_at=parse_datetime(payload["completedAt"]) if payload.get("completedAt") else None,
+        id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
+def word_entry_from_payload(payload: dict[str, Any]) -> WordEntry:
+    return WordEntry(
+        user_id=payload["userId"], word=payload["word"], normalized_word=payload["normalizedWord"],
+        language=payload.get("language", "English"),
+        meaning=payload.get("meaning", ""), pronunciation=payload.get("pronunciation", ""),
+        goal_id=payload.get("goalId"), tags=tuple(payload.get("tags", [])),
+        phrases=tuple(payload.get("phrases", [])), examples=tuple(payload.get("examples", [])),
+        notes=payload.get("notes", ""), dictionary=payload.get("dictionary", {}),
+        mastered=bool(payload.get("mastered", False)),
+        mistake_count=int(payload.get("mistakeCount", 0)),
+        last_reviewed_at=parse_datetime(payload["lastReviewedAt"]) if payload.get("lastReviewedAt") else None,
+        source=WordEntrySource(payload.get("source", "manual")),
         id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
         updated_at=parse_datetime(payload["updatedAt"]),
     )
@@ -162,10 +200,12 @@ def document_from_payload(payload: dict[str, Any]) -> Document:
         user_id=payload["userId"], file_name=payload["fileName"], file_type=DocumentType(payload["fileType"]),
         subject=payload["subject"], topic=payload["topic"], goal_id=payload.get("goalId"),
         planet_type=payload.get("planetType", "study"), tech_stack_id=payload.get("techStackId"),
+        scope_name=payload.get("scopeName"),
         tags=tuple(payload.get("tags", [])), content=payload.get("content", ""),
         content_encoding=payload.get("contentEncoding", "text"), storage_path=payload.get("storagePath"),
         provider=payload.get("provider", "local"), provider_dataset_id=payload.get("providerDatasetId"),
         provider_document_id=payload.get("providerDocumentId"), provider_status=payload.get("providerStatus"),
+        provider_error_code=payload.get("providerErrorCode"),
         processing_status=DocumentStatus(payload.get("processingStatus", "uploaded")),
         error_message=payload.get("errorMessage"), id=payload["id"],
         created_at=parse_datetime(payload["createdAt"]), updated_at=parse_datetime(payload["updatedAt"]),
@@ -177,6 +217,21 @@ def chunk_from_payload(payload: dict[str, Any]) -> DocumentChunk:
         user_id=payload["userId"], document_id=payload["documentId"], chunk_index=int(payload["chunkIndex"]),
         content=payload["content"], metadata=payload.get("metadata", {}), id=payload["id"],
         created_at=parse_datetime(payload["createdAt"]),
+    )
+
+
+def annotation_from_payload(payload: dict[str, Any]) -> KnowledgeAnnotation:
+    return KnowledgeAnnotation(
+        user_id=payload["userId"], document_id=payload["documentId"],
+        selected_text=payload["selectedText"],
+        annotation_type=KnowledgeAnnotationType(payload["annotationType"]),
+        goal_id=payload.get("goalId"), chunk_id=payload.get("chunkId"),
+        note=payload.get("note", ""), prompt=payload.get("prompt", ""),
+        answer=payload.get("answer", ""), hidden_terms=tuple(payload.get("hiddenTerms", [])),
+        mastered=bool(payload.get("mastered", False)),
+        mastered_at=parse_datetime(payload["masteredAt"]) if payload.get("masteredAt") else None,
+        id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
     )
 
 

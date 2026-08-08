@@ -41,11 +41,33 @@ class SQLitePersistence:
                 version = migration.name
                 if version in applied:
                     continue
+                self._apply_compatibility_step(version)
                 self.connection.executescript(migration.read_text(encoding="utf-8"))
                 self.connection.execute(
                     "INSERT INTO schema_migrations(version) VALUES (?)",
                     (version,),
                 )
+
+    def _apply_compatibility_step(self, version: str) -> None:
+        """Apply a schema repair that cannot be expressed portably in SQLite SQL.
+
+        The first shipped Wordbook SQLite migration was recorded as
+        ``004_study_wordbook.sql`` before its language partition column was
+        added. Existing databases therefore need a conditional ALTER TABLE,
+        while fresh databases already receive the column from migration 004.
+        """
+
+        if version != "005_study_wordbook_language_backfill.sql":
+            return
+        columns = {
+            row["name"]
+            for row in self.connection.execute("PRAGMA table_info(study_word_entries)")
+        }
+        if "language" not in columns:
+            self.connection.execute(
+                "ALTER TABLE study_word_entries "
+                "ADD COLUMN language TEXT NOT NULL DEFAULT 'English'"
+            )
 
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:

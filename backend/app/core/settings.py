@@ -15,7 +15,9 @@ class Settings:
     ragflow_embedding_model: str = getenv("RAGFLOW_EMBEDDING_MODEL", "")
     ragflow_llm_model: str = getenv("RAGFLOW_LLM_MODEL", "")
     ragflow_rerank_model: str = getenv("RAGFLOW_RERANK_MODEL", "")
-    persistence_backend: str = getenv("PERSISTENCE_BACKEND", "sqlite")
+    # PostgreSQL is the Universe runtime data store. SQLite remains available
+    # only when a local developer explicitly opts into it.
+    persistence_backend: str = getenv("PERSISTENCE_BACKEND", "postgres")
     database_path: str = getenv("UNIVERSE_DATABASE_PATH", "database/universe.sqlite3")
     database_url: str = getenv("DATABASE_URL", "")
     object_storage_backend: str = getenv("OBJECT_STORAGE_BACKEND", "local")

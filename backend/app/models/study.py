@@ -54,6 +54,11 @@ class ReviewStatus(StrEnum):
     SKIPPED = "skipped"
 
 
+class WordEntrySource(StrEnum):
+    MANUAL = "manual"
+    IMPORT = "import"
+
+
 def _id() -> str:
     return str(uuid4())
 
@@ -329,6 +334,54 @@ class ReviewItem:
             "status": self.status.value,
             "result": self.result,
             "completedAt": self.completed_at.isoformat() if self.completed_at else None,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class WordEntry:
+    """A learner-owned vocabulary record inside Study Planet."""
+
+    user_id: str
+    word: str
+    normalized_word: str
+    language: str = "English"
+    meaning: str = ""
+    pronunciation: str = ""
+    goal_id: str | None = None
+    tags: tuple[str, ...] = ()
+    phrases: tuple[str, ...] = ()
+    examples: tuple[str, ...] = ()
+    notes: str = ""
+    dictionary: dict[str, Any] = field(default_factory=dict)
+    mastered: bool = False
+    mistake_count: int = 0
+    last_reviewed_at: datetime | None = None
+    source: WordEntrySource = WordEntrySource.MANUAL
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "goalId": self.goal_id,
+            "word": self.word,
+            "normalizedWord": self.normalized_word,
+            "language": self.language,
+            "meaning": self.meaning,
+            "pronunciation": self.pronunciation,
+            "tags": list(self.tags),
+            "phrases": list(self.phrases),
+            "examples": list(self.examples),
+            "notes": self.notes,
+            "dictionary": self.dictionary,
+            "mastered": self.mastered,
+            "mistakeCount": self.mistake_count,
+            "lastReviewedAt": self.last_reviewed_at.isoformat() if self.last_reviewed_at else None,
+            "source": self.source.value,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
         }

@@ -11,6 +11,7 @@ import StudyPlaceholder from '../planets/study/placeholder/StudyPlaceholder.vue'
 import StudyReview from '../planets/study/review/StudyReview.vue'
 import StudyTutor from '../planets/study/tutor/StudyTutor.vue'
 import StudyKnowledge from '../planets/study/knowledge/StudyKnowledge.vue'
+import StudyWordbook from '../planets/study/wordbook/StudyWordbook.vue'
 import StudyAnalytics from '../planets/study/analytics/StudyAnalytics.vue'
 import WorkWorkspace from '../planets/work/layout/WorkWorkspace.vue'
 import WorkHome from '../planets/work/home/WorkHome.vue'
@@ -37,6 +38,7 @@ export const router = createRouter({
         { path: 'plan', name: 'StudyPlan', component: StudyPlan },
         { path: 'session/:sessionId', name: 'StudySession', component: StudySession },
         { path: 'knowledge', name: 'StudyKnowledge', component: StudyKnowledge },
+        { path: 'wordbook', name: 'StudyWordbook', component: StudyWordbook },
         { path: 'tutor', name: 'StudyTutor', component: StudyTutor },
         { path: 'analytics', name: 'StudyAnalytics', component: StudyAnalytics },
         { path: 'review', name: 'StudyReview', component: StudyReview },

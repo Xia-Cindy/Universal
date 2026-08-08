@@ -204,6 +204,7 @@ Study Workspace
 │   ├── Home
 │   ├── Plan
 │   ├── Knowledge
+│   ├── Wordbook
 │   ├── Tutor
 │   ├── Review
 │   └── Analytics
@@ -212,6 +213,8 @@ Study Workspace
 ```
 
 Navigation 不应呈现为传统后台菜单。它更像空间中的区域切换。
+
+Wordbook 应呈现为学习空间中的“小型词汇花园”：主区域先横向选择语言、再用标签缩小词表，列表用于轻量回看，详情用于沉淀词组、例句与个人记忆；新增和批量导入收进工具入口，不要退化为只有列和筛选器的词典后台。
 
 ## 4.2 Responsive Rules
 

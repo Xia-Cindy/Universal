@@ -106,7 +106,11 @@ class RetrievalService:
         provider_documents = [
             document
             for document in documents
-            if document.provider_dataset_id and document.provider_document_id
+            if (
+                document.processing_status == DocumentStatus.PROCESSED
+                and document.provider_dataset_id
+                and document.provider_document_id
+            )
         ]
         dataset_ids = sorted({str(document.provider_dataset_id) for document in provider_documents})
         document_ids = [str(document.provider_document_id) for document in provider_documents]
@@ -116,7 +120,11 @@ class RetrievalService:
             user_id=query.user_id,
             query=query.query,
             dataset_ids=dataset_ids,
-            document_ids=document_ids if query.document_id else None,
+            # A RAGFlow dataset is reusable across uploads. Always constrain the
+            # provider request to the Universe documents in the current scope so
+            # stale, failed, or otherwise inaccessible provider documents cannot
+            # become evidence for this answer.
+            document_ids=document_ids,
             limit=query.limit,
         )
         return self._normalize_provider_search_result(

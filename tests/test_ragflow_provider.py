@@ -2,7 +2,7 @@ import unittest
 
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.knowledge.providers import RAGFlowKnowledgeProvider
-from backend.app.models import Document, DocumentType
+from backend.app.models import Document, DocumentStatus, DocumentType
 from backend.app.retrieval import RetrievalQuery, RetrievalService
 
 
@@ -65,13 +65,15 @@ class FakeKnowledgeProvider:
 
 
 class StubRAGFlowClient:
-    def __init__(self):
+    def __init__(self, *, status_run="DONE", fail_reason=None):
         self.requests = []
         self.dataset_counter = 0
+        self.status_run = status_run
+        self.fail_reason = fail_reason
 
     def request_json(self, method, path, payload=None, query=None):
         self.requests.append((method, path, payload, query))
-        if path == "/api/v1/datasets":
+        if path == "/api/v1/datasets" and method == "POST":
             self.dataset_counter += 1
             dataset_id = "dataset-created" if self.dataset_counter == 1 else f"dataset-created-{self.dataset_counter}"
             return {"code": 0, "data": {"id": dataset_id}}
@@ -95,7 +97,7 @@ class StubRAGFlowClient:
             return {
                 "code": 0,
                 "data": {
-                    "docs": [{"id": "doc-1", "run": "DONE", "fail_reason": None}],
+                    "docs": [{"id": "doc-1", "run": self.status_run, "fail_reason": self.fail_reason}],
                     "total": 1,
                 },
             }
@@ -165,6 +167,7 @@ class RAGFlowProviderTests(unittest.TestCase):
                 provider="ragflow",
                 provider_dataset_id="dataset-1",
                 provider_document_id="provider-doc-1",
+                processing_status=DocumentStatus.PROCESSED,
             )
         )
         retrieval = RetrievalService(knowledge_repository=repository, knowledge_provider=provider)
@@ -178,6 +181,43 @@ class RAGFlowProviderTests(unittest.TestCase):
         self.assertEqual(result["results"][0]["metadata"]["providerDocumentId"], "provider-doc-1")
         self.assertEqual(provider.search_calls[0]["datasetIds"], ["dataset-1"])
         self.assertEqual(provider.search_calls[0]["documentIds"], ["provider-doc-1"])
+
+    def test_retrieval_excludes_unprocessed_provider_documents_from_evidence(self):
+        provider = FakeKnowledgeProvider()
+        repository = KnowledgeRepository()
+        repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="still-indexing.pdf",
+                file_type=DocumentType.PDF,
+                subject="systems",
+                topic="memory",
+                provider="ragflow",
+                provider_dataset_id="dataset-1",
+                provider_document_id="provider-doc-pending",
+                processing_status=DocumentStatus.CHUNKING,
+            )
+        )
+        ready = repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="ready.md",
+                file_type=DocumentType.MARKDOWN,
+                subject="systems",
+                topic="memory",
+                provider="ragflow",
+                provider_dataset_id="dataset-1",
+                provider_document_id="provider-doc-ready",
+                processing_status=DocumentStatus.PROCESSED,
+            )
+        )
+
+        RetrievalService(knowledge_repository=repository, knowledge_provider=provider).search(
+            RetrievalQuery(user_id="local-user", query="memory", limit=3)
+        )
+
+        self.assertEqual(provider.search_calls[0]["documentIds"], ["provider-doc-ready"])
+        self.assertEqual(ready.provider_document_id, "provider-doc-ready")
 
     def test_ragflow_adapter_normalizes_api_responses(self):
         client = StubRAGFlowClient()
@@ -252,8 +292,29 @@ class RAGFlowProviderTests(unittest.TestCase):
 
         self.assertEqual(first_upload["datasetId"], same_goal_upload["datasetId"])
         self.assertNotEqual(first_upload["datasetId"], second_upload["datasetId"])
-        dataset_creates = [request for request in client.requests if request[1] == "/api/v1/datasets"]
+        create_names = [request[2]["name"] for request in client.requests if request[0] == "POST" and request[1] == "/api/v1/datasets"]
+        self.assertIn("Study", create_names[0])
+        self.assertIn("goal-a", create_names[0])
+        dataset_creates = [request for request in client.requests if request[0] == "POST" and request[1] == "/api/v1/datasets"]
         self.assertEqual(len(dataset_creates), 2)
+
+    def test_dataset_scope_uses_goal_and_tech_stack_names(self):
+        client = StubRAGFlowClient()
+        provider = RAGFlowKnowledgeProvider(client=client)
+        study_document = Document(
+            user_id="local-user", file_name="study.md", file_type=DocumentType.MARKDOWN,
+            subject="math", topic="algebra", goal_id="goal-12345678", scope_name="AI 研究生目标", content="content",
+        )
+        work_document = Document(
+            user_id="local-user", file_name="work.md", file_type=DocumentType.MARKDOWN,
+            subject="backend", topic="java", planet_type="work", tech_stack_id="stack-12345678",
+            scope_name="Java", content="content",
+        )
+        provider.upload_document(user_id="local-user", document=study_document)
+        provider.upload_document(user_id="local-user", document=work_document)
+        names = [request[2]["name"] for request in client.requests if request[0] == "POST" and request[1] == "/api/v1/datasets"]
+        self.assertEqual(names[0], "Universe OS Knowledge / Study / AI 研究生目标 (goal-123)")
+        self.assertEqual(names[1], "Universe OS Knowledge / Work / Java (stack-12)")
 
     def test_ragflow_runtime_contract_normalizes_health_status_and_delete(self):
         client = StubRAGFlowClient()
@@ -272,6 +333,66 @@ class RAGFlowProviderTests(unittest.TestCase):
             document_id="doc-1",
         )
         self.assertEqual(deleted["status"], "deleted")
+
+    def test_running_ragflow_document_exposes_completed_chunks_without_becoming_processed(self):
+        provider = RAGFlowKnowledgeProvider(client=StubRAGFlowClient(status_run="RUNNING"))
+        repository = KnowledgeRepository()
+        document = repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="long-running.pdf",
+                file_type=DocumentType.PDF,
+                subject="systems",
+                topic="queue",
+                provider="ragflow",
+                provider_dataset_id="dataset-1",
+                provider_document_id="doc-1",
+                processing_status=DocumentStatus.CHUNKING,
+            )
+        )
+
+        detail = KnowledgeService(repository=repository, provider=provider).refresh_document(
+            "local-user", document.id
+        )
+
+        self.assertEqual(detail["document"]["processingStatus"], "chunking")
+        self.assertEqual(detail["document"]["providerStatus"], "running")
+        self.assertEqual(detail["chunks"][0]["content"], "Normalized chunk")
+        chunk_request = next(
+            request for request in provider._client.requests
+            if request[0] == "GET" and request[1].endswith("/chunks")
+        )
+        self.assertEqual(chunk_request[3]["page_size"], 100)
+
+    def test_ragflow_embedding_failure_exposes_actionable_error_code(self):
+        client = StubRAGFlowClient(
+            status_run="FAIL",
+            fail_reason='Fail to bind embedding model: InvalidApiKey / Invalid API-key provided.',
+        )
+        provider = RAGFlowKnowledgeProvider(client=client)
+        repository = KnowledgeRepository()
+        document = repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="failed.pdf",
+                file_type=DocumentType.PDF,
+                subject="runtime",
+                topic="embedding",
+                provider="ragflow",
+                provider_dataset_id="dataset-1",
+                provider_document_id="doc-1",
+            )
+        )
+        detail = KnowledgeService(repository=repository, provider=provider).refresh_document(
+            "local-user", document.id
+        )
+
+        self.assertEqual(detail["document"]["processingStatus"], "failed")
+        self.assertEqual(
+            detail["document"]["providerErrorCode"],
+            "RAGFLOW_EMBEDDING_INVALID_API_KEY",
+        )
+        self.assertIn("Check the selected embedding model provider credentials", detail["document"]["errorMessage"])
 
 
 if __name__ == "__main__":

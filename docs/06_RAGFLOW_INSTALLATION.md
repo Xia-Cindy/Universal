@@ -236,15 +236,16 @@ curl http://127.0.0.1:8000/api/health
 Upload a Knowledge document in Study Planet:
 
 ```text
-Study Workspace → Knowledge → select file → Upload → Process
+Study Workspace → Knowledge → select file → Upload
 ```
 
 Expected result:
 
 - document shows `provider: ragflow`
 - processing status moves through `parsing` / `chunking`
+- provider-backed PDF、TXT 和 Markdown upload will automatically enter processing; only a local-provider PDF remains metadata-only
 - after RAGFlow chunks are available, Universe stores a local chunk preview cache
-- Tutor retrieval still goes through AI Core ToolRouter and Universe RetrievalService
+- Tutor retrieval still goes through AI Core ToolRouter and Universe RetrievalService, constrained to processed documents in the current Universe scope
 
 ---
 

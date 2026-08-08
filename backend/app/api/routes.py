@@ -1,11 +1,18 @@
 from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
 from backend.app.core.settings import settings
-from backend.app.knowledge import KnowledgeRepository, KnowledgeService
+from backend.app.knowledge import (
+    EnglishDictionaryService,
+    FallbackEnglishDictionaryProvider,
+    FreeDictionaryProvider,
+    KnowledgeRepository,
+    KnowledgeService,
+    StaticEnglishDictionaryProvider,
+)
 from backend.app.knowledge.repository import SQLiteKnowledgeRepository
 from backend.app.knowledge.providers import RAGFlowClient, RAGFlowKnowledgeProvider
 from backend.app.memory import MemoryService
 from backend.app.memory.repository import SQLiteMemoryRepository
-from backend.app.models import MemoryScope
+from backend.app.models import LearningEvent, MemoryScope
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.analytics import StudyAnalystContextProvider, StudyAnalyticsService
 from backend.app.planets.study.dashboard import StudyHomeService
@@ -19,11 +26,14 @@ from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.planets.study.workspace import StudyWorkspaceService
 from backend.app.planets.study.review import ReviewService
+from backend.app.planets.study.wordbook import WordbookService
 from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
 from backend.app.planets.work.repository import SQLiteWorkRepository
+from backend.app.planets.novel import NovelDraftService, NovelRepository, SQLiteNovelRepository
 from backend.app.persistence import (
     PostgresKnowledgeRepository,
     PostgresMemoryRepository,
+    PostgresNovelRepository,
     PostgresPersistence,
     PostgresStudyRepository,
     PostgresWorkRepository,
@@ -38,23 +48,43 @@ from backend.app.users import AuthService, ConsoleEmailSender, SMTPEmailSender, 
 class ApiFacade:
     """Dependency-light API facade used by tests and optional web adapters."""
 
-    def __init__(self, *, database_path: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        database_path: str | None = None,
+        persistence_backend: str | None = None,
+        database_url: str | None = None,
+        english_dictionary_provider=None,
+    ) -> None:
         self.registry = create_default_registry()
         self.universe = UniverseService(self.registry)
-        if settings.persistence_backend == "postgres":
-            if not settings.database_url:
+        backend = persistence_backend or ("sqlite" if database_path else "memory")
+        if backend == "postgres":
+            database_url = database_url or settings.database_url
+            if not database_url:
                 raise ValueError("DATABASE_URL is required when PERSISTENCE_BACKEND=postgres")
-            self.persistence = PostgresPersistence(settings.database_url)
+            self.persistence = PostgresPersistence(database_url)
             study_repository = PostgresStudyRepository(self.persistence)
             knowledge_repository = PostgresKnowledgeRepository(self.persistence)
             memory_repository = PostgresMemoryRepository(self.persistence)
+            novel_repository = PostgresNovelRepository(self.persistence)
             work_repository = PostgresWorkRepository(self.persistence)
-        else:
+        elif backend == "sqlite":
             self.persistence = SQLitePersistence(database_path) if database_path else None
             study_repository = SQLiteStudyRepository(self.persistence) if self.persistence else StudyRepository()
             knowledge_repository = SQLiteKnowledgeRepository(self.persistence) if self.persistence else KnowledgeRepository()
             memory_repository = SQLiteMemoryRepository(self.persistence) if self.persistence else None
+            novel_repository = SQLiteNovelRepository(self.persistence) if self.persistence else NovelRepository()
             work_repository = SQLiteWorkRepository(self.persistence) if self.persistence else WorkRepository()
+        elif backend == "memory":
+            self.persistence = None
+            study_repository = StudyRepository()
+            knowledge_repository = KnowledgeRepository()
+            memory_repository = None
+            novel_repository = NovelRepository()
+            work_repository = WorkRepository()
+        else:
+            raise ValueError("PERSISTENCE_BACKEND must be postgres, sqlite, or memory")
         self.users = UserService(settings.default_user_id, persistence=self.persistence)
         email_sender = (
             SMTPEmailSender(
@@ -79,6 +109,10 @@ class ApiFacade:
             repository=self.knowledge_repository,
             provider=self.knowledge_provider,
             storage=self.object_storage,
+        )
+        self.english_dictionary = EnglishDictionaryService(
+            repository=self.knowledge_repository,
+            provider=english_dictionary_provider or self._create_english_dictionary_provider(backend),
         )
         self.retrieval = RetrievalService(
             knowledge_repository=self.knowledge_repository,
@@ -140,6 +174,10 @@ class ApiFacade:
             memory=self.memory,
         )
         self.study_review = ReviewService(self.study_repository)
+        self.study_wordbook = WordbookService(
+            self.study_repository,
+            dictionary=self.english_dictionary,
+        )
         self.study_tutor = TutorService(
             repository=self.study_repository,
             ai_core=self.ai_core,
@@ -154,6 +192,7 @@ class ApiFacade:
         self.work_repository = work_repository
         self.work = WorkService(self.work_repository)
         self.work_community = CSDNCommunityService()
+        self.novel_drafts = NovelDraftService(novel_repository)
 
     def _create_knowledge_provider(self):
         if settings.knowledge_provider != "ragflow":
@@ -193,6 +232,17 @@ class ApiFacade:
             email=payload["email"],
             password=payload["password"],
             display_name=payload.get("displayName", ""),
+        )
+
+    def _create_english_dictionary_provider(self, backend: str):
+        static = StaticEnglishDictionaryProvider()
+        # Unit tests use the offline reference. Runtime services retain a
+        # replaceable remote provider for vocabulary outside the bundled set.
+        if backend == "memory":
+            return static
+        return FallbackEnglishDictionaryProvider(
+            static=static,
+            remote=FreeDictionaryProvider(),
         )
 
     def verify_registration(self, payload: dict) -> dict[str, object]:
@@ -287,6 +337,15 @@ class ApiFacade:
         user = self.users.current_user()
         return self.work.create_resume_draft(user.id, payload)
 
+    def list_novel_drafts(self) -> list[dict[str, object]]:
+        return self.novel_drafts.list_drafts(self.users.current_user().id)
+
+    def create_novel_draft(self, payload: dict) -> dict[str, object]:
+        return self.novel_drafts.create_draft(self.users.current_user().id, payload)
+
+    def update_novel_draft(self, draft_id: str, payload: dict) -> dict[str, object]:
+        return self.novel_drafts.update_draft(self.users.current_user().id, draft_id, payload)
+
     def get_study_home(self) -> dict[str, object]:
         user = self.users.current_user()
         planet = self.registry.get_enterable_planet("study")
@@ -308,12 +367,18 @@ class ApiFacade:
         planet = self.registry.get_enterable_planet("study")
         memory_context = self.memory.prepare_context(user.id, planet_type="study")
         analytics = self.study_analytics.analytics(user=user, memory_context=memory_context)
-        return self.study_workspace.workspace(
+        workspace = self.study_workspace.workspace(
             user=user,
             planet=planet,
             knowledge_summary=self.knowledge.overview(user.id),
             analytics_summary=analytics,
         )
+        current_goal = workspace.get("currentGoal")
+        if isinstance(current_goal, dict) and current_goal.get("id"):
+            progress = current_goal.get("progress")
+            if isinstance(progress, dict):
+                progress["masteredItems"] = self._goal_mastered_count(user.id, str(current_goal["id"]))
+        return workspace
 
     def get_study_onboarding(self) -> dict[str, object]:
         user = self.users.current_user()
@@ -426,11 +491,170 @@ class ApiFacade:
         user = self.users.current_user()
         return self.study_tutor.history(user=user)
 
+    def list_wordbook_entries(
+        self,
+        *,
+        goal_id: str | None = None,
+        language: str | None = None,
+        tag: str | None = None,
+    ) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        if goal_id:
+            self.study_repository.get_goal(goal_id, user.id)
+        return self.study_wordbook.list_entries(user.id, goal_id=goal_id, language=language, tag=tag)
+
+    def get_wordbook_entry(self, entry_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_wordbook.get_entry(user.id, entry_id)
+
+    def create_wordbook_entry(self, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = self._with_wordbook_goal(payload, user.id)
+        return self.study_wordbook.create_entry(user.id, payload)
+
+    def update_wordbook_entry(self, entry_id: str, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = self._with_wordbook_goal(payload, user.id, default_current_goal=False)
+        return self.study_wordbook.update_entry(user.id, entry_id, payload)
+
+    def delete_wordbook_entry(self, entry_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_wordbook.delete_entry(user.id, entry_id)
+
+    def import_wordbook_entries(self, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = self._with_wordbook_goal(payload, user.id)
+        return self.study_wordbook.import_entries(user.id, payload)
+
+    def refresh_wordbook_dictionary(self, entry_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_wordbook.refresh_dictionary_entry(user.id, entry_id)
+
+    def review_wordbook_entry(self, entry_id: str, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        remembered = bool(payload.get("remembered"))
+        before = self.study_wordbook.get_entry(user.id, entry_id)
+        entry = self.study_wordbook.review_entry(user.id, entry_id, remembered=remembered)
+        if remembered and not bool(before.get("mastered")):
+            self._record_goal_mastery(
+                user.id,
+                entry.get("goalId"),
+                event_type="wordbook_entry_mastered",
+                summary=f"背过单词：{entry.get('word') or '未命名单词'}",
+                metadata={"entryId": entry["id"]},
+            )
+        return entry
+
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
+        payload = dict(payload)
         if payload.get("goalId"):
-            self.study_repository.get_goal(payload["goalId"], user.id)
+            goal = self.study_repository.get_goal(payload["goalId"], user.id)
+            payload["scopeName"] = goal.goal_name
+        if payload.get("planetType") == "work" and payload.get("techStackId"):
+            try:
+                tech_stack = self.work_repository.get_tech_stack(payload["techStackId"], user.id)
+            except KeyError:
+                tech_stack = None
+            if tech_stack:
+                payload["scopeName"] = tech_stack.name
         return self.knowledge.create_document(user.id, payload).to_dict()
+
+    def list_knowledge_annotations(self, document_id: str) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.knowledge.list_annotations(user.id, document_id)
+
+    def create_knowledge_annotation(self, document_id: str, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = dict(payload)
+        if payload.get("goalId"):
+            self.study_repository.get_goal(str(payload["goalId"]), user.id)
+        return self.knowledge.create_annotation(user.id, document_id, payload)
+
+    def update_knowledge_annotation(
+        self,
+        document_id: str,
+        annotation_id: str,
+        payload: dict[str, object],
+    ) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = dict(payload)
+        if payload.get("goalId"):
+            self.study_repository.get_goal(str(payload["goalId"]), user.id)
+        return self.knowledge.update_annotation(user.id, document_id, annotation_id, payload)
+
+    def mark_knowledge_annotation_mastered(
+        self,
+        document_id: str,
+        annotation_id: str,
+        payload: dict[str, object],
+    ) -> dict[str, object]:
+        user = self.users.current_user()
+        previous = self.knowledge.get_annotation(user.id, document_id, annotation_id)
+        mastered = bool(payload.get("mastered", True))
+        annotation = self.knowledge.set_annotation_mastered(
+            user.id,
+            document_id,
+            annotation_id,
+            mastered,
+        )
+        if mastered and not bool(previous.get("mastered")):
+            self._record_goal_mastery(
+                user.id,
+                annotation.get("goalId"),
+                event_type="knowledge_annotation_mastered",
+                summary="背过知识卡片" if annotation.get("annotationType") == "card" else "背过知识笔记",
+                metadata={"annotationId": annotation["id"], "documentId": document_id},
+            )
+        return annotation
+
+    def delete_knowledge_annotation(self, document_id: str, annotation_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.delete_annotation(user.id, document_id, annotation_id)
+
+    def _with_wordbook_goal(
+        self,
+        payload: dict[str, object],
+        user_id: str,
+        *,
+        default_current_goal: bool = True,
+    ) -> dict[str, object]:
+        normalized = dict(payload)
+        if "goalId" not in normalized and default_current_goal:
+            goal = self.study_repository.get_active_goal(user_id)
+            normalized["goalId"] = goal.id if goal else None
+        if normalized.get("goalId"):
+            self.study_repository.get_goal(str(normalized["goalId"]), user_id)
+        return normalized
+
+    def _record_goal_mastery(
+        self,
+        user_id: str,
+        goal_id: object,
+        *,
+        event_type: str,
+        summary: str,
+        metadata: dict[str, object],
+    ) -> None:
+        if not goal_id:
+            return
+        goal = self.study_repository.get_goal(str(goal_id), user_id)
+        self.study_repository.save_learning_event(
+            LearningEvent(
+                user_id=user_id,
+                event_type=event_type,
+                summary=summary,
+                metadata={**metadata, "goalId": goal.id},
+            )
+        )
+
+    def _goal_mastered_count(self, user_id: str, goal_id: str) -> int:
+        return sum(
+            1
+            for event in self.study_repository.list_learning_events(user_id)
+            if event.event_type in {"knowledge_annotation_mastered", "wordbook_entry_mastered"}
+            and event.metadata.get("goalId") == goal_id
+        )
 
     def knowledge_overview(self) -> dict[str, object]:
         user = self.users.current_user()
@@ -454,6 +678,26 @@ class ApiFacade:
             topic=topic,
             goal_id=goal_id,
             planet_type=planet_type,
+            tech_stack_id=tech_stack_id,
+        )
+
+    def list_study_knowledge_documents(
+        self,
+        *,
+        subject: str | None = None,
+        topic: str | None = None,
+        goal_id: str | None = None,
+        planet_type: str | None = None,
+        tech_stack_id: str | None = None,
+    ) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        self.english_dictionary.ensure_reference(user.id)
+        return self.knowledge.list_documents(
+            user.id,
+            subject=subject,
+            topic=topic,
+            goal_id=goal_id,
+            planet_type=planet_type or "study",
             tech_stack_id=tech_stack_id,
         )
 
@@ -484,6 +728,23 @@ class ApiFacade:
 
     def update_knowledge_document(self, document_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
+        payload = dict(payload)
+        if "goalId" in payload:
+            if payload["goalId"]:
+                goal = self.study_repository.get_goal(payload["goalId"], user.id)
+                payload["scopeName"] = goal.goal_name
+            else:
+                payload["scopeName"] = None
+        if payload.get("planetType") == "work" and "techStackId" in payload:
+            if payload["techStackId"]:
+                try:
+                    tech_stack = self.work_repository.get_tech_stack(payload["techStackId"], user.id)
+                except KeyError:
+                    tech_stack = None
+                if tech_stack:
+                    payload["scopeName"] = tech_stack.name
+            else:
+                payload["scopeName"] = None
         return self.knowledge.update_document(user.id, document_id, payload).to_dict()
 
     def prepare_document_embeddings(self, document_id: str) -> dict[str, object]:
@@ -584,4 +845,15 @@ class ApiFacade:
         return self.study_review.complete(user.id, review_id, payload)
 
 
-api = ApiFacade(database_path=settings.database_path if settings.persistence_backend == "sqlite" else None)
+# Service tests import this module without a runtime database. The ASGI factory
+# rejects a missing PostgreSQL configuration before it can serve requests; this
+# dependency-light facade keeps unit tests independent of external services.
+api = (
+    ApiFacade(persistence_backend="memory")
+    if settings.persistence_backend == "postgres" and not settings.database_url
+    else ApiFacade(
+        database_path=settings.database_path if settings.persistence_backend == "sqlite" else None,
+        persistence_backend=settings.persistence_backend,
+        database_url=settings.database_url,
+    )
+)

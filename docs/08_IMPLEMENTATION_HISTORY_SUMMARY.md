@@ -957,7 +957,7 @@ Goal
 已完成本地共享持久化基础：
 
 - 新增 shared SQLite persistence、schema migration runner 和 transaction boundary。
-- 生产 API 默认使用 `database/universe.sqlite3`，该文件被 Git 忽略。
+- 当时的生产 API 曾默认使用 `database/universe.sqlite3`；现已改为 PostgreSQL runtime，SQLite 仅保留为显式本地兼容 adapter。
 - Study、Knowledge、Memory、Work repository 通过 adapter 共享同一个 persistence connection。
 - 新增 `user_planet_context`，作为 Study `current_goal` 的唯一来源。
 - Goal switch 不再依赖 Memory 中的 `active_goal_id`，也不会归档其他 active Goal。
@@ -969,3 +969,43 @@ Goal
 - Session finish 的统一 application transaction。
 - RAGFlow runtime acceptance、status polling、retry、delete sync 和 Citation。
 - Wrong Questions 与 Review 闭环。
+
+---
+
+# 28. Focus Reader 与目标关联复习卡
+
+## 已完成
+
+- Knowledge Reader 以资料为唯一归属：划线生成的笔记与知识卡片均绑定 `document_id`、用户和可选 `goal_id`，不新增独立 Notes 系统。
+- 新增 `knowledge_annotations` 的 PostgreSQL / SQLite migration、repository、API contract 与重启持久化测试。
+- 翻开的书页不再提供内层滚动；资料文字会拆分为纸页，阅读时根据可用纸面高度自动调整排版，保留翻页操作。
+- 划线后可选择“添加到笔记”或“制成知识卡”，并可覆盖资料默认的关联学习目标。
+- 知识卡片在正面随机遮住关键词，点击“翻到背面”显示答案；“背过了”仅在首次状态转换时写入一个 Goal-linked Learning Event。
+- Wordbook 以英文正面、个人释义背面提供记忆卡，支持“背过了”和“记错了”；后者会增加 `mistakeCount` 并记录最近复习时间。
+- Study Workspace 的当前目标进度新增 `progress.masteredItems`，统计关联目标的首次知识卡/笔记/单词背过事件，避免重复点击造成虚高。
+
+## 未改变
+
+- Knowledge 仍是共享服务；Study 只负责 Goal、Learning Event 和学习进度聚合。
+- 未引入新的 AI Core、Agent、独立卡片库或自动判分逻辑。
+
+---
+
+# 29. 当前 Study Knowledge 空间实现
+
+本节覆盖当前可交付交互，并替代此前空间原型中“词汇植物/实体词典架”的表述。
+
+## 已实现
+
+- 学习电脑仅通过显示器屏幕进入 Study Home / Goals / Tutor；原先包围书桌区域的白色热点框已移除。
+- 墙面黑板直接进入 `/study/cards`，页面只展示现有 Knowledge 资料生成的知识卡片与学习笔记；卡片/笔记可以在画廊中展开，返回房间与底部快捷导航保持可用。
+- 每份上传资料对应书架中的一本书。书架使用三本一页的参考构图，超过三本可切换书架页，并保留学科筛选、Goal 关联、编辑与删除操作。
+- 书籍需先选中再点击封面进入双页阅读器。阅读器无书页内滚动，提供前后翻页、指定页跳转和浏览器本地书签；当 RAGFlow 仍在处理时，会读取已返回的 chunks 并标注持续解析状态，不重提解析任务。
+- 划线生成的笔记和知识卡片持续绑定原资料；知识卡可隐藏关键词、翻面揭示并将首次“背过了”计入关联 Goal 的 `progress.masteredItems`。
+- Wordbook 的 tag 展示为同样的实体词汇书。单词页面展示词典与个人字段；记忆卡保持英文正面、学习者释义背面，并记录“背过了”或“记错了”。
+
+## 架构边界
+
+- 空间层只消费 Study、Knowledge 与 Wordbook 的既有 API，不复制 Knowledge document、annotation 或 Wordbook persistence。
+- Knowledge 卡片/笔记不是新的独立系统；其归属关系仍是 `document_id`、用户和可选 `goal_id`。
+- 该功能未新增 AI Core、Agent、RAGFlow 调用入口或自动判分逻辑。

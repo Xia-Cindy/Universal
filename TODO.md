@@ -1,5 +1,24 @@
 # TODO
 
+## Study Bookshelf Module
+
+- [x] Remove the Planning Table's visible room outline and make the existing wall blackboard the direct entrance to a Study Knowledge Board for document-owned notes and recall cards.
+- [x] Add `/study/cards`: a physical blackboard review space that groups existing Knowledge annotations into cards and notes, supports answer reveal and toggling the durable “背过了” state.
+- [x] Apply the Rope Gallery hanging-rope visual language to the knowledge blackboard: paired cords, pin anchors, inset card stock and gentle motion, without replacing the learner-owned card data flow.
+- [x] Make room assets use root-relative URLs so direct refreshes of shareable room paths, including `/study/cards`, keep loading the original room model.
+- [x] Add Focus Reader notes and knowledge cards that remain owned by their source Knowledge document, including passage selection, optional Goal association, random key-term hiding, answer reveal and a durable “背过了” state.
+- [x] Add Wordbook memory cards with English front / learner meaning back, remembered and mistaken result tracking, and durable review timestamps.
+- [x] Count each first-time Knowledge/Wordbook “背过了” result once in the linked Study Goal workspace progress, without treating repeated clicks as additional progress.
+- [x] Remove reader page scrolling and fit each generated paper page to the physical spread before turning it.
+- [x] Add page-number jumping and browser-local bookmarks to the open Knowledge reader.
+- [x] Keep the reference three-book hero composition while exposing every uploaded Study Knowledge document through previous/next shelf pages after the third book.
+- [x] Add Study Knowledge subject filtering, goal association during upload, and a confirmed delete action that uses the existing document API.
+- [x] Present every Wordbook tag as a vocabulary book in the deployed reference shelf, with the source physical open motion and paged paper reader for its real tagged entries.
+- [x] Make an opened physical cover the reading entry: clicking it opens a center two-page spread and turns pages in pairs for Knowledge and Wordbook.
+- [x] Let the open reader edit/delete the active Study Knowledge document or Wordbook entry, and use a shareable URL for every room module.
+- [x] Integrate the deployed reference 3D book structure, its physical book-cover/detail motion, and its visual layout into Knowledge without substituting a custom animation.
+- [x] Generate deterministic reference-style cover variants from Knowledge metadata when a new document enters the collection.
+
 ## Milestone 1 Foundation
 
 - [x] Align repository structure with `AGENTS.md`.
@@ -198,10 +217,27 @@
 - [x] Connect Knowledge services to PostgreSQL adapters and local/S3 object storage boundaries.
 - [x] Add SQLite/PostgreSQL backup and guarded PostgreSQL restore scripts.
 - [x] Add email verification registration with SMTP production boundary and console development sender.
-- [ ] Run production RAGFlow runtime validation with a real API key and embedding model configured; current blocker is an invalid RAGFlow embedding-provider key.
+- [ ] Run RAGFlow runtime acceptance with fresh TXT, Markdown and PDF samples now that the embedding-provider key issue is resolved; record processed status, chunk preview and Tutor retrieval evidence.
+- [x] Keep Study Goal and Work Tech Stack dataset scopes readable, isolated and reusable across provider restarts; surface the provider error code when embedding binding fails.
 - [x] Add provider status polling and retry handling.
+- [x] Keep Work Knowledge provider status polling separate from parse initiation so an in-flight RAGFlow document is not parsed twice.
 - [x] Synchronize provider document deletion with RAGFlow.
 - [x] Add stable Citation / Evidence source contract, source quote preview, Knowledge click-through and saved Tutor Learning Events.
+- [x] Add Study Wordbook with manual entry, TXT/CSV batch import, scope-local duplicate handling, and editable tags/phrases/examples/notes.
+- [x] Repair Wordbook save/list behavior across language and independent scope filters, with a forward-compatible PostgreSQL migration.
+- [x] Make PostgreSQL the default Universe runtime persistence configuration and provide a local pgvector startup profile.
+- [x] Decode native PostgreSQL JSONB payloads across shared repositories so persistent Study, Knowledge, Memory and Work reads remain portable.
+- [x] Unify Universe Portal, Study Workspace, and Work Workspace around the dark planetary visual language while preserving existing API-driven product flows.
+- [x] Replace the spatial room drawer with independent 3D module worlds for all Study, Work and Novel drill-down pages.
+- [x] Enter 3D module worlds through mapped room furniture with a short focus transition and near-field module stage.
+- [x] Redesign the spatial Wordbook as a searchable, paginated vocabulary garden with selectable plants, readable lexicon details, single-word creation and TXT/CSV import instruments.
+- [x] Preserve Chinese Pinyin composition in the spatial Wordbook creation form without propagating keyboard input into the 3D controls.
+- [x] Reconnect dropped PostgreSQL sessions at the shared persistence boundary and show explicit Wordbook save status without replaying uncertain writes.
+- [x] Add a shared English-English Dictionary reference to Study Knowledge and automatically attach English Wordbook entries with dictionary pronunciation and usage records while preserving user-authored meanings, phrases, examples and notes.
+- [x] Add Wordbook dictionary refresh actions to the Vue and spatial Wordbook interfaces, including explicit unavailable and not-found states.
+- [x] Remove the central in-world web panel and express module data through interactive physical models.
+- [x] Replace the Study Plan tile wall with a Blender-authored orbital calendar: six week rings, 42 date nodes, a Goal core and a rising task ribbon.
+- [x] Reuse the original room wall, trim, warm wood, paper, cyan, pink and gold material language across all module worlds.
 - [ ] Backfill existing local documents into RAGFlow when original content is available.
 - [x] Productize Plan Builder with Goal-owned long-term, monthly, weekly and daily node creation plus task ordering.
 - [ ] Implement full Goal-aware Knowledge Space UI modes: exam isolation, reading bookshelf and knowledge cards.
@@ -209,5 +245,16 @@
 - [ ] Add richer Dynamic Resume editor, version comparison and user confirmation flow.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
 - [x] Implement Wrong Questions, 1/3/7/30 Review queue, idempotent completion and Analytics summary integration.
-- [ ] Complete real RAGFlow TXT/Markdown/PDF processed acceptance after fixing the embedding provider key/model.
+- [ ] Complete real RAGFlow TXT/Markdown/PDF processed acceptance and cross-provider source-position verification.
 - [ ] Add production PostgreSQL unit-of-work transaction for atomic Session finish across Task, Event and Memory.
+
+## Spatial Universe Workspace
+
+- [x] Expand the original room GLB by modifying the existing wall and floor geometry.
+- [x] Add a wall-height Knowledge bookshelf using the original desk's warm wood color system.
+- [x] Add Work and novel-writing furniture hotspots without duplicating Study or Work services.
+- [x] Persist novel drafts through the shared repository boundary without adding a Novel Agent.
+- [x] Keep the expanded room framed on desktop and narrow mobile viewports.
+- [x] Pass three browser smoke-test rounds across 13 Study/Work routes and novel draft saving.
+- [x] Replace static route overlays with API-driven spatial consoles and furniture-focus camera states.
+- [x] Keep active Study, Knowledge and Work furniture visible beside responsive data consoles.

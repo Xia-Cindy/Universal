@@ -1595,17 +1595,18 @@ Not changed:
 ## 已实现
 
 - 增加 shared SQLite connection、事务边界和 migration runner。
-- 生产 API 默认使用 `database/universe.sqlite3`。
+- SQLite 仅保留为显式本地开发/测试 adapter；Universe runtime 使用 PostgreSQL。
 - Study、Knowledge、Memory、Work repository 继续保持原有 service contract，底层可切换为 SQLite adapter。
 - `current_goal` 的唯一来源为 `user_planet_context(user_id, planet_type, current_goal_id)`。
 - 多个 Study Goal 可以同时保持 active，Goal switch 只更新 Study Planet context。
 - User、Goal、Plan、Task、Session、Learning Event、Document、Chunk、Memory、Work records 可以跨 API 重启读取。
 - 增加 restart persistence integration tests。
+- PostgreSQL adapter 在操作前检查连接状态；连接中断后只自动重试 SELECT / SHOW / WITH 等只读语句，写入不盲目重放，以避免重复业务事实。
 
 ## 约束与未完成项
 
 - SQLite 是本地开发实现，不是最终生产数据库。
-- PostgreSQL adapter 仍需使用相同 repository interfaces 补齐。
+- PostgreSQL adapter 已复用相同 repository interfaces；运行环境仍必须保证 PostgreSQL 服务和备份策略可用。
 - Retrieval 的 in-memory vector store 不属于本阶段持久化范围；RAGFlow provider 通过后续 runtime acceptance 负责生产检索状态。
 - Session finish 的跨 Task、Learning Event、Memory、Analytics 统一 application transaction 仍是下一阶段工作。
 
@@ -1615,14 +1616,15 @@ Not changed:
 
 - `KnowledgeProvider` 提供 health check、document status、retry 和 delete boundary。
 - RAGFlow-backed Knowledge 文档支持异步 status refresh；Study Knowledge UI 在 `parsing` / `chunking` 状态下轮询。
+- RAGFlow-backed PDF 与 TXT/Markdown 走同一处理入口；只有 `local` provider 的 PDF 保持 metadata-only，避免把旧的本地限制误用到已配置的 provider。
 - Provider 删除会先同步删除 RAGFlow document，再删除 Universe metadata 和本地 chunk preview。
-- RAGFlow health endpoint 在本地 runtime 可访问，mocked provider tests 与完整 backend/frontend checks 已通过。
+- Provider retrieval 只提交当前 Universe scope 内、已 `processed` 的 provider document id，避免处于索引中、失败或陈旧的 provider 文档成为 Tutor Evidence。
 
 当前未通过的外部验收：
 
-- RAGFlow API 可访问，但其 embedding model provider 返回 `InvalidApiKey`，因此真实 TXT、Markdown、PDF 尚未完成 `processed` 验收。
-- 在有效 embedding provider key/model 配置前，不把 RAGFlow-backed Knowledge 描述为已可用生产能力。
-- Citation / source click-through 仍属于下一阶段统一 Evidence 合同，不在本节提前宣称完成。
+- 已确认此前的 embedding provider key 问题在部署配置中修复；Universe 不缓存该配置结论，仍须以新的 TXT、Markdown、PDF runtime sample 确认状态能到达 `processed`。
+- Runtime sample 完成前，不把 RAGFlow-backed Knowledge 描述为已完成生产验收。
+- Citation / source click-through 使用统一 Evidence 合同；跨 provider 的位置语义仍需在真实 runtime sample 中确认。
 
 ## 30. Current Platform Foundation Status
 
@@ -1636,6 +1638,8 @@ Not changed:
 - Study Knowledge 已从 Markdown-only textarea 升级为正文编辑器，支持标题、加粗、颜色、图片、表格、代码块、对齐、行列操作、合并和拆分单元格。
 - Work Tech Stack 详情默认展示文章/笔记库；Work Home、技术栈目录和详情页提供显式写文章入口，只有用户主动进入后才展开同类正文编辑器。
 - RAGFlow embedding、LLM、rerank 仍由 RAGFlow 管理；Universe health endpoint 只报告 API 可达性和可选标签，不伪造模型运行成功。真实 TXT、Markdown、PDF processed acceptance 仍必须通过 runtime samples。
+- RAGFlow dataset scope implementation status：Study 使用 `Universe OS Knowledge / Study / {goal name} ({goal id prefix})`，Work 使用 `Universe OS Knowledge / Work / {tech stack name} ({tech stack id prefix})`；上传前会按完整名称查找并复用已有 dataset，避免服务重启或重复上传生成重复作用域。
+- RAGFlow 异步失败状态会保留 `providerErrorCode`；包括 `InvalidApiKey` 在内的历史或新错误都会在 UI 显示可执行的 retry / provider 检查提示。该处理不绕过 RAGFlow，也不把外部凭证写入 Universe。
 
 ## 29. Citation / Evidence 与 Review Loop
 
@@ -1649,7 +1653,41 @@ Not changed:
 
 未完成：
 
-- 真实 RAGFlow processed 文档和跨 provider 稳定位置引用。
+- 真实 RAGFlow processed 文档和跨 provider 稳定位置引用的 runtime acceptance。
 - 跨 repository 的 PostgreSQL unit-of-work transaction。
+
+## 31. Study Wordbook
+
+- Wordbook 是 Study Planet 的领域数据，不复制共享 Knowledge、Memory 或 AI Core。
+- `WordEntry` 归属用户，可选关联当前 Study Goal；保存语言、单词、释义、音标、标签、词组、例句、个人笔记和只读 dictionary reference payload。
+- `EnglishDictionaryService` 属于共享 Knowledge 层：它为 Study 用户建立一个 `English-English Dictionary` 参考 Document，并把已查到的音标和用法作为该 Document 的 Chunk。它可替换远程 provider，并保留少量离线 continuity reference；未知或服务不可用时返回明确状态，不伪造词典内容。
+- `WordbookService` 通过 Study repository 提供按 Goal / 语言 / 标签筛选、手动创建、TXT/CSV 批量导入、同 scope 去重、详情读取与更新。创建、导入或手动刷新英语词条时只消费 `EnglishDictionaryService` 的 reference payload；个人释义、词组、例句和笔记不会被词典同步覆盖。
+- SQLite 与 PostgreSQL migration 各自创建 `study_word_entries`，保持当前 repository adapter contract。
+- Study Workspace 通过 `/study/wordbook` 提供列表、个人用法编辑和词典刷新；空间 Wordbook 将 tag 映射为实体词汇书，沿用 Knowledge 的书架和双页阅读流程，并显示词典参考与个人字段。前端不直接处理持久化、AI Core 或 RAGFlow。
+
+## 32. Universe Workspace Visual Layer
+
+- Universe Portal、Study Workspace 与 Work Workspace 共享前端视觉层：行星入口、紧凑 breadcrumb、左侧模块轨道和可降低动画的星点/流星背景。
+- 视觉层只组织现有路由与 API 返回数据；Study Home 的 `primaryAction`、Goal context、Plan、Knowledge、Wordbook 及 Work 的 Tech Stack、Knowledge、Projects、Resume 仍由既有服务提供。
+- 该更新不改变 AI Core、Retrieval、RAGFlow、Memory、数据库或 Planet service 边界。
+
+## 33. Spatial Universe Room
+
+- `room-portfolio/` 提供独立的 Three.js 空间入口。Study、Work 与 Novel 的 14 个模块分别进入独立 3D 装置，通过现有 API 聚合契约把真实数据映射为日期轨道、Goal 行星、Tutor Core、Review 晶体、Analytics 柱体、Knowledge 书籍、Work 工件和 Novel 稿纸；不使用中央网页显示面、固定抽屉或静态路由嵌入，也不复制 Planet 业务逻辑。
+- 扩容资产由 `scripts/expand_room_model.py` 从原始 `RoomModel.glb` 生成；脚本只拉伸原墙面和原地板几何，保持原模型材质、墙高和地板基线。
+- Knowledge 书架、Work Bench 和作品展墙是空间导航热点。书架采用原书桌的暖木配色，作品展墙只提供小说草稿写作入口。
+- 空间入口与模块分组保持一一映射：学习电脑的显示器屏幕承载 Home / Goals / Tutor，计划桌承载 Plan / Review / Analytics，知识书架承载 Knowledge / Wordbook，墙面黑板承载 `/study/cards`。点击入口后相机先聚焦家具，再在近场坐标展开 3D 模块；不再使用统一的远端 `z=-50` 舞台，也不显示覆盖家具的大型白色热点框。进入模块时主房间暂时隐藏以避免墙体穿插，返回时恢复原房间与默认相机。
+- Wordbook 3D 空间只消费既有 Wordbook API：每个 tag 映射为一本词汇书；书页映射 pronunciation、meaning、tags、phrases、examples 与 notes，记忆卡从英文翻至学习者释义。场景内新建台调用既有 `/api/study/wordbook/entries`，TXT/CSV 导入台调用 `/api/study/wordbook/import`，不复制 Wordbook service、持久化或 Memory 规则。
+- Plan 的静态主体由 `scripts/build_plan_orbit_model.py` 在 Blender 中生成，并保留 `room-portfolio/blender/PlanOrbit.blend` 作为可编辑源文件、导出 `public/assets/PlanOrbit.glb` 供 Three.js 使用。模型使用 6 条周轨道和 42 个具名日期节点；运行时只映射日期、任务状态与点击行为，选中节点沿前轴升起并展开 Blender 任务纸带。Goal 切换、Knowledge 文档打开、Tutor 回答、Review 完成与 Novel 草稿动作仍由原 Study / Work / Novel service 和 API 完成。
+- 小说草稿通过 shared persistence repository 保存；未增加 Novel Agent、AI Core 实例、RAG、Retrieval 或 Memory 架构。
+- 默认相机按画布纵横比调整距离；模块世界直接复用原房间的墙面、边饰、暖木、纸张、青色、粉色和金色材质语言，移动端使用避开底部空间导航的紧凑视角。
+
+### 33.1 当前 Study Knowledge 空间交互
+
+- 学习电脑只以显示器屏幕作为 Study Home / Goals / Tutor 的点击入口；不使用覆盖书桌、椅子或墙面的白色选择框。
+- Knowledge 文档一对一映射为书架中的实体书。书架保留每页三本书的参考场景构图，超过三本后以书架页切换；文档可按学科筛选，上传/编辑时可关联 Study Goal，并沿用既有删除 API。
+- 选中书籍后必须点击封面才进入双页阅读器。页面按纸张可用高度拆分，不设置书页内滚动；提供前后翻页、页码跳转与浏览器本地书签。RAGFlow 未结束时继续显示处理状态，并展示已返回的 chunks，不重复发起解析。
+- 阅读划线生成的笔记与知识卡片继续归属原 `document_id`，可选关联 `goal_id`；知识卡支持关键词隐藏、答案揭示和首次“背过了”写入学习进度。`/study/cards` 只呈现这些笔记和卡片，墙面黑板为直接入口，页面保留返回房间与底部空间导航。
+- Wordbook 的 tag 一对一映射为词汇书，沿用同一实体书/双页阅读流程。记忆卡正面为英文，翻面显示学习者释义；“背过了”和“记错了”只更新既有 Wordbook 复习数据。
 
 # End

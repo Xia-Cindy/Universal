@@ -2,6 +2,10 @@
   <section class="study-plan knowledge-space" aria-labelledby="knowledge-title">
     <p class="eyebrow">Knowledge</p>
     <h2 id="knowledge-title">Knowledge Space</h2>
+    <p class="knowledge-intro">
+      Keep material close to the Goal it serves. Once RAGFlow has prepared a document, Tutor can
+      cite its exact passages instead of treating your space like a file cabinet.
+    </p>
 
     <div class="knowledge-mode-tabs" aria-label="Knowledge input mode">
       <button type="button" :class="{ selected: inputMode === 'upload' }" @click="inputMode = 'upload'">Upload File</button>
@@ -142,40 +146,12 @@
     </div>
 
     <div v-else class="knowledge-grid">
-      <div class="knowledge-list" aria-label="Knowledge documents">
-        <article
-          v-for="document in documents"
-          :key="document.id"
-          class="knowledge-document"
-          :class="{ selected: selectedDocument?.document.id === document.id }"
-        >
-          <button type="button" class="document-main" @click="selectDocument(document.id)">
-            <span>{{ document.fileName }}</span>
-            <small>{{ document.subject }} / {{ document.topic }}</small>
-            <small>{{ documentGoalLabel(document.goalId) }}</small>
-            <small>{{ providerLabel(document) }}</small>
-          </button>
-          <div class="document-meta">
-            <span class="status-pill">{{ displayDocumentStatus(document) }}</span>
-            <button
-              v-if="canProcess(document)"
-              type="button"
-              :disabled="document.processingStatus === 'processed'"
-              @click="processDocument(document.id)"
-            >
-              Process
-            </button>
-            <button
-              v-if="document.processingStatus === 'failed' && document.provider !== 'local'"
-              type="button"
-              @click="retryDocument(document.id)"
-            >
-              Retry
-            </button>
-          </div>
-          <p v-if="document.errorMessage" class="error-text">{{ document.errorMessage }}</p>
-        </article>
-      </div>
+      <StudyBookshelf
+        :books="bookshelfDocuments"
+        :selected-id="selectedDocument?.document.id"
+        label="Knowledge bookshelf"
+        @select="selectDocument"
+      />
 
       <aside class="chunk-panel">
         <template v-if="selectedDocument">
@@ -192,8 +168,38 @@
               Provider: {{ selectedDocument.document.provider }} · {{ selectedDocument.document.providerStatus || 'pending' }}
             </span>
           </p>
+          <div class="document-meta">
+            <span class="status-pill" :class="`status-${selectedDocument.document.processingStatus}`">
+              {{ displayDocumentStatus(selectedDocument.document) }}
+            </span>
+            <button
+              v-if="canProcess(selectedDocument.document)"
+              type="button"
+              :disabled="selectedDocument.document.processingStatus === 'processed'"
+              @click="selectedDocument.document.processingStatus === 'uploaded' ? processDocument(selectedDocument.document.id) : refreshDocument(selectedDocument.document.id)"
+            >
+              {{ selectedDocument.document.processingStatus === 'uploaded' ? 'Prepare for Tutor' : 'Check preparation' }}
+            </button>
+            <button
+              v-if="selectedDocument.document.processingStatus === 'failed' && selectedDocument.document.provider !== 'local'"
+              type="button"
+              @click="retryDocument(selectedDocument.document.id)"
+            >
+              Retry
+            </button>
+          </div>
+          <p v-if="selectedDocument.document.errorMessage" class="error-text">{{ selectedDocument.document.errorMessage }}</p>
+          <small v-if="selectedDocument.document.providerErrorCode" class="error-code">{{ selectedDocument.document.providerErrorCode }}</small>
+          <div
+            v-if="selectedDocument.document.provider !== 'local'"
+            class="provider-progress"
+            :class="`provider-${selectedDocument.document.processingStatus}`"
+          >
+            <strong>{{ providerProgressTitle(selectedDocument.document) }}</strong>
+            <span>{{ providerProgressCopy(selectedDocument.document) }}</span>
+          </div>
           <div v-if="selectedDocument.chunks.length" class="chunk-list">
-            <article v-for="chunk in selectedDocument.chunks" :key="chunk.id" class="chunk-item">
+            <article :id="`chunk-${chunk.id}`" v-for="chunk in selectedDocument.chunks" :key="chunk.id" class="chunk-item">
               <strong>Chunk {{ chunk.chunkIndex + 1 }}</strong>
               <p>{{ chunk.content }}</p>
             </article>
@@ -204,7 +210,7 @@
           >
             PDF metadata is available for organization. Text parsing will come in a later milestone.
           </div>
-          <div v-else class="knowledge-state">Process this document to create provider-backed chunks.</div>
+          <div v-else class="knowledge-state">{{ emptyChunkState(selectedDocument.document) }}</div>
         </template>
         <template v-else>
           <div class="knowledge-state">Select a document to inspect its chunks.</div>
@@ -215,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   createKnowledgeDocument,
@@ -230,6 +236,7 @@ import {
   type KnowledgeDocumentPayload,
   type StudyGoal,
 } from '../../../services/api'
+import StudyBookshelf, { type StudyShelfBook } from '../components/StudyBookshelf.vue'
 
 const form = ref<KnowledgeDocumentPayload>({
   fileName: '',
@@ -266,6 +273,17 @@ const articleForm = ref({
   goalId: null as string | null,
   body: '',
 })
+const shelfColors = ['#5eb7d7', '#6384c6', '#798fd0', '#4d9d8f', '#ba8e55', '#a7738f', '#8d779d']
+const bookshelfDocuments = computed<StudyShelfBook[]>(() =>
+  documents.value.map((document, index) => ({
+    id: document.id,
+    title: document.fileName.replace(/\.[^.]+$/, '') || document.fileName,
+    spine: document.fileType.toUpperCase(),
+    meta: `${document.subject} · ${document.topic}`,
+    status: displayDocumentStatus(document),
+    color: shelfColors[index % shelfColors.length],
+  })),
+)
 const canUpload = computed(
   () =>
     !isUploading.value &&
@@ -604,13 +622,13 @@ async function uploadDocument() {
   try {
     const payload = { ...form.value, storagePath: selectedFileName.value }
     const document = await createKnowledgeDocument(payload)
-    statusMessage.value = document.fileType === 'pdf' ? 'PDF metadata uploaded.' : 'Document uploaded.'
-    if (document.fileType !== 'pdf') {
+    statusMessage.value =
+      document.fileType === 'pdf' && document.provider === 'local'
+        ? 'PDF metadata uploaded. Local text parsing is not enabled.'
+        : 'Document uploaded. Preparing it for Tutor...'
+    if (document.provider !== 'local' || document.fileType !== 'pdf') {
       selectedDocument.value = await processKnowledgeDocument(document.id)
-      statusMessage.value =
-        selectedDocument.value.document.processingStatus === 'processed'
-          ? 'Document uploaded and processed.'
-          : 'Document uploaded but processing failed.'
+      statusMessage.value = processResultMessage(selectedDocument.value.document)
     }
     await loadDocuments()
     await selectDocument(document.id)
@@ -702,6 +720,46 @@ function displayDocumentStatus(document: KnowledgeDocument) {
   return displayStatus(document.processingStatus)
 }
 
+function providerProgressTitle(document: KnowledgeDocument) {
+  if (document.processingStatus === 'processed') return 'Ready for cited answers'
+  if (document.processingStatus === 'failed') return 'Preparation needs attention'
+  if (document.processingStatus === 'parsing') return 'Reading your document'
+  if (document.processingStatus === 'chunking') return 'Indexing for Tutor'
+  return 'Waiting to prepare'
+}
+
+function providerProgressCopy(document: KnowledgeDocument) {
+  if (document.processingStatus === 'processed') {
+    return 'The source preview below is available to retrieval and Tutor evidence.'
+  }
+  if (document.processingStatus === 'failed') {
+    return document.errorMessage || 'Review the provider error, then retry when the runtime is ready.'
+  }
+  if (document.processingStatus === 'parsing') {
+    return 'RAGFlow is extracting the material. This page will refresh automatically.'
+  }
+  if (document.processingStatus === 'chunking') {
+    return 'RAGFlow is creating searchable passages. Tutor will use it only after it is ready.'
+  }
+  return 'Choose Prepare for Tutor to start provider processing.'
+}
+
+function emptyChunkState(document: KnowledgeDocument) {
+  if (document.processingStatus === 'failed') {
+    return 'No source passages were created. Review the provider message and retry when ready.'
+  }
+  if (isProviderProcessing(document)) {
+    return 'Preparation is in progress. This detail will refresh automatically.'
+  }
+  return 'Prepare this document to create source passages for Tutor.'
+}
+
+function processResultMessage(document: KnowledgeDocument) {
+  if (document.processingStatus === 'processed') return 'Document is ready for Tutor and source citations.'
+  if (document.processingStatus === 'failed') return document.errorMessage || 'Document preparation failed.'
+  return 'Document is being prepared. Its status will refresh automatically.'
+}
+
 function canProcess(document: KnowledgeDocument) {
   return document.provider !== 'local' || document.fileType !== 'pdf'
 }
@@ -722,6 +780,7 @@ function documentGoalLabel(goalId?: string | null) {
 
 async function selectDocument(documentId: string) {
   selectedDocument.value = await fetchKnowledgeDocument(documentId)
+  await scrollToRequestedChunk()
   if (isProviderProcessing(selectedDocument.value.document)) {
     startStatusPolling(documentId)
   } else {
@@ -729,14 +788,29 @@ async function selectDocument(documentId: string) {
   }
 }
 
+async function scrollToRequestedChunk() {
+  if (!route.hash) return
+  await nextTick()
+  document.getElementById(route.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 async function processDocument(documentId: string) {
   isLoading.value = true
   try {
     selectedDocument.value = await processKnowledgeDocument(documentId)
-    statusMessage.value =
-      selectedDocument.value.document.processingStatus === 'processed'
-        ? 'Document processed into chunks.'
-        : 'Document processing failed.'
+    statusMessage.value = processResultMessage(selectedDocument.value.document)
+    await loadDocuments()
+    await selectDocument(documentId)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function refreshDocument(documentId: string) {
+  isLoading.value = true
+  try {
+    selectedDocument.value = await refreshKnowledgeDocument(documentId)
+    statusMessage.value = processResultMessage(selectedDocument.value.document)
     await loadDocuments()
     await selectDocument(documentId)
   } finally {

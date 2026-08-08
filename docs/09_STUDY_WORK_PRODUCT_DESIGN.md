@@ -486,19 +486,19 @@ Work Planet 生成 Work Plan Event。
 
 ## 7.1 Current Observation
 
-当前 PDF 上传到 Universe OS 后，RAGFlow provider 已可接收文档，并返回：
+RAGFlow provider 接收 PDF 后，Universe 会记录：
 
 - `providerDatasetId`
 - `providerDocumentId`
 - `providerStatus`
 
-但文档可能停留在：
+此前文档可能停留在：
 
 ```text
 chunking
 ```
 
-这说明问题可能发生在 RAGFlow 的异步解析、embedding 配置、模型配置、文件解析状态轮询或 Universe 状态刷新层。
+此前 embedding provider key 曾阻止异步处理；该部署配置现已修复。仍须用新的 runtime sample 确认 RAGFlow 的解析、embedding、状态轮询、chunk cache 和 Retrieval 链路完整通过。
 
 ## 7.2 Required Diagnosis
 
@@ -506,7 +506,7 @@ chunking
 
 检查项：
 
-- RAGFlow API key 是否有效。
+- RAGFlow 当前 API / embedding provider 配置是否有效。
 - RAGFlow dataset 是否创建成功。
 - RAGFlow 是否配置 embedding model。
 - PDF parser 是否可用。
@@ -517,7 +517,7 @@ chunking
 
 ## 7.3 Product Behavior
 
-PDF 不应只显示模糊的 `chunking`。
+PDF 不应只显示模糊的 `chunking`，也不应因为旧 local fallback 规则而跳过 provider 处理。
 
 建议状态：
 
@@ -532,7 +532,8 @@ Failed: embedding model not configured
 
 ## 7.4 Acceptance Criteria
 
-- Given PDF 已上传到 RAGFlow，When RAGFlow 仍在解析，Then UI 显示明确 processing state。
+- Given PDF 已上传到 RAGFlow，When RAGFlow 仍在解析，Then UI 显示明确 processing state 并自动轮询。
+- Given RAGFlow provider 已启用，When 用户上传 PDF，Then Universe 自动提交处理，不要求用户额外点击旧的 local `Process` 行为。
 - Given RAGFlow embedding model 未配置，When 处理失败，Then UI 显示可理解错误。
 - Given RAGFlow 处理完成，When 打开文档详情，Then Universe 拉取 chunk preview。
 - Given chunk ready，When Tutor 提问，Then Retrieval 通过 ToolRouter 返回相关 chunks。
@@ -1072,4 +1073,3 @@ Definition of done for each milestone:
 - Backend tests pass.
 - Documentation updated.
 - Commit created.
-

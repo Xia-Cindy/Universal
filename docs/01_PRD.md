@@ -123,6 +123,7 @@ Work Planet、Novel Planet、Life Planet、Creator Planet 可以在 Universe Por
 | File Upload | File Upload | file_upload | 上传学习资料 |
 | AI Summary | AI Summary | ai_summary | 对资料或记录生成总结 |
 | Knowledge | Knowledge | knowledge | 原 Knowledge Base，用户侧统一称 Knowledge |
+| Wordbook | Wordbook | wordbook | 与学习 Goal 关联的个人单词、词组、例句和笔记空间 |
 | RAG Q&A | RAG Q&A | rag_qa | 基于 Knowledge 的问答 |
 | Tutor | Tutor | tutor | 原 AI Tutor，用户侧统一称 Tutor |
 | Wrong Questions | Wrong Questions | wrong_questions | 错题管理 |
@@ -158,6 +159,7 @@ Universe Portal
         ├── File Upload
         ├── AI Summary
         ├── Knowledge
+        ├── Wordbook
         ├── RAG Q&A
         ├── Tutor
         ├── Wrong Questions
@@ -444,6 +446,24 @@ MVP 内容：
 - Given 检索不到相关资料，When 用户提问，Then AI 明确说明当前 Knowledge 不足，并给出可上传或可补充的资料建议。
 - Given 用户点击保存，When 问答被保存，Then Learning Event 进入 Memory。
 
+## Module 08.5: Wordbook
+
+目标：让用户把学习中遇到的词汇沉淀成可持续补充的个人单词本，而不是临时的文件或表格。
+
+必须支持：
+
+- 先按语言浏览，再通过标签缩小单词列表。
+- 手动添加单词、释义、音标和标签。
+- 通过 TXT 或 CSV 批量导入单词；同一 Goal scope 内重复单词必须提示并跳过。
+- 在单词详情下钻维护词组、例句与个人笔记。
+- 默认关联当前 Study Goal，同时允许独立单词本。
+
+验收标准：
+
+- Given 用户新增单词，When 保存，Then Wordbook 列表出现该词并可编辑详情。
+- Given 用户上传 TXT/CSV，When 同一 scope 存在重复单词，Then 只导入新词并反馈跳过数量。
+- Given 用户在详情添加标签、词组、句子和笔记，When 再次打开，Then 内容保持可读且持久化。
+
 ## Module 09: Tutor
 
 目标：成为长期学习老师，而不是普通聊天窗口。
@@ -600,6 +620,7 @@ Study Planet：
 - File Upload。
 - AI Summary。
 - Knowledge。
+- Wordbook。
 - RAG Q&A。
 - Tutor。
 - Wrong Questions。
@@ -629,9 +650,10 @@ MVP 完成后，用户必须能够：
 7. 上传 PDF、Markdown 或 TXT 学习资料。
 8. 生成 AI Summary。
 9. 基于 Knowledge 进行 RAG Q&A，并看到来源引用。
-10. 保存和管理 Wrong Questions。
-11. 完成 Review 并更新掌握状态。
-12. 查看 Analytics，并获得 AI Recommendation。
+10. 手动添加或批量导入 Wordbook 单词，并保存词组、例句和笔记。
+11. 保存和管理 Wrong Questions。
+12. 完成 Review 并更新掌握状态。
+13. 查看 Analytics，并获得 AI Recommendation。
 
 ---
 

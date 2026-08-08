@@ -1,8 +1,8 @@
 <template>
-  <section class="study-plan" aria-labelledby="tutor-title">
+  <section class="study-plan tutor-space" aria-labelledby="tutor-title">
     <p class="eyebrow">Tutor</p>
     <h2 id="tutor-title">Study Tutor</h2>
-    <p>
+    <p class="tutor-intro">
       Tutor uses your Goal, Plan, Daily Tasks, Study Sessions, Learning Events, and prepared
       Knowledge chunks when available.
     </p>
@@ -26,25 +26,31 @@
       </label>
       <div class="knowledge-actions">
         <button type="submit" :disabled="!canAsk">Ask Tutor</button>
-        <span v-if="!canAsk">Enter a question to ask Tutor.</span>
+        <span>{{ askStatus }}</span>
       </div>
     </form>
+
+    <p v-if="askError" class="error-text tutor-error">{{ askError }}</p>
 
     <article v-if="response" class="tutor-response">
       <h3>Answer</h3>
       <p>{{ response.answer }}</p>
-      <h3>Reasoning</h3>
-      <p>{{ response.reasoning }}</p>
+      <details class="tutor-reasoning">
+        <summary>How this answer was prepared</summary>
+        <p>{{ response.reasoning }}</p>
+      </details>
       <h3>Suggested next action</h3>
       <p>{{ response.suggestedNextAction }}</p>
       <h3>Knowledge sources</h3>
       <p>{{ response.sourceNotice }}</p>
-      <div v-if="response.sources?.length" class="grounding-list">
+      <div v-if="response.sources?.length" class="grounding-list evidence-list">
         <article v-for="source in response.sources" :key="source.sourceId" class="chunk-item">
-          <strong>{{ source.title }}</strong>
-          <p>{{ source.quote }}</p>
-          <small>Score {{ source.score }}</small>
-          <a v-if="source.sourceUrl" :href="source.sourceUrl">Open source</a>
+          <div class="evidence-heading">
+            <strong>{{ source.title }}</strong>
+            <small>Relevance {{ source.score.toFixed(2) }}</small>
+          </div>
+          <blockquote>{{ source.quote }}</blockquote>
+          <a v-if="source.sourceUrl" :href="source.sourceUrl">Inspect exact passage</a>
         </article>
       </div>
       <p v-else class="knowledge-state">No prepared Knowledge source matched this question.</p>
@@ -66,15 +72,30 @@ const question = ref('')
 const response = ref<any>(null)
 const scope = ref('current_goal')
 const isSaving = ref(false)
+const isAsking = ref(false)
 const saveStatus = ref('')
+const askError = ref('')
 const canAsk = computed(() => question.value.trim().length > 0)
+const askStatus = computed(() => {
+  if (isAsking.value) return 'Looking through your learning context...'
+  if (!canAsk.value) return 'Enter a question to ask Tutor.'
+  return 'Tutor will cite prepared Knowledge passages when a match exists.'
+})
 
 async function askTutor() {
   if (!canAsk.value) {
     return
   }
   saveStatus.value = ''
-  response.value = await askStudyTutor(question.value.trim(), scope.value)
+  askError.value = ''
+  isAsking.value = true
+  try {
+    response.value = await askStudyTutor(question.value.trim(), scope.value)
+  } catch (error) {
+    askError.value = error instanceof Error ? error.message : 'Tutor is unavailable right now.'
+  } finally {
+    isAsking.value = false
+  }
 }
 
 async function saveAnswer() {

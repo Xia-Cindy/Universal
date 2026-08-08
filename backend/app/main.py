@@ -1,5 +1,6 @@
 from backend.app.api.contracts import list_contracts
 from backend.app.api.routes import api
+from backend.app.core.settings import settings
 
 
 def create_app():
@@ -18,6 +19,12 @@ def create_app():
             "status": "fastapi_not_installed",
             "contracts": list_contracts(),
         }
+
+    if settings.persistence_backend == "postgres" and not settings.database_url:
+        raise RuntimeError(
+            "DATABASE_URL is required for the default PostgreSQL runtime. "
+            "Copy docker/universe.env.example, configure it, then load it before starting the API."
+        )
 
     app = FastAPI(title="Universe OS API")
 
@@ -129,6 +136,18 @@ def create_app():
     def create_work_resume_draft(payload: dict):
         return api.create_work_resume_draft(payload)
 
+    @app.get("/api/novel/drafts")
+    def list_novel_drafts():
+        return api.list_novel_drafts()
+
+    @app.post("/api/novel/drafts")
+    def create_novel_draft(payload: dict):
+        return api.create_novel_draft(payload)
+
+    @app.patch("/api/novel/drafts/{draft_id}")
+    def update_novel_draft(draft_id: str, payload: dict):
+        return api.update_novel_draft(draft_id, payload)
+
     @app.post("/api/work/knowledge/documents")
     def create_work_knowledge_document(payload: dict):
         return api.create_knowledge_document(payload)
@@ -160,6 +179,10 @@ def create_app():
     @app.post("/api/work/knowledge/documents/{document_id}/process")
     def process_work_knowledge_document(document_id: str):
         return api.process_knowledge_document(document_id)
+
+    @app.get("/api/work/knowledge/documents/{document_id}/status")
+    def refresh_work_knowledge_document(document_id: str):
+        return api.refresh_knowledge_document(document_id)
 
     @app.get("/api/study/workspace")
     def get_study_workspace():
@@ -253,6 +276,38 @@ def create_app():
     def get_tutor_history():
         return api.get_tutor_history()
 
+    @app.get("/api/study/wordbook/entries")
+    def list_wordbook_entries(goalId: str | None = None, language: str | None = None, tag: str | None = None):
+        return api.list_wordbook_entries(goal_id=goalId, language=language, tag=tag)
+
+    @app.post("/api/study/wordbook/entries")
+    def create_wordbook_entry(payload: dict):
+        return api.create_wordbook_entry(payload)
+
+    @app.get("/api/study/wordbook/entries/{entry_id}")
+    def get_wordbook_entry(entry_id: str):
+        return api.get_wordbook_entry(entry_id)
+
+    @app.patch("/api/study/wordbook/entries/{entry_id}")
+    def update_wordbook_entry(entry_id: str, payload: dict):
+        return api.update_wordbook_entry(entry_id, payload)
+
+    @app.delete("/api/study/wordbook/entries/{entry_id}")
+    def delete_wordbook_entry(entry_id: str):
+        return api.delete_wordbook_entry(entry_id)
+
+    @app.post("/api/study/wordbook/import")
+    def import_wordbook_entries(payload: dict):
+        return api.import_wordbook_entries(payload)
+
+    @app.post("/api/study/wordbook/entries/{entry_id}/dictionary/refresh")
+    def refresh_wordbook_dictionary(entry_id: str):
+        return api.refresh_wordbook_dictionary(entry_id)
+
+    @app.post("/api/study/wordbook/entries/{entry_id}/review")
+    def review_wordbook_entry(entry_id: str, payload: dict):
+        return api.review_wordbook_entry(entry_id, payload)
+
     @app.post("/api/study/tutor/events")
     def save_tutor_answer_event(payload: dict):
         return api.save_tutor_answer_event(payload)
@@ -273,7 +328,7 @@ def create_app():
         planetType: str | None = None,
         techStackId: str | None = None,
     ):
-        return api.list_knowledge_documents(
+        return api.list_study_knowledge_documents(
             subject=subject,
             topic=topic,
             goal_id=goalId,
@@ -284,6 +339,26 @@ def create_app():
     @app.get("/api/study/knowledge/documents/{document_id}")
     def get_knowledge_document(document_id: str):
         return api.get_knowledge_document(document_id)
+
+    @app.get("/api/study/knowledge/documents/{document_id}/annotations")
+    def list_knowledge_annotations(document_id: str):
+        return api.list_knowledge_annotations(document_id)
+
+    @app.post("/api/study/knowledge/documents/{document_id}/annotations")
+    def create_knowledge_annotation(document_id: str, payload: dict):
+        return api.create_knowledge_annotation(document_id, payload)
+
+    @app.patch("/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}")
+    def update_knowledge_annotation(document_id: str, annotation_id: str, payload: dict):
+        return api.update_knowledge_annotation(document_id, annotation_id, payload)
+
+    @app.post("/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}/mastered")
+    def mark_knowledge_annotation_mastered(document_id: str, annotation_id: str, payload: dict):
+        return api.mark_knowledge_annotation_mastered(document_id, annotation_id, payload)
+
+    @app.delete("/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}")
+    def delete_knowledge_annotation(document_id: str, annotation_id: str):
+        return api.delete_knowledge_annotation(document_id, annotation_id)
 
     @app.get("/api/study/knowledge/documents/{document_id}/evidence")
     def get_knowledge_evidence(document_id: str):

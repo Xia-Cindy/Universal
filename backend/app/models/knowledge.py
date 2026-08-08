@@ -21,6 +21,11 @@ class DocumentType(StrEnum):
     PDF = "pdf"
 
 
+class KnowledgeAnnotationType(StrEnum):
+    NOTE = "note"
+    CARD = "card"
+
+
 def _id() -> str:
     return str(uuid4())
 
@@ -35,6 +40,7 @@ class Document:
     goal_id: str | None = None
     planet_type: str = "study"
     tech_stack_id: str | None = None
+    scope_name: str | None = None
     tags: tuple[str, ...] = ()
     content: str = ""
     content_encoding: str = "text"
@@ -43,6 +49,7 @@ class Document:
     provider_dataset_id: str | None = None
     provider_document_id: str | None = None
     provider_status: str | None = None
+    provider_error_code: str | None = None
     processing_status: DocumentStatus = DocumentStatus.UPLOADED
     error_message: str | None = None
     id: str = field(default_factory=_id)
@@ -60,6 +67,7 @@ class Document:
             "topic": self.topic,
             "planetType": self.planet_type,
             "techStackId": self.tech_stack_id,
+            "scopeName": self.scope_name,
             "tags": list(self.tags),
             "storagePath": self.storage_path,
             "contentEncoding": self.content_encoding,
@@ -67,6 +75,7 @@ class Document:
             "providerDatasetId": self.provider_dataset_id,
             "providerDocumentId": self.provider_document_id,
             "providerStatus": self.provider_status,
+            "providerErrorCode": self.provider_error_code,
             "processingStatus": self.processing_status.value,
             "errorMessage": self.error_message,
             "createdAt": self.created_at.isoformat(),
@@ -93,6 +102,46 @@ class DocumentChunk:
             "content": self.content,
             "metadata": self.metadata,
             "createdAt": self.created_at.isoformat(),
+        }
+
+
+@dataclass
+class KnowledgeAnnotation:
+    """Learner-owned note or recall card anchored to a document passage."""
+
+    user_id: str
+    document_id: str
+    selected_text: str
+    annotation_type: KnowledgeAnnotationType
+    goal_id: str | None = None
+    chunk_id: str | None = None
+    note: str = ""
+    prompt: str = ""
+    answer: str = ""
+    hidden_terms: tuple[str, ...] = ()
+    mastered: bool = False
+    mastered_at: datetime | None = None
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "documentId": self.document_id,
+            "chunkId": self.chunk_id,
+            "goalId": self.goal_id,
+            "selectedText": self.selected_text,
+            "annotationType": self.annotation_type.value,
+            "note": self.note,
+            "prompt": self.prompt,
+            "answer": self.answer,
+            "hiddenTerms": list(self.hidden_terms),
+            "mastered": self.mastered,
+            "masteredAt": self.mastered_at.isoformat() if self.mastered_at else None,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
         }
 
 

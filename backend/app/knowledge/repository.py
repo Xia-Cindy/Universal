@@ -1,4 +1,4 @@
-from backend.app.models import Concept, Document, DocumentChunk
+from backend.app.models import Concept, Document, DocumentChunk, KnowledgeAnnotation
 
 from backend.app.persistence.knowledge import SQLiteKnowledgeRepository
 
@@ -10,6 +10,7 @@ class KnowledgeRepository:
         self.documents: dict[str, Document] = {}
         self.chunks: dict[str, DocumentChunk] = {}
         self.concepts: dict[str, Concept] = {}
+        self.annotations: dict[str, KnowledgeAnnotation] = {}
 
     def save_document(self, document: Document) -> Document:
         self.documents[document.id] = document
@@ -60,6 +61,11 @@ class KnowledgeRepository:
         self.chunks = {
             chunk_id: chunk for chunk_id, chunk in self.chunks.items() if chunk.document_id != document_id
         }
+        self.annotations = {
+            annotation_id: annotation
+            for annotation_id, annotation in self.annotations.items()
+            if annotation.document_id != document_id
+        }
         return document
 
     def list_chunks(self, document_id: str, user_id: str) -> list[DocumentChunk]:
@@ -78,3 +84,28 @@ class KnowledgeRepository:
 
     def list_concepts(self, user_id: str) -> list[Concept]:
         return [concept for concept in self.concepts.values() if concept.user_id == user_id]
+
+    def save_annotation(self, annotation: KnowledgeAnnotation) -> KnowledgeAnnotation:
+        self.annotations[annotation.id] = annotation
+        return annotation
+
+    def get_annotation(self, annotation_id: str, user_id: str) -> KnowledgeAnnotation:
+        annotation = self.annotations[annotation_id]
+        if annotation.user_id != user_id:
+            raise PermissionError("Annotation does not belong to user")
+        return annotation
+
+    def list_annotations(self, document_id: str, user_id: str) -> list[KnowledgeAnnotation]:
+        return sorted(
+            [
+                annotation
+                for annotation in self.annotations.values()
+                if annotation.document_id == document_id and annotation.user_id == user_id
+            ],
+            key=lambda annotation: annotation.created_at,
+        )
+
+    def delete_annotation(self, annotation_id: str, user_id: str) -> KnowledgeAnnotation:
+        annotation = self.get_annotation(annotation_id, user_id)
+        self.annotations.pop(annotation_id, None)
+        return annotation

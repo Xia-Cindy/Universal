@@ -7,6 +7,7 @@ from backend.app.models import (
     LearningEvent,
     ReviewItem,
     WrongQuestion,
+    WordEntry,
     MonthPlan,
     PlanStatus,
     SessionStatus,
@@ -18,6 +19,7 @@ from backend.app.models import (
 )
 from backend.app.persistence.codec import (
     dumps,
+    loads,
     event_from_payload,
     review_item_from_payload,
     goal_from_payload,
@@ -27,6 +29,7 @@ from backend.app.persistence.codec import (
     week_plan_from_payload,
     year_plan_from_payload,
     wrong_question_from_payload,
+    word_entry_from_payload,
 )
 from backend.app.persistence.sqlite import SQLitePersistence
 
@@ -125,6 +128,7 @@ class SQLiteStudyRepository:
     def save_daily_task(self, task: DailyTask) -> DailyTask:
         payload = task.to_dict()
         with self._db.transaction() as db:
+            self._ensure_postgres_task_parent_anchors(db, task)
             db.execute(
                 """INSERT INTO daily_tasks
                 (id,user_id,goal_id,week_plan_id,subject,topic,task_date,estimated_minutes,priority,sort_order,status,
@@ -141,6 +145,33 @@ class SQLiteStudyRepository:
                 ),
             )
         return task
+
+    def _ensure_postgres_task_parent_anchors(self, db, task: DailyTask) -> None:
+        """Repair compatibility anchors before a PostgreSQL task write.
+
+        Earlier runtime versions persisted only `study_plans`. Rebuilding the
+        normalized parent chain here lets those existing plans accept tasks
+        without a destructive data migration.
+        """
+        if getattr(self._db, "backend", "sqlite") != "postgres":
+            return
+
+        week = self.get_week_plan(task.week_plan_id, task.user_id)
+        month = self.get_month_plan(week.month_plan_id, task.user_id)
+        year = self.get_year_plan(month.year_plan_id, task.user_id)
+        self._save_postgres_plan_anchor(
+            db, year, parent_id=None, year=year.year, month=None,
+            week_start=None, week_end=None, payload=year.to_dict(),
+        )
+        self._save_postgres_plan_anchor(
+            db, month, parent_id=year.id, year=None, month=month.month,
+            week_start=None, week_end=None, payload=month.to_dict(),
+        )
+        self._save_postgres_plan_anchor(
+            db, week, parent_id=month.id, year=None, month=None,
+            week_start=week.week_start.isoformat(), week_end=week.week_end.isoformat(),
+            payload=week.to_dict(),
+        )
 
     def get_year_plan(self, plan_id: str, user_id: str) -> YearPlan:
         return year_plan_from_payload(self._plan_payload(plan_id, user_id, "long_term"))
@@ -233,7 +264,7 @@ class SQLiteStudyRepository:
         ).fetchall()
         return [event_from_payload({
             "id": row["id"], "userId": row["user_id"], "eventType": row["event_type"],
-            "summary": row["summary"], "metadata": __import__("json").loads(row["metadata"]),
+            "summary": row["summary"], "metadata": loads(row["metadata"]),
             "createdAt": row["created_at"],
         }) for row in rows]
 
@@ -251,7 +282,7 @@ class SQLiteStudyRepository:
         row = self._db.connection.execute("SELECT payload FROM wrong_questions WHERE id = ?", (question_id,)).fetchone()
         if not row:
             raise KeyError(question_id)
-        question = wrong_question_from_payload(__import__("json").loads(row["payload"]))
+        question = wrong_question_from_payload(loads(row["payload"]))
         if question.user_id != user_id:
             raise PermissionError("Wrong question does not belong to user")
         return question
@@ -264,7 +295,7 @@ class SQLiteStudyRepository:
             params.append(goal_id)
         query += " ORDER BY created_at DESC"
         rows = self._db.connection.execute(query, params).fetchall()
-        return [wrong_question_from_payload(__import__("json").loads(row["payload"])) for row in rows]
+        return [wrong_question_from_payload(loads(row["payload"])) for row in rows]
 
     def save_review_item(self, item: ReviewItem) -> ReviewItem:
         payload = item.to_dict()
@@ -281,7 +312,7 @@ class SQLiteStudyRepository:
         row = self._db.connection.execute("SELECT payload FROM review_items WHERE id = ?", (item_id,)).fetchone()
         if not row:
             raise KeyError(item_id)
-        item = review_item_from_payload(__import__("json").loads(row["payload"]))
+        item = review_item_from_payload(loads(row["payload"]))
         if item.user_id != user_id:
             raise PermissionError("Review item does not belong to user")
         return item
@@ -294,7 +325,78 @@ class SQLiteStudyRepository:
             params.append(wrong_question_id)
         query += " ORDER BY due_date, created_at"
         rows = self._db.connection.execute(query, params).fetchall()
-        return [review_item_from_payload(__import__("json").loads(row["payload"])) for row in rows]
+        return [review_item_from_payload(loads(row["payload"])) for row in rows]
+
+    def save_word_entry(self, entry: WordEntry) -> WordEntry:
+        payload = entry.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO study_word_entries(id,user_id,goal_id,normalized_word,language,payload,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET goal_id=excluded.goal_id,
+                   normalized_word=excluded.normalized_word,language=excluded.language,payload=excluded.payload,updated_at=excluded.updated_at""",
+                (
+                    entry.id, entry.user_id, entry.goal_id, entry.normalized_word, entry.language, dumps(payload),
+                    payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+        return entry
+
+    def get_word_entry(self, entry_id: str, user_id: str) -> WordEntry:
+        row = self._db.connection.execute(
+            "SELECT payload FROM study_word_entries WHERE id = ?", (entry_id,)
+        ).fetchone()
+        if not row:
+            raise KeyError(entry_id)
+        entry = word_entry_from_payload(loads(row["payload"]))
+        if entry.user_id != user_id:
+            raise PermissionError("Word entry does not belong to user")
+        return entry
+
+    def delete_word_entry(self, entry_id: str, user_id: str) -> None:
+        self.get_word_entry(entry_id, user_id)
+        with self._db.transaction() as db:
+            db.execute("DELETE FROM study_word_entries WHERE id = ?", (entry_id,))
+
+    def list_word_entries(
+        self,
+        user_id: str,
+        goal_id: str | None = None,
+        language: str | None = None,
+        tag: str | None = None,
+    ) -> list[WordEntry]:
+        query = "SELECT payload FROM study_word_entries WHERE user_id = ?"
+        params: list[object] = [user_id]
+        if goal_id:
+            query += " AND goal_id = ?"
+            params.append(goal_id)
+        query += " ORDER BY normalized_word, created_at"
+        rows = self._db.connection.execute(query, params).fetchall()
+        entries = [word_entry_from_payload(loads(row["payload"])) for row in rows]
+        if language:
+            entries = [entry for entry in entries if entry.language == language]
+        if tag:
+            entries = [entry for entry in entries if tag in entry.tags]
+        return entries
+
+    def find_word_entry(
+        self,
+        user_id: str,
+        normalized_word: str,
+        goal_id: str | None = None,
+        language: str | None = None,
+    ) -> WordEntry | None:
+        query = "SELECT payload FROM study_word_entries WHERE user_id = ? AND normalized_word = ?"
+        params: list[object] = [user_id, normalized_word]
+        if goal_id is None:
+            query += " AND goal_id IS NULL"
+        else:
+            query += " AND goal_id = ?"
+            params.append(goal_id)
+        if language:
+            query += " AND language = ?"
+            params.append(language)
+        row = self._db.connection.execute(query, params).fetchone()
+        return word_entry_from_payload(loads(row["payload"])) if row else None
 
     def _save_plan(self, plan, *, parent_id: str | None = None, year: int | None = None, month: int | None = None, week_start: str | None = None, week_end: str | None = None) -> None:
         payload = plan.to_dict()
@@ -309,6 +411,65 @@ class SQLiteStudyRepository:
                     week_start, week_end, plan.title, getattr(plan, "focus", ""), plan.status.value,
                     payload["createdAt"], payload["updatedAt"],
                 ),
+            )
+            self._save_postgres_plan_anchor(
+                db,
+                plan,
+                parent_id=parent_id,
+                year=year,
+                month=month,
+                week_start=week_start,
+                week_end=week_end,
+                payload=payload,
+            )
+
+    def _save_postgres_plan_anchor(
+        self,
+        db,
+        plan,
+        *,
+        parent_id: str | None,
+        year: int | None,
+        month: int | None,
+        week_start: str | None,
+        week_end: str | None,
+        payload: dict,
+    ) -> None:
+        """Maintain legacy normalized parents required by PostgreSQL task FKs.
+
+        The portable repository reads `study_plans`, while the original
+        PostgreSQL schema still constrains `daily_tasks.week_plan_id` through
+        `week_plans` and its parent chain. These rows are compatibility
+        anchors only; the shared plan contract remains `study_plans`.
+        """
+        if getattr(self._db, "backend", "sqlite") != "postgres":
+            return
+
+        if plan.plan_type.value == "long_term":
+            db.execute(
+                """INSERT INTO year_plans(id,user_id,goal_id,year,title,status,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                   year=excluded.year,title=excluded.title,status=excluded.status,updated_at=excluded.updated_at""",
+                (plan.id, plan.user_id, plan.goal_id, year, plan.title, plan.status.value,
+                 payload["createdAt"], payload["updatedAt"]),
+            )
+        elif plan.plan_type.value == "monthly":
+            db.execute(
+                """INSERT INTO month_plans(id,user_id,goal_id,year_plan_id,month,title,focus,status,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                   year_plan_id=excluded.year_plan_id,month=excluded.month,title=excluded.title,
+                   focus=excluded.focus,status=excluded.status,updated_at=excluded.updated_at""",
+                (plan.id, plan.user_id, plan.goal_id, parent_id, month, plan.title, plan.focus,
+                 plan.status.value, payload["createdAt"], payload["updatedAt"]),
+            )
+        elif plan.plan_type.value == "weekly":
+            db.execute(
+                """INSERT INTO week_plans(id,user_id,goal_id,month_plan_id,week_start,week_end,title,focus,status,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                   month_plan_id=excluded.month_plan_id,week_start=excluded.week_start,week_end=excluded.week_end,
+                   title=excluded.title,focus=excluded.focus,status=excluded.status,updated_at=excluded.updated_at""",
+                (plan.id, plan.user_id, plan.goal_id, parent_id, week_start, week_end, plan.title,
+                 plan.focus, plan.status.value, payload["createdAt"], payload["updatedAt"]),
             )
 
     def _plan_payload(self, plan_id: str, user_id: str, plan_type: str) -> dict:
@@ -338,7 +499,7 @@ class SQLiteStudyRepository:
         return goal_from_payload({
             "id": row["id"], "userId": row["user_id"], "goalName": row["goal_name"],
             "goalType": row["goal_type"], "examName": row["exam_name"], "deadline": row["deadline"],
-            "description": row["description"], "subjects": __import__("json").loads(row["subjects"]),
+            "description": row["description"], "subjects": loads(row["subjects"]),
             "currentLevel": row["current_level"], "dailyAvailableMinutes": row["daily_available_minutes"],
             "priority": row["priority"], "status": row["status"], "createdAt": row["created_at"], "updatedAt": row["updated_at"],
         })
