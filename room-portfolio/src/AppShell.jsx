@@ -5,6 +5,7 @@ const roomZones = [
     ['study', '学习控制台'],
     ['plan', '计划桌'],
     ['library', '知识书架'],
+    ['board', '知识黑板'],
     ['work', 'Work Bench'],
     ['novel', '作品展墙']
 ];

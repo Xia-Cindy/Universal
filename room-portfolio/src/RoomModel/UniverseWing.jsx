@@ -268,35 +268,6 @@ function Workbench({ active, onOpen }) {
     );
 }
 
-function ExistingRoomHotspots({ onOpen }) {
-    return (
-        <>
-            <Hotspot
-                hint="Home · Goals · Tutor"
-                label="学习电脑"
-                onOpen={() => onOpen('study')}
-                position={[1.75, 2.45, 2.4]}
-            >
-                <mesh>
-                    <boxGeometry args={[3.5, 2.5, 2.2]} />
-                    <meshBasicMaterial transparent opacity={0} />
-                </mesh>
-            </Hotspot>
-            <Hotspot
-                hint="Plan · Review · Analytics"
-                label="计划桌"
-                onOpen={() => onOpen('plan')}
-                position={[-5.15, 2.4, -1.8]}
-            >
-                <mesh>
-                    <boxGeometry args={[3, 2.5, 0.5]} />
-                    <meshBasicMaterial transparent opacity={0} />
-                </mesh>
-            </Hotspot>
-        </>
-    );
-}
-
 export default function UniverseWing({ activeSpace, onOpen }) {
     return (
         <group>
@@ -323,6 +294,11 @@ export default function UniverseWing({ activeSpace, onOpen }) {
                 position={[7.05, 0.18, 3.73]}
             />
             <FocusBeacon
+                active={activeSpace === 'board'}
+                color={palette.gold}
+                position={[-5.15, 0.18, -1.8]}
+            />
+            <FocusBeacon
                 active={activeSpace === 'work'}
                 color={palette.cyan}
                 position={[8.85, 0.18, 0.55]}
@@ -332,7 +308,6 @@ export default function UniverseWing({ activeSpace, onOpen }) {
                 color={palette.pink}
                 position={[10.92, 0.18, 3.75]}
             />
-            <ExistingRoomHotspots onOpen={onOpen} />
             <ContactShadows
                 blur={2.3}
                 color="#1a1020"

@@ -12,7 +12,7 @@ from backend.app.knowledge.repository import SQLiteKnowledgeRepository
 from backend.app.knowledge.providers import RAGFlowClient, RAGFlowKnowledgeProvider
 from backend.app.memory import MemoryService
 from backend.app.memory.repository import SQLiteMemoryRepository
-from backend.app.models import MemoryScope
+from backend.app.models import LearningEvent, MemoryScope
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.analytics import StudyAnalystContextProvider, StudyAnalyticsService
 from backend.app.planets.study.dashboard import StudyHomeService
@@ -367,12 +367,18 @@ class ApiFacade:
         planet = self.registry.get_enterable_planet("study")
         memory_context = self.memory.prepare_context(user.id, planet_type="study")
         analytics = self.study_analytics.analytics(user=user, memory_context=memory_context)
-        return self.study_workspace.workspace(
+        workspace = self.study_workspace.workspace(
             user=user,
             planet=planet,
             knowledge_summary=self.knowledge.overview(user.id),
             analytics_summary=analytics,
         )
+        current_goal = workspace.get("currentGoal")
+        if isinstance(current_goal, dict) and current_goal.get("id"):
+            progress = current_goal.get("progress")
+            if isinstance(progress, dict):
+                progress["masteredItems"] = self._goal_mastered_count(user.id, str(current_goal["id"]))
+        return workspace
 
     def get_study_onboarding(self) -> dict[str, object]:
         user = self.users.current_user()
@@ -524,6 +530,21 @@ class ApiFacade:
         user = self.users.current_user()
         return self.study_wordbook.refresh_dictionary_entry(user.id, entry_id)
 
+    def review_wordbook_entry(self, entry_id: str, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        remembered = bool(payload.get("remembered"))
+        before = self.study_wordbook.get_entry(user.id, entry_id)
+        entry = self.study_wordbook.review_entry(user.id, entry_id, remembered=remembered)
+        if remembered and not bool(before.get("mastered")):
+            self._record_goal_mastery(
+                user.id,
+                entry.get("goalId"),
+                event_type="wordbook_entry_mastered",
+                summary=f"背过单词：{entry.get('word') or '未命名单词'}",
+                metadata={"entryId": entry["id"]},
+            )
+        return entry
+
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         payload = dict(payload)
@@ -539,6 +560,58 @@ class ApiFacade:
                 payload["scopeName"] = tech_stack.name
         return self.knowledge.create_document(user.id, payload).to_dict()
 
+    def list_knowledge_annotations(self, document_id: str) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        return self.knowledge.list_annotations(user.id, document_id)
+
+    def create_knowledge_annotation(self, document_id: str, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = dict(payload)
+        if payload.get("goalId"):
+            self.study_repository.get_goal(str(payload["goalId"]), user.id)
+        return self.knowledge.create_annotation(user.id, document_id, payload)
+
+    def update_knowledge_annotation(
+        self,
+        document_id: str,
+        annotation_id: str,
+        payload: dict[str, object],
+    ) -> dict[str, object]:
+        user = self.users.current_user()
+        payload = dict(payload)
+        if payload.get("goalId"):
+            self.study_repository.get_goal(str(payload["goalId"]), user.id)
+        return self.knowledge.update_annotation(user.id, document_id, annotation_id, payload)
+
+    def mark_knowledge_annotation_mastered(
+        self,
+        document_id: str,
+        annotation_id: str,
+        payload: dict[str, object],
+    ) -> dict[str, object]:
+        user = self.users.current_user()
+        previous = self.knowledge.get_annotation(user.id, document_id, annotation_id)
+        mastered = bool(payload.get("mastered", True))
+        annotation = self.knowledge.set_annotation_mastered(
+            user.id,
+            document_id,
+            annotation_id,
+            mastered,
+        )
+        if mastered and not bool(previous.get("mastered")):
+            self._record_goal_mastery(
+                user.id,
+                annotation.get("goalId"),
+                event_type="knowledge_annotation_mastered",
+                summary="背过知识卡片" if annotation.get("annotationType") == "card" else "背过知识笔记",
+                metadata={"annotationId": annotation["id"], "documentId": document_id},
+            )
+        return annotation
+
+    def delete_knowledge_annotation(self, document_id: str, annotation_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.delete_annotation(user.id, document_id, annotation_id)
+
     def _with_wordbook_goal(
         self,
         payload: dict[str, object],
@@ -553,6 +626,35 @@ class ApiFacade:
         if normalized.get("goalId"):
             self.study_repository.get_goal(str(normalized["goalId"]), user_id)
         return normalized
+
+    def _record_goal_mastery(
+        self,
+        user_id: str,
+        goal_id: object,
+        *,
+        event_type: str,
+        summary: str,
+        metadata: dict[str, object],
+    ) -> None:
+        if not goal_id:
+            return
+        goal = self.study_repository.get_goal(str(goal_id), user_id)
+        self.study_repository.save_learning_event(
+            LearningEvent(
+                user_id=user_id,
+                event_type=event_type,
+                summary=summary,
+                metadata={**metadata, "goalId": goal.id},
+            )
+        )
+
+    def _goal_mastered_count(self, user_id: str, goal_id: str) -> int:
+        return sum(
+            1
+            for event in self.study_repository.list_learning_events(user_id)
+            if event.event_type in {"knowledge_annotation_mastered", "wordbook_entry_mastered"}
+            and event.metadata.get("goalId") == goal_id
+        )
 
     def knowledge_overview(self) -> dict[str, object]:
         user = self.users.current_user()

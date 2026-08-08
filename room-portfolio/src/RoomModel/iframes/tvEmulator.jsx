@@ -6,7 +6,7 @@ import { EmulatorJS } from 'react-emulatorjs';
 import { useCameraStore } from '../../helper/CameraStore';
 
 const TvEmulator = React.memo(() => {
-    const rom = './assets/SuperMarioAdvance4.gba';
+    const rom = '/assets/SuperMarioAdvance4.gba';
 
     const cameraState = useCameraStore((state) => state.cameraState);
     const isTv = useMemo(() => cameraState === 'tv', [cameraState]);

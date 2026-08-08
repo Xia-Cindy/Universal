@@ -43,6 +43,19 @@ export const SPACE_GROUPS = {
             }
         ]
     },
+    board: {
+        title: 'Knowledge Board',
+        eyebrow: 'Study recall',
+        entryLabel: '知识黑板',
+        portal: { x: -5.15, stageZ: -12.5 },
+        modules: [
+            {
+                id: 'study-cards',
+                label: '知识卡片与笔记',
+                path: '/study/cards'
+            }
+        ]
+    },
     work: {
         title: 'Work Bench',
         eyebrow: 'Work Planet',

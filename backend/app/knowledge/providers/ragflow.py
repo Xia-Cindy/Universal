@@ -242,13 +242,27 @@ class RAGFlowKnowledgeProvider:
         document_id: str,
         limit: int = 30,
     ) -> list[dict[str, object]]:
-        response = self._client.request_json(
-            "GET",
-            f"/api/v1/datasets/{dataset_id}/documents/{document_id}/chunks",
-            query={"page": 1, "page_size": limit},
-        )
-        data = response.get("data", {})
-        chunks = data.get("chunks", []) if isinstance(data, dict) else []
+        chunks: list[dict[str, object]] = []
+        page = 1
+        page_size = min(max(limit, 1), 100)
+        total: int | None = None
+        while len(chunks) < limit:
+            response = self._client.request_json(
+                "GET",
+                f"/api/v1/datasets/{dataset_id}/documents/{document_id}/chunks",
+                query={"page": page, "page_size": page_size},
+            )
+            data = response.get("data", {})
+            raw_chunks = data.get("chunks", []) if isinstance(data, dict) else []
+            if not isinstance(raw_chunks, list) or not raw_chunks:
+                break
+            chunks.extend(chunk for chunk in raw_chunks if isinstance(chunk, dict))
+            if isinstance(data, dict) and isinstance(data.get("total"), int):
+                total = data["total"]
+            if total is None or len(chunks) >= total or len(raw_chunks) < page_size:
+                break
+            page += 1
+        chunks = chunks[:limit]
         return [
             {
                 "chunkId": chunk.get("id"),

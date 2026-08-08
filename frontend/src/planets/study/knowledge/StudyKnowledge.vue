@@ -146,43 +146,12 @@
     </div>
 
     <div v-else class="knowledge-grid">
-      <div class="knowledge-list" aria-label="Knowledge documents">
-        <article
-          v-for="document in documents"
-          :key="document.id"
-          class="knowledge-document"
-          :class="{ selected: selectedDocument?.document.id === document.id }"
-        >
-          <button type="button" class="document-main" @click="selectDocument(document.id)">
-            <span>{{ document.fileName }}</span>
-            <small>{{ document.subject }} / {{ document.topic }}</small>
-            <small>{{ documentGoalLabel(document.goalId) }}</small>
-            <small>{{ providerLabel(document) }}</small>
-          </button>
-          <div class="document-meta">
-            <span class="status-pill" :class="`status-${document.processingStatus}`">
-              {{ displayDocumentStatus(document) }}
-            </span>
-            <button
-              v-if="canProcess(document)"
-              type="button"
-              :disabled="document.processingStatus === 'processed'"
-              @click="processDocument(document.id)"
-            >
-              {{ document.processingStatus === 'uploaded' ? 'Prepare for Tutor' : 'Check preparation' }}
-            </button>
-            <button
-              v-if="document.processingStatus === 'failed' && document.provider !== 'local'"
-              type="button"
-              @click="retryDocument(document.id)"
-            >
-              Retry
-            </button>
-          </div>
-          <p v-if="document.errorMessage" class="error-text">{{ document.errorMessage }}</p>
-          <small v-if="document.providerErrorCode" class="error-code">{{ document.providerErrorCode }}</small>
-        </article>
-      </div>
+      <StudyBookshelf
+        :books="bookshelfDocuments"
+        :selected-id="selectedDocument?.document.id"
+        label="Knowledge bookshelf"
+        @select="selectDocument"
+      />
 
       <aside class="chunk-panel">
         <template v-if="selectedDocument">
@@ -199,6 +168,28 @@
               Provider: {{ selectedDocument.document.provider }} · {{ selectedDocument.document.providerStatus || 'pending' }}
             </span>
           </p>
+          <div class="document-meta">
+            <span class="status-pill" :class="`status-${selectedDocument.document.processingStatus}`">
+              {{ displayDocumentStatus(selectedDocument.document) }}
+            </span>
+            <button
+              v-if="canProcess(selectedDocument.document)"
+              type="button"
+              :disabled="selectedDocument.document.processingStatus === 'processed'"
+              @click="selectedDocument.document.processingStatus === 'uploaded' ? processDocument(selectedDocument.document.id) : refreshDocument(selectedDocument.document.id)"
+            >
+              {{ selectedDocument.document.processingStatus === 'uploaded' ? 'Prepare for Tutor' : 'Check preparation' }}
+            </button>
+            <button
+              v-if="selectedDocument.document.processingStatus === 'failed' && selectedDocument.document.provider !== 'local'"
+              type="button"
+              @click="retryDocument(selectedDocument.document.id)"
+            >
+              Retry
+            </button>
+          </div>
+          <p v-if="selectedDocument.document.errorMessage" class="error-text">{{ selectedDocument.document.errorMessage }}</p>
+          <small v-if="selectedDocument.document.providerErrorCode" class="error-code">{{ selectedDocument.document.providerErrorCode }}</small>
           <div
             v-if="selectedDocument.document.provider !== 'local'"
             class="provider-progress"
@@ -245,6 +236,7 @@ import {
   type KnowledgeDocumentPayload,
   type StudyGoal,
 } from '../../../services/api'
+import StudyBookshelf, { type StudyShelfBook } from '../components/StudyBookshelf.vue'
 
 const form = ref<KnowledgeDocumentPayload>({
   fileName: '',
@@ -281,6 +273,17 @@ const articleForm = ref({
   goalId: null as string | null,
   body: '',
 })
+const shelfColors = ['#5eb7d7', '#6384c6', '#798fd0', '#4d9d8f', '#ba8e55', '#a7738f', '#8d779d']
+const bookshelfDocuments = computed<StudyShelfBook[]>(() =>
+  documents.value.map((document, index) => ({
+    id: document.id,
+    title: document.fileName.replace(/\.[^.]+$/, '') || document.fileName,
+    spine: document.fileType.toUpperCase(),
+    meta: `${document.subject} · ${document.topic}`,
+    status: displayDocumentStatus(document),
+    color: shelfColors[index % shelfColors.length],
+  })),
+)
 const canUpload = computed(
   () =>
     !isUploading.value &&
@@ -795,6 +798,18 @@ async function processDocument(documentId: string) {
   isLoading.value = true
   try {
     selectedDocument.value = await processKnowledgeDocument(documentId)
+    statusMessage.value = processResultMessage(selectedDocument.value.document)
+    await loadDocuments()
+    await selectDocument(documentId)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function refreshDocument(documentId: string) {
+  isLoading.value = true
+  try {
+    selectedDocument.value = await refreshKnowledgeDocument(documentId)
     statusMessage.value = processResultMessage(selectedDocument.value.document)
     await loadDocuments()
     await selectDocument(documentId)

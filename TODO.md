@@ -2,6 +2,15 @@
 
 ## Study Bookshelf Module
 
+- [x] Remove the Planning Table's visible room outline and make the existing wall blackboard the direct entrance to a Study Knowledge Board for document-owned notes and recall cards.
+- [x] Add `/study/cards`: a physical blackboard review space that groups existing Knowledge annotations into cards and notes, supports answer reveal and toggling the durable “背过了” state.
+- [x] Apply the Rope Gallery hanging-rope visual language to the knowledge blackboard: paired cords, pin anchors, inset card stock and gentle motion, without replacing the learner-owned card data flow.
+- [x] Make room assets use root-relative URLs so direct refreshes of shareable room paths, including `/study/cards`, keep loading the original room model.
+- [x] Add Focus Reader notes and knowledge cards that remain owned by their source Knowledge document, including passage selection, optional Goal association, random key-term hiding, answer reveal and a durable “背过了” state.
+- [x] Add Wordbook memory cards with English front / learner meaning back, remembered and mistaken result tracking, and durable review timestamps.
+- [x] Count each first-time Knowledge/Wordbook “背过了” result once in the linked Study Goal workspace progress, without treating repeated clicks as additional progress.
+- [x] Remove reader page scrolling and fit each generated paper page to the physical spread before turning it.
+- [x] Add page-number jumping and browser-local bookmarks to the open Knowledge reader.
 - [x] Keep the reference three-book hero composition while exposing every uploaded Study Knowledge document through previous/next shelf pages after the third book.
 - [x] Add Study Knowledge subject filtering, goal association during upload, and a confirmed delete action that uses the existing document API.
 - [x] Present every Wordbook tag as a vocabulary book in the deployed reference shelf, with the source physical open motion and paged paper reader for its real tagged entries.

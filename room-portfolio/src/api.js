@@ -76,6 +76,18 @@ export const roomApi = {
             method: 'PATCH',
             body: JSON.stringify(payload)
         }),
+    knowledgeAnnotations: (documentId) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/annotations`),
+    createKnowledgeAnnotation: (documentId, payload) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/annotations`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+    markKnowledgeAnnotationMastered: (documentId, annotationId, mastered = true) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/annotations/${annotationId}/mastered`, {
+            method: 'POST',
+            body: JSON.stringify({ mastered })
+        }),
     wordbook: () => apiRequest('/api/study/wordbook/entries'),
     createWordbookEntry: (payload) =>
         apiRequest('/api/study/wordbook/entries', {
@@ -92,6 +104,11 @@ export const roomApi = {
     refreshWordbookDictionary: (entryId) =>
         apiRequest(`/api/study/wordbook/entries/${entryId}/dictionary/refresh`, {
             method: 'POST'
+        }),
+    reviewWordbookEntry: (entryId, remembered) =>
+        apiRequest(`/api/study/wordbook/entries/${entryId}/review`, {
+            method: 'POST',
+            body: JSON.stringify({ remembered })
         }),
     importWordbook: (payload) =>
         apiRequest('/api/study/wordbook/import', {

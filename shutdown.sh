@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_DIR="$ROOT_DIR/.universe-os"
 BACKEND_PID_FILE="$RUN_DIR/backend.pid"
 FRONTEND_PID_FILE="$RUN_DIR/frontend.pid"
+ROOM_PID_FILE="$RUN_DIR/room.pid"
 
 stop_process() {
   local name="$1"
@@ -40,4 +41,5 @@ stop_process() {
 }
 
 stop_process "Frontend" "$FRONTEND_PID_FILE"
+stop_process "Room" "$ROOM_PID_FILE"
 stop_process "Backend" "$BACKEND_PID_FILE"

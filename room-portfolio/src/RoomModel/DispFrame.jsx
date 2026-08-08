@@ -10,21 +10,18 @@ import SmartphoneiFrame from './iframes/smartphoneiFrame';
 import TvEmulator from './iframes/tvEmulator';
 import LaptopDisp from './laptopDisp';
 
-const DispFrame = React.memo(({ nodes }) => {
+const DispFrame = React.memo(({ nodes, onOpen }) => {
     // Retrieve camera states from the store
     const cameraState = useCameraStore((state) => state.cameraState);
-    const desktopState = useCameraStore((state) => state.desktop);
     const laptopState = useCameraStore((state) => state.laptop);
     const tvState = useCameraStore((state) => state.tv);
     const smartphoneState = useCameraStore((state) => state.smartphone);
-    const displayBoardState = useCameraStore((state) => state.displayBoard);
 
     const [hovered, setHover] = useState(false);
     const [hoveredMonitor, setHoveredMonitor] = useState(null);
     const [hoveredLaptop, setHoveredLaptop] = useState(null);
     const [hoveredTv, setHoveredTv] = useState(null);
     const [hoveredSmartphone, setHoveredSmartphone] = useState(null);
-    const [hoveredDisplayBoard, setHoveredDisplayBoard] = useState(null);
 
     // Change cursor style based on hover state
     useEffect(() => {
@@ -36,10 +33,10 @@ const DispFrame = React.memo(({ nodes }) => {
     const onPointerOut = useCallback(() => setHover(false), []);
 
     // Load video and image textures
-    const desktopWallpaper = useVideoTexture('./assets/desktopWallpaper.mp4');
-    const tvWallpaper = useVideoTexture('./assets/marioWallpaper.mp4');
-    const smartphoneWallpaper = useTexture('./assets/smartphoneWallpaper.webp');
-    const musicBg = useTexture('./assets/SpotifyClone.webp');
+    const desktopWallpaper = useVideoTexture('/assets/desktopWallpaper.mp4');
+    const tvWallpaper = useVideoTexture('/assets/marioWallpaper.mp4');
+    const smartphoneWallpaper = useTexture('/assets/smartphoneWallpaper.webp');
+    const musicBg = useTexture('/assets/SpotifyClone.webp');
 
     return (
         <>
@@ -49,44 +46,32 @@ const DispFrame = React.memo(({ nodes }) => {
             <DesktopiFrame />
             <TvEmulator />
 
-            {/* Desktop monitor */}
-            <Select enabled={hoveredMonitor}>
-                <mesh
-                    geometry={nodes.monitor.geometry}
-                    position={nodes.monitor.position}
-                    rotation={nodes.monitor.rotation}
-                    onClick={
-                        cameraState !== 'desktop'
-                            ? () => {
-                                  desktopState();
-                                  setHoveredMonitor(false);
-                                  onPointerOut();
-                              }
-                            : undefined
-                    }
-                    onPointerOver={
-                        cameraState === 'default'
-                            ? () => {
-                                  onPointerOver();
-                                  setHoveredMonitor(true);
-                              }
-                            : undefined
-                    }
-                    onPointerOut={
-                        cameraState === 'default'
-                            ? () => {
-                                  onPointerOut();
-                                  setHoveredMonitor(false);
-                              }
-                            : undefined
-                    }
-                >
-                    <meshBasicMaterial
-                        map={desktopWallpaper}
-                        toneMapped={false}
-                    />
-                </mesh>
-            </Select>
+            {/* The study space opens only from the visible monitor screen.
+                It deliberately is not wrapped in Select, so the desk never receives a white outline. */}
+            <mesh
+                geometry={nodes.monitor.geometry}
+                position={nodes.monitor.position}
+                rotation={nodes.monitor.rotation}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    onOpen?.('study');
+                    setHoveredMonitor(false);
+                    onPointerOut();
+                }}
+                onPointerOver={() => {
+                    onPointerOver();
+                    setHoveredMonitor(true);
+                }}
+                onPointerOut={() => {
+                    onPointerOut();
+                    setHoveredMonitor(false);
+                }}
+            >
+                <meshBasicMaterial
+                    map={desktopWallpaper}
+                    toneMapped={false}
+                />
+            </mesh>
 
             {/* Laptop display */}
             <Select enabled={hoveredLaptop}>
@@ -196,46 +181,26 @@ const DispFrame = React.memo(({ nodes }) => {
                 </mesh>
             </Select>
 
-            {/* Display board */}
-            <Select enabled={hoveredDisplayBoard}>
-                <mesh
-                    position={[-5.2, 2.95, -1.95]}
-                    rotation={[0, Math.PI / 2, 0]}
-                    scale={[2.8, 1.6, 1]}
-                    onClick={
-                        cameraState === 'displayBoard'
-                            ? undefined
-                            : () => {
-                                  displayBoardState();
-                                  setHoveredDisplayBoard(false);
-                                  onPointerOut();
-                              }
-                    }
-                    onPointerOver={
-                        cameraState === 'default'
-                            ? () => {
-                                  onPointerOver();
-                                  setHoveredDisplayBoard(true);
-                              }
-                            : undefined
-                    }
-                    onPointerOut={
-                        cameraState === 'default'
-                            ? () => {
-                                  onPointerOut();
-                                  setHoveredDisplayBoard(false);
-                              }
-                            : undefined
-                    }
-                >
-                    <meshBasicMaterial
-                        transparent={true}
-                        opacity={0}
-                        color={'#d9d9d9'}
-                    />
-                    <planeGeometry />
-                </mesh>
-            </Select>
+            {/* Blackboard is a direct entry to learner-owned notes and recall cards.
+                It intentionally has no Select wrapper so the room keeps no white outline. */}
+            <mesh
+                position={[-5.2, 2.95, -1.95]}
+                rotation={[0, Math.PI / 2, 0]}
+                scale={[2.8, 1.6, 1]}
+                onClick={() => {
+                    onOpen?.('board');
+                    onPointerOut();
+                }}
+                onPointerOver={() => {
+                    onPointerOver();
+                }}
+                onPointerOut={() => {
+                    onPointerOut();
+                }}
+            >
+                <meshBasicMaterial transparent opacity={0} />
+                <planeGeometry />
+            </mesh>
         </>
     );
 });
@@ -243,5 +208,5 @@ const DispFrame = React.memo(({ nodes }) => {
 export default DispFrame;
 
 // Preload textures
-useTexture.preload('./assets/smartphoneWallpaper.webp');
-useTexture.preload('./assets/SpotifyClone.webp');
+useTexture.preload('/assets/smartphoneWallpaper.webp');
+useTexture.preload('/assets/SpotifyClone.webp');

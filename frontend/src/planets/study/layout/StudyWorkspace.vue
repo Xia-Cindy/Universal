@@ -1,55 +1,35 @@
 <template>
-  <main class="study-workspace">
-    <header class="study-header">
-      <div class="workspace-title">
-        <RouterLink class="universe-return" to="/">Universe Home</RouterLink>
-        <p class="eyebrow">Study Planet</p>
-        <h1>Study Workspace</h1>
-        <p class="workspace-location" aria-label="Universe / Study Planet">
-          Universe > Study Planet > {{ breadcrumbGoal }} > {{ currentLocation }}
-        </p>
+  <main class="study-workspace planet-workspace universe-screen">
+    <UniverseBackdrop tone="study" />
+    <header class="workspace-topbar">
+      <RouterLink aria-label="Return to Universe Home" title="Universe Home" class="universe-return icon-return" to="/">Universe Home</RouterLink>
+      <div class="workspace-crumbs" aria-label="Universe / Study Planet · Universe > Study Planet">
+        <span>Study Planet</span><i>/</i><strong>{{ breadcrumbGoal }}</strong><i>/</i><span>{{ currentLocation }}</span>
       </div>
-      <div class="goal-context" aria-label="Current Goal">
-        <div>
-          <span class="eyebrow">Current Goal</span>
-          <strong>{{ currentGoalName }}</strong>
-        </div>
-        <div class="goal-actions">
-          <button
-            v-if="goals.length > 1"
-            class="secondary-action"
-            type="button"
-            @click="isGoalSwitcherOpen = !isGoalSwitcherOpen"
-          >
-            Switch Goal
-          </button>
-          <RouterLink class="secondary-action" to="/study/goals">Manage Goals</RouterLink>
-        </div>
+      <div class="workspace-goal-switcher" aria-label="Current Goal">
+        <span class="workspace-goal-label">Current Goal</span>
+        <strong>{{ currentGoalName }}</strong>
+        <button
+          v-if="goals.length > 1"
+          class="icon-action"
+          type="button"
+          title="Switch Goal"
+          aria-label="Switch Goal"
+          @click="isGoalSwitcherOpen = !isGoalSwitcherOpen"
+        >⌄</button>
         <select v-if="isGoalSwitcherOpen" v-model="selectedGoalId" @change="switchGoal">
-          <option v-for="goal in goals" :key="goal.id" :value="goal.id">
-            {{ goal.goalName }}
-          </option>
+          <option v-for="goal in goals" :key="goal.id" :value="goal.id">{{ goal.goalName }}</option>
         </select>
       </div>
     </header>
 
-    <section class="workspace-grid">
+    <section class="workspace-grid study-grid">
       <nav class="study-nav" aria-label="Study workspace">
-        <RouterLink v-for="item in navigation" :key="item.route" :to="item.route">
-          {{ item.label }}
+        <RouterLink v-for="item in navigation" :key="item.route" :to="item.route" :title="item.label" :aria-label="item.label">
+          <span class="nav-icon" aria-hidden="true">{{ navIcons[item.label] }}</span><span class="nav-label">{{ item.label }}</span>
         </RouterLink>
       </nav>
       <RouterView />
-      <aside class="ai-panel">
-        <p class="eyebrow">Study Context</p>
-        <strong>{{ currentGoalName }}</strong>
-        <p>AI suggestions appear when Study Analyst has enough Goal, Session, Knowledge, and Review signal.</p>
-        <div class="context-stack">
-          <span>AI Core ready</span>
-          <span>Planet Memory scoped</span>
-          <span>Knowledge-aware Tutor</span>
-        </div>
-      </aside>
     </section>
   </main>
 </template>
@@ -58,6 +38,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchStudyWorkspace, switchStudyGoal, type StudyGoal } from '../../../services/api'
+import UniverseBackdrop from '../../../ui/UniverseBackdrop.vue'
 
 const navigation = [
   { label: 'Home', route: '/study' },
@@ -68,6 +49,10 @@ const navigation = [
   { label: 'Review', route: '/study/review' },
   { label: 'Analytics', route: '/study/analytics' },
 ]
+
+const navIcons: Record<string, string> = {
+  Home: '⌂', Plan: '▱', Knowledge: '⌬', Wordbook: '▤', Tutor: '◌', Review: '↻', Analytics: '▥',
+}
 
 const route = useRoute()
 const goals = ref<StudyGoal[]>([])

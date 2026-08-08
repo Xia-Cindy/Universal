@@ -15,6 +15,7 @@ import AppShell from './AppShell';
 import { CameraManager } from './CameraManager/CameraManager';
 import DeployedBooks from './DeployedBooks';
 import { useCameraStore } from './helper/CameraStore';
+import KnowledgeCardsGallery from './KnowledgeCardsGallery';
 import ModuleWorld from './ModuleWorld';
 import RoomModel from './RoomModel/roomModel';
 import { SPACE_GROUPS } from './spaces';
@@ -58,6 +59,7 @@ const wordbookPages = (book) => ({
         eyebrow: `${entry.language || 'VOCABULARY'} · ${index + 1} / ${book.entries.length}`,
         title: entry.word || '未命名词条',
         subtitle: entry.pronunciation ? `/${entry.pronunciation.replace(/^\/+|\/+$/g, '')}/` : book.title,
+        meaning: entry.meaning || '尚未填写个人释义。',
         content: [
             entry.meaning || '尚未填写个人释义。',
             entry.phrases?.length ? `短语：${entry.phrases.join(' · ')}` : '',
@@ -142,6 +144,7 @@ const Experience = React.memo(() => {
     const isWordbookBooks = activeModule === 'study-wordbook';
     const isReferenceBooks = activeModule === 'study-knowledge' || activeModule === 'work-knowledge' || isWordbookBooks;
     const isWorkKnowledge = activeModule === 'work-knowledge';
+    const isKnowledgeCardsGallery = activeModule === 'study-cards';
 
     useEffect(() => {
         if (!isReferenceBooks) return undefined;
@@ -272,6 +275,24 @@ const Experience = React.memo(() => {
         setWordbookRevision((revision) => revision + 1);
     };
 
+    const createKnowledgeAnnotation = async (documentId, payload) => {
+        const annotation = await roomApi.createKnowledgeAnnotation(documentId, payload);
+        setKnowledgeRevision((revision) => revision + 1);
+        return annotation;
+    };
+
+    const markKnowledgeAnnotationMastered = async (documentId, annotationId, mastered) => {
+        const annotation = await roomApi.markKnowledgeAnnotationMastered(documentId, annotationId, mastered);
+        setKnowledgeRevision((revision) => revision + 1);
+        return annotation;
+    };
+
+    const reviewWordbookEntry = async (entryId, remembered) => {
+        const entry = await roomApi.reviewWordbookEntry(entryId, remembered);
+        setWordbookRevision((revision) => revision + 1);
+        return entry;
+    };
+
     const speakWord = (word) => {
         if (!word || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
         window.speechSynthesis.cancel();
@@ -290,54 +311,63 @@ const Experience = React.memo(() => {
 
     return (
         <>
-            <Canvas
-                dpr={[1, 1.5]}
-                shadows="soft"
-                camera={{
-                    fov: 38,
-                    near: 0.1,
-                    far: 200,
-                    position: [28, 18, -28]
-                }}
-                gl={{
-                    antialias: true,
-                    alpha: true,
-                    powerPreference: 'high-performance'
-                }}
-            >
-                <Suspense fallback={null}>
-                    <Selection>
-                        <EffectComposer autoClear={false}>
-                            <Outline
-                                blur
-                                visibleEdgeColor="white"
-                                edgeStrength={60}
-                                width={2000}
-                            />
-                            <Bloom mipmapBlur intensity={0.9} />
-                        </EffectComposer>
-                        {/* <Perf position={'top-left'} /> */}
-                        <CameraManager />
-                        {!activeModule && (
-                            <RoomModel activeSpace={activeSpace} onOpen={openSpace} />
-                        )}
-                        <ModuleWorld
-                            activeModule={activeModule}
-                            activeSpace={activeSpace}
-                            onOpenSpace={openSpace}
-                        />
-                        <Stars count={900} depth={40} factor={2.2} fade radius={80} speed={0.22} />
-                    </Selection>
-                </Suspense>
-            </Canvas>
-            <Loader />
-            <AppShell
-                activeModule={activeModule}
-                activeSpace={activeSpace}
-                onClose={closeSpace}
-                onOpen={openSpace}
-                onSelectModule={selectModule}
-            />
+            {!isKnowledgeCardsGallery && (
+                <>
+                    <Canvas
+                        dpr={[1, 1.5]}
+                        shadows="soft"
+                        camera={{
+                            fov: 38,
+                            near: 0.1,
+                            far: 200,
+                            position: [28, 18, -28]
+                        }}
+                        gl={{
+                            antialias: true,
+                            alpha: true,
+                            powerPreference: 'high-performance'
+                        }}
+                    >
+                        <Suspense fallback={null}>
+                            <Selection>
+                                <EffectComposer autoClear={false}>
+                                    <Outline
+                                        blur
+                                        visibleEdgeColor="white"
+                                        edgeStrength={60}
+                                        width={2000}
+                                    />
+                                    <Bloom mipmapBlur intensity={0.9} />
+                                </EffectComposer>
+                                <CameraManager />
+                                {!activeModule && (
+                                    <RoomModel activeSpace={activeSpace} onOpen={openSpace} />
+                                )}
+                                <ModuleWorld
+                                    activeModule={activeModule}
+                                    activeSpace={activeSpace}
+                                    onOpenSpace={openSpace}
+                                />
+                                <Stars count={900} depth={40} factor={2.2} fade radius={80} speed={0.22} />
+                            </Selection>
+                        </Suspense>
+                    </Canvas>
+                    <Loader />
+                    <AppShell
+                        activeModule={activeModule}
+                        activeSpace={activeSpace}
+                        onClose={closeSpace}
+                        onOpen={openSpace}
+                        onSelectModule={selectModule}
+                    />
+                </>
+            )}
+            {isKnowledgeCardsGallery && (
+                <KnowledgeCardsGallery
+                    onOpenSpace={openSpace}
+                    onReturn={closeSpace}
+                />
+            )}
             {isReferenceBooks && (
                 <DeployedBooks
                     books={isWordbookBooks ? wordbookBooks : knowledgeBooks.map((document) => ({
@@ -355,6 +385,9 @@ const Experience = React.memo(() => {
                     onEditKnowledge={isWordbookBooks || isWorkKnowledge ? undefined : editKnowledge}
                     onEditWord={isWordbookBooks ? editWordbookEntry : undefined}
                     onSpeakWord={isWordbookBooks ? speakWord : undefined}
+                    onCreateAnnotation={isWorkKnowledge || isWordbookBooks ? undefined : createKnowledgeAnnotation}
+                    onMarkAnnotationMastered={isWorkKnowledge || isWordbookBooks ? undefined : markKnowledgeAnnotationMastered}
+                    onReviewWord={isWordbookBooks ? reviewWordbookEntry : undefined}
                     onOpen={isWordbookBooks ? wordbookPages : openKnowledgeBook}
                     onOpenKnowledge={() => selectModule('study-knowledge')}
                     onOpenWordbook={() => selectModule('study-wordbook')}

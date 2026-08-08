@@ -68,6 +68,24 @@ class WordbookService:
         entry = self._repository.get_word_entry(entry_id, user_id)
         return self._save_with_dictionary(entry).to_dict()
 
+    def review_entry(
+        self,
+        user_id: str,
+        entry_id: str,
+        *,
+        remembered: bool,
+    ) -> dict[str, object]:
+        """Persist the learner's recall result without changing authored content."""
+        entry = self._repository.get_word_entry(entry_id, user_id)
+        entry.last_reviewed_at = local_now()
+        if remembered:
+            entry.mastered = True
+        else:
+            entry.mastered = False
+            entry.mistake_count += 1
+        entry.updated_at = local_now()
+        return self._repository.save_word_entry(entry).to_dict()
+
     def import_entries(self, user_id: str, payload: dict[str, object]) -> dict[str, object]:
         content = _clean_text(payload.get("content"))
         if not content:

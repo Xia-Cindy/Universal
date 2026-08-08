@@ -5,7 +5,7 @@ import React, { useRef } from 'react';
 import * as THREE from 'three';
 
 const Clock = React.memo(() => {
-    const { nodes } = useGLTF('./assets/clock.glb');
+    const { nodes } = useGLTF('/assets/clock.glb');
 
     const hourRef = useRef();
     const minuteRef = useRef();
@@ -70,4 +70,4 @@ const Clock = React.memo(() => {
 
 export default Clock;
 
-useGLTF.preload('./assets/clock.glb');
+useGLTF.preload('/assets/clock.glb');

@@ -158,6 +158,15 @@ WORD_BOOK_CONTRACTS: tuple[ApiContract, ...] = (
         "refresh_wordbook_dictionary",
         "study_wordbook",
     ),
+    ApiContract("POST", "/api/study/wordbook/entries/{entry_id}/review", "review_wordbook_entry", "study_wordbook"),
+)
+
+FOCUS_READER_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("GET", "/api/study/knowledge/documents/{document_id}/annotations", "list_knowledge_annotations", "focus_reader"),
+    ApiContract("POST", "/api/study/knowledge/documents/{document_id}/annotations", "create_knowledge_annotation", "focus_reader"),
+    ApiContract("PATCH", "/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}", "update_knowledge_annotation", "focus_reader"),
+    ApiContract("POST", "/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}/mastered", "mark_knowledge_annotation_mastered", "focus_reader"),
+    ApiContract("DELETE", "/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}", "delete_knowledge_annotation", "focus_reader"),
 )
 
 MILESTONE_10_CONTRACTS: tuple[ApiContract, ...] = (
@@ -234,6 +243,7 @@ def list_contracts() -> list[dict[str, str]]:
             *MILESTONE_7_6_CONTRACTS,
             *MILESTONE_8_REVIEW_CONTRACTS,
             *WORD_BOOK_CONTRACTS,
+            *FOCUS_READER_CONTRACTS,
             *MILESTONE_10_CONTRACTS,
             *SPATIAL_STUDIO_CONTRACTS,
         )

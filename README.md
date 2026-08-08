@@ -2,6 +2,11 @@
 
 Universe OS is a personal AI operating system built around Planet-based workspaces.
 
+The current frontend uses one shared deep-space workspace layer across Universe
+Portal, Study Planet, and Work Planet. It preserves API-driven Goal, Plan,
+Knowledge, Wordbook, Tech Stack, Project, and Resume workflows while adding
+reduced-motion-aware star and meteor movement to the visual environment.
+
 Milestone 1 implements the project foundation only:
 
 - repository structure
@@ -190,7 +195,10 @@ cd /Users/xiaxin/Documents/Codex/Universal
 
 Runtime logs are written under `.universe-os/logs/`.
 
-If `docker/ragflow/universe.env` exists, `startup.sh` loads it and starts the backend in the configured Knowledge provider mode. If it does not exist, the backend defaults to local Knowledge mode.
+`startup.sh` loads `docker/universe.env` first for PostgreSQL persistence, then
+loads `docker/ragflow/universe.env` when it exists for the configured Knowledge
+provider. If neither provider file exists, the backend uses local Knowledge
+mode; PostgreSQL still requires its documented runtime configuration.
 
 Manual startup is also supported.
 
@@ -296,6 +304,56 @@ items without requiring AI. Review completion is included in Study Analytics.
 - `scripts/backup_sqlite.sh`, `scripts/backup_postgres.sh` and guarded `scripts/restore_postgres.sh` provide operational starting points; production still needs scheduled off-host retention and restore drills.
 - Study Plan now supports Goal-owned node creation and task reordering. It is a manual Plan Builder; automatic AI planning is intentionally not implemented.
 - Study Knowledge now uses the same rich inline authoring primitives as Work for headings, formatting, images, tables, code blocks and table operations while keeping the existing Knowledge API.
+
+## Personal Intelligence Room
+
+The spatial Universe entry is available at:
+
+```text
+http://127.0.0.1:5180
+```
+
+The room retains the original GLB wall, floor and furniture language. Navigation
+is attached to the actual object a learner sees: clicking the **monitor screen**
+opens Study Home, Goals and Tutor; the planning table opens Plan, Review and
+Analytics; the bookshelf opens Knowledge and Wordbook; the wall blackboard opens
+review cards and notes. The former large white selection frames are not used. A
+bottom dock provides the same routes as an accessible shortcut, while room
+objects remain the primary entry points.
+
+### Knowledge bookshelf and reader
+
+- Each uploaded Knowledge document becomes one physical book. The shelf keeps the
+  deployed three-book composition, moves through additional books by shelf page,
+  and supports subject filtering, Goal association, editing and confirmed
+  deletion.
+- Selecting a book and then clicking its cover opens a centered, two-page paper
+  reader. Document chunks are split into page-sized spreads without an inner
+  scrollbar. Readers can turn pages, jump to a page, and add or reopen a
+  browser-local bookmark.
+- Documents that are still being parsed keep their provider status visible. Any
+  chunks already returned by the provider can be read; the UI does not resubmit a
+  parse job merely because processing has not completed.
+
+### Notes, recall cards and Wordbook
+
+- A selected reading passage can be saved as a source-document-owned note or a
+  recall card, with an optional Study Goal. Recall cards initially hide selected
+  key terms; revealing the answer and the first `背过了` result are durable. That
+  first mastery result contributes once to
+  `currentGoal.progress.masteredItems`.
+- `/study/cards` is a dedicated review space entered from the wall blackboard. It
+  contains only Knowledge cards and reading notes, rendered as a hanging-card
+  gallery with its own return action and bottom room dock. Cards and notes open
+  in place and keep their source document and mastery state.
+- Wordbook tags are displayed as physical vocabulary books in the same bookshelf
+  flow. A word page shows pronunciation, meaning, phrases, examples and personal
+  notes. Its memory card presents English first and the learner meaning after a
+  flip; `背过了` and `记错了` update the existing Wordbook review data.
+
+The spatial layer consumes the existing Study, Knowledge and Wordbook APIs; it
+does not create a second Knowledge store, a second AI Core, or a separate card
+database.
 
 ## Test
 

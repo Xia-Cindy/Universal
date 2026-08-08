@@ -2,6 +2,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const REFERENCE_URL = 'https://books-sigma-ashen.vercel.app/';
+const BOOKMARKS_STORAGE_KEY = 'universe-books:reader-bookmarks';
+
+const loadReaderBookmarks = () => {
+    try {
+        return JSON.parse(window.localStorage.getItem(BOOKMARKS_STORAGE_KEY) || '{}');
+    } catch {
+        return {};
+    }
+};
 
 function readerBridge(canDelete, canEdit, readerLabel, mode) {
     return `
@@ -10,11 +19,12 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
   body.detail-open:not(.universe-reading) #universe-reader { display: block; }
   #universe-reader .ur-kicker { margin: 0 0 7px; color: #f591ac; font-size: 11px; font-weight: 800; letter-spacing: .13em; }
   #universe-reader .ur-hint { margin: 0; color: #fdfbf4; font: 600 14px/1.5 Georgia, serif; }
-  #universe-bookstage { position: fixed; z-index: 26; left: 50%; top: 53%; width: min(900px, 76vw); opacity: 0; pointer-events: none; transform: translate(-50%, -48%) scale(.94); transition: opacity .35s ease, transform .6s cubic-bezier(.2,.86,.22,1); }
+  #universe-bookstage { position: fixed; z-index: 26; left: 50%; top: 50%; display: flex; flex-direction: column; width: min(900px, 76vw); height: min(720px, calc(100vh - 36px)); opacity: 0; pointer-events: none; transform: translate(-50%, -48%) scale(.94); transition: opacity .35s ease, transform .6s cubic-bezier(.2,.86,.22,1); }
   body.universe-reading #universe-bookstage { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
   body.universe-reading #dp > * { opacity: 0 !important; pointer-events: none !important; transform: translateY(20px) !important; }
-  .ub-book { position: relative; display: grid; grid-template-columns: 1fr 1fr; min-height: min(520px, 60vh); perspective: 1800px; filter: drop-shadow(0 28px 32px rgba(0,0,0,.35)); }
-  .ub-page { position: relative; overflow: auto; padding: clamp(24px, 4vw, 56px); background: repeating-linear-gradient(90deg, rgba(108,81,43,.026) 0 1px, transparent 1px 6px), #fbf7ea; color: #273840; box-shadow: inset 0 0 0 1px rgba(68,46,22,.12), inset 14px 0 22px rgba(54,34,16,.08); }
+  body.universe-reading #universe-shelf-pager, body.universe-reading #universe-shelf-filter { display: none; }
+  .ub-book { position: relative; display: grid; flex: 1 1 auto; grid-template-columns: 1fr 1fr; min-height: 0; perspective: 1800px; filter: drop-shadow(0 28px 32px rgba(0,0,0,.35)); }
+  .ub-page { position: relative; overflow: hidden; padding: clamp(24px, 4vw, 56px); background: repeating-linear-gradient(90deg, rgba(108,81,43,.026) 0 1px, transparent 1px 6px), #fbf7ea; color: #273840; box-shadow: inset 0 0 0 1px rgba(68,46,22,.12), inset 14px 0 22px rgba(54,34,16,.08); }
   .ub-page:first-of-type { border-radius: 11px 3px 3px 11px; box-shadow: inset -16px 0 20px rgba(54,34,16,.09), inset 0 0 0 1px rgba(68,46,22,.12); }
   .ub-page:last-of-type { border-radius: 3px 11px 11px 3px; }
   .ub-spine { position: absolute; z-index: 4; left: calc(50% - 5px); top: 0; width: 10px; height: 100%; background: linear-gradient(90deg, rgba(47,29,13,.34), rgba(255,255,255,.48), rgba(47,29,13,.28)); box-shadow: 0 0 18px rgba(0,0,0,.16); }
@@ -30,14 +40,29 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
   .ub-copy { margin: 0; white-space: pre-wrap; color: #29424a; font: 16px/1.76 Georgia, serif; }
   .ub-number { position: absolute; bottom: 22px; color: #82908a; font-size: 11px; font-weight: 700; }
   .ub-page:first-of-type .ub-number { left: 28px; } .ub-page:last-of-type .ub-number { right: 28px; }
-  .ub-controls { display: flex; align-items: center; gap: 10px; margin: 17px auto 0; width: max-content; padding: 8px; border: 1px solid rgba(253,251,244,.28); border-radius: 999px; background: rgba(16,22,48,.78); box-shadow: 0 16px 40px rgba(0,0,0,.28); }
+  .ub-controls { position: relative; z-index: 16; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 17px auto 0; max-width: 100%; padding: 8px; border: 1px solid rgba(253,251,244,.28); border-radius: 20px; background: rgba(16,22,48,.94); box-shadow: 0 16px 40px rgba(0,0,0,.28); }
   .ub-controls button { min-height: 37px; padding: 0 15px; border-radius: 999px; background: #fdfbf4; color: #141a32; font-weight: 800; }
   .ub-controls button:disabled { opacity: .4; cursor: default; } .ub-controls .ub-fold { background: transparent; color: #c9d0ee; }
   .ub-controls .ub-delete { background: transparent; color: #f591ac; font-size: 12px; } .ub-page-count { min-width: 88px; text-align: center; color: #fdfbf4; font-size: 12px; font-weight: 700; }
+  .ub-jump { display: flex; min-height: 37px; align-items: center; gap: 5px; padding: 0 5px 0 11px; border: 1px solid rgba(201,208,238,.28); border-radius: 999px; color: #c9d0ee; font: 700 11px Arial,sans-serif; }
+  .ub-jump input { width: 44px; border: 0; border-radius: 7px; padding: 6px 3px; background: rgba(253,251,244,.12); color: #fdfbf4; text-align: center; font: inherit; }
+  .ub-jump button { min-height: 27px; padding: 0 8px; font-size: 11px; }
+  #ub-selection { position: fixed; z-index: 12; display: none; gap: 6px; padding: 7px; border: 1px solid rgba(253,251,244,.3); border-radius: 12px; background: rgba(16,22,48,.96); box-shadow: 0 16px 32px rgba(0,0,0,.3); }
+  #ub-selection button { min-height: 32px; padding: 0 10px; border-radius: 8px; background: #fdfbf4; color: #141a32; font-size: 11px; font-weight: 800; }
+  #ub-selection select { max-width: 128px; border: 0; border-radius: 8px; padding: 0 8px; background: rgba(253,251,244,.14); color: #fdfbf4; font-size: 11px; }
+  #ub-card { position: absolute; z-index: 14; top: 4%; right: 9%; bottom: 92px; left: 9%; display: none; min-height: 0; padding: clamp(22px, 4vw, 48px); border: 1px solid rgba(229,220,193,.54); border-radius: 24px; background: radial-gradient(circle at 15% 12%, rgba(239,178,121,.2), transparent 28%), linear-gradient(145deg, #171c37, #33345d); color: #fdf8eb; box-shadow: 0 32px 80px rgba(0,0,0,.48); overflow: hidden; }
+  #ub-card.is-open { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 13px; animation: ub-card-in .32s cubic-bezier(.2,.86,.22,1); }
+  #ub-card .ub-card-eyebrow { margin: 0; color: #f3bc83; font: 800 11px/1.4 Arial,sans-serif; letter-spacing: .16em; }
+  #ub-card .ub-card-content { min-height: 0; overflow: auto; padding-right: 9px; overscroll-behavior: contain; }
+  #ub-card .ub-card-prompt, #ub-card .ub-card-answer { margin: 10px 0 18px; font: 700 clamp(22px,3.2vw,44px)/1.2 Georgia,serif; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #ub-card .ub-card-answer { color: #aee0bd; font-size: clamp(18px,2.4vw,30px); }
+  #ub-card .ub-card-index { margin: 0 0 10px; color: #c9d0ee; font: 700 11px/1.4 Arial,sans-serif; letter-spacing: .08em; }
+  #ub-card .ub-card-actions { display: flex; flex-wrap: wrap; gap: 9px; } #ub-card button { min-height: 39px; padding: 0 15px; border-radius: 999px; background: #fdfbf4; color: #141a32; font-weight: 800; } #ub-card [data-card-forgot] { background: transparent; color: #f2b0be; border: 1px solid rgba(242,176,190,.5); }
+  @keyframes ub-card-in { from { opacity: 0; transform: translateY(14px) rotateX(-8deg); } to { opacity: 1; transform: none; } }
   @keyframes ub-cover-open { 0% { transform: rotateY(0deg); opacity: 1; } 72% { opacity: 1; } 100% { transform: rotateY(165deg); opacity: 0; visibility: hidden; } }
   @keyframes ub-page-next { 0% { transform: rotateY(0deg); opacity: 1; } 49% { opacity: .76; } 100% { transform: rotateY(-178deg); opacity: .06; } }
   @keyframes ub-page-prev { 0% { transform: rotateY(0deg); opacity: 1; } 49% { opacity: .76; } 100% { transform: rotateY(178deg); opacity: .06; } }
-  @media (max-width: 760px) { #universe-bookstage { width: 94vw; top: 49%; } .ub-book { min-height: 57vh; } .ub-page { padding: 22px 16px 42px; } .ub-copy { font-size: 13px; } .ub-controls { gap: 4px; } .ub-controls button { padding: 0 10px; } .ub-page:first-of-type .ub-number { left: 16px; } .ub-page:last-of-type .ub-number { right: 16px; } }
+  @media (max-width: 760px) { #universe-bookstage { width: 94vw; height: calc(100vh - 24px); } .ub-page { padding: 22px 16px 42px; } .ub-copy { font-size: 13px; } .ub-controls { gap: 4px; } .ub-controls button { padding: 0 10px; } .ub-page:first-of-type .ub-number { left: 16px; } .ub-page:last-of-type .ub-number { right: 16px; } #ub-card { top: 3%; right: 4%; bottom: 116px; left: 4%; } #ub-selection { max-width: 90vw; flex-wrap: wrap; } }
 </style>
 <script>
   (function () {
@@ -49,7 +74,7 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     var stage = document.createElement('section');
     stage.id = 'universe-bookstage';
     stage.setAttribute('aria-live', 'polite');
-    stage.innerHTML = '<div class="ub-book"><article class="ub-page ub-left"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><article class="ub-page ub-right"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><i class="ub-spine"></i><button class="ub-front" type="button" aria-label="翻开封面"><span></span><strong></strong><span>点击封面翻开</span></button></div><div class="ub-controls"><button type="button" data-reader-prev>上一页</button><span class="ub-page-count"></span><button type="button" data-reader-next>下一页</button>${mode === 'wordbook' ? '<button type="button" data-reader-speak>发音</button>' : ''}<button class="ub-fold" type="button" data-reader-fold>合上书本</button>${canEdit ? '<button class="ub-fold" type="button" data-reader-edit>编辑</button>' : ''}${canDelete ? `<button class="ub-delete" type="button" data-reader-delete>${mode === 'wordbook' ? '删除单词' : '删除资料'}</button>` : ''}</div>';
+    stage.innerHTML = '<div class="ub-book"><article class="ub-page ub-left"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><article class="ub-page ub-right"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><i class="ub-spine"></i><button class="ub-front" type="button" aria-label="翻开封面"><span></span><strong></strong><span>点击封面翻开</span></button></div><div class="ub-controls"><button type="button" data-reader-prev>上一页</button><span class="ub-page-count"></span><button type="button" data-reader-next>下一页</button><label class="ub-jump">跳至<input type="number" min="1" inputmode="numeric" aria-label="跳至指定页" data-reader-jump-input><button type="button" data-reader-jump>前往</button></label><button class="ub-fold" type="button" data-reader-bookmark>添加书签</button><button class="ub-fold" type="button" data-reader-open-bookmark hidden></button>${mode === 'wordbook' ? '<button type="button" data-reader-speak>发音</button>' : ''}<button class="ub-fold" type="button" data-reader-cards>${mode === 'wordbook' ? '记忆卡' : '知识卡片'}</button><button class="ub-fold" type="button" data-reader-fold>合上书本</button>${canEdit ? '<button class="ub-fold" type="button" data-reader-edit>编辑</button>' : ''}${canDelete ? `<button class="ub-delete" type="button" data-reader-delete>${mode === 'wordbook' ? '删除单词' : '删除资料'}</button>` : ''}</div><div id="ub-selection"><select data-selection-goal aria-label="关联目标"><option value="">沿用资料目标</option></select><button type="button" data-selection-note>添加到笔记</button><button type="button" data-selection-card>制成知识卡</button></div><section id="ub-card" aria-live="polite"><p class="ub-card-eyebrow"></p><div class="ub-card-content"><p class="ub-card-index"></p><p class="ub-card-prompt"></p><p class="ub-card-answer" hidden></p></div><div class="ub-card-actions"><button type="button" data-card-prev>上一张</button><button type="button" data-card-reveal>翻到背面</button><button type="button" data-card-next>下一张</button><button type="button" data-card-remember>背过了</button><button type="button" data-card-forgot>记错了</button><button type="button" data-card-close>回到书页</button></div></section>';
     document.body.appendChild(stage);
     var pages = [];
     var spreadIndex = 0;
@@ -66,8 +91,36 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     var remove = stage.querySelector('[data-reader-delete]');
     var edit = stage.querySelector('[data-reader-edit]');
     var speak = stage.querySelector('[data-reader-speak]');
+    var cardsButton = stage.querySelector('[data-reader-cards]');
     var pageCount = stage.querySelector('.ub-page-count');
+    var jumpInput = stage.querySelector('[data-reader-jump-input]');
+    var jumpButton = stage.querySelector('[data-reader-jump]');
+    var bookmarkButton = stage.querySelector('[data-reader-bookmark]');
+    var openBookmarkButton = stage.querySelector('[data-reader-open-bookmark]');
+    var selectionBar = stage.querySelector('#ub-selection');
+    var selectionGoal = stage.querySelector('[data-selection-goal]');
+    var card = stage.querySelector('#ub-card');
+    var cardEyebrow = stage.querySelector('.ub-card-eyebrow');
+    var cardIndex = stage.querySelector('.ub-card-index');
+    var cardPrompt = stage.querySelector('.ub-card-prompt');
+    var cardAnswer = stage.querySelector('.ub-card-answer');
+    var cardReveal = stage.querySelector('[data-card-reveal]');
+    var cardPrevious = stage.querySelector('[data-card-prev]');
+    var cardNext = stage.querySelector('[data-card-next]');
+    var activeCard = null;
+    var cardIndexValue = 0;
+    var cards = [];
+    var bookmark = null;
+    var bookmarkId = null;
+    var goals = [];
+    var selectedPassage = '';
     var tap = null;
+    function fitPage(root) {
+      var copy = root.querySelector('.ub-copy');
+      var size = window.innerWidth < 760 ? 13 : 16;
+      copy.style.fontSize = size + 'px';
+      while (root.scrollHeight > root.clientHeight && size > 10) { size -= 1; copy.style.fontSize = size + 'px'; }
+    }
     function setPage(root, item, pageNumber) {
       item = item || { title: '', content: '' };
       root.querySelector('.ub-kicker').textContent = item.eyebrow || '';
@@ -75,6 +128,7 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
       root.querySelector('.ub-subtitle').textContent = item.subtitle || '';
       root.querySelector('.ub-copy').textContent = item.content || (pageNumber ? '本页留白。' : '资料正在准备可翻阅的页面。');
       root.querySelector('.ub-number').textContent = pageNumber ? pageNumber : '';
+      window.requestAnimationFrame(function () { fitPage(root); });
     }
     function renderSpread() {
       var total = pages.length;
@@ -83,8 +137,75 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
       pageCount.textContent = total ? '第 ' + (spreadIndex + 1) + (total > spreadIndex + 1 ? '-' + (spreadIndex + 2) : '') + ' / ' + total + ' 页' : '处理中';
       previous.disabled = spreadIndex <= 0;
       next.disabled = spreadIndex + 2 >= total;
+      jumpInput.max = total || 1;
+      jumpInput.value = total ? spreadIndex + 1 : '';
       activeEntryId = pages[spreadIndex] && pages[spreadIndex].entryId || null;
       if (speak) speak.disabled = !activeEntryId;
+      renderBookmark();
+    }
+    function renderBookmark() {
+      var saved = bookmark;
+      if (!saved || !saved.page) { openBookmarkButton.hidden = true; return; }
+      openBookmarkButton.hidden = false;
+      openBookmarkButton.textContent = '书签第 ' + saved.page + ' 页';
+    }
+    function goToPage(page) {
+      var total = pages.length;
+      var target = Math.max(1, Math.min(total || 1, Number(page) || 1));
+      spreadIndex = Math.floor((target - 1) / 2) * 2;
+      renderSpread();
+    }
+    function maskTerms(value, terms) {
+      var picked = terms && terms.length ? terms : String(value || '').match(/[A-Za-z]{5,}|[\u4e00-\u9fff]{3,}/g) || [];
+      return picked.slice(0, 2).reduce(function (text, term) {
+        return text.replace(term, '＿＿＿＿');
+      }, String(value || ''));
+    }
+    function currentCard() {
+      if ('${mode}' === 'wordbook') {
+        var page = pages[spreadIndex] || pages[0] || {};
+        return { entryId: page.entryId, prompt: page.title || '单词', answer: page.meaning || page.content || '尚未填写释义。', hiddenTerms: [] };
+      }
+      if (!cards.length) return null;
+      cardIndexValue = Math.max(0, Math.min(cards.length - 1, cardIndexValue));
+      return cards[cardIndexValue];
+    }
+    function renderCard() {
+      activeCard = currentCard();
+      if (!activeCard) {
+        cardEyebrow.textContent = '知识卡片';
+        cardIndex.textContent = '';
+        cardPrompt.textContent = '还没有知识卡片。划线后选择“制成知识卡”，它会出现在这里。';
+        cardAnswer.hidden = true;
+        cardReveal.hidden = true;
+        cardPrevious.hidden = true;
+        cardNext.hidden = true;
+        return;
+      }
+      var front = activeCard.prompt || activeCard.selectedText || '回忆这段内容';
+      cardEyebrow.textContent = '${mode}' === 'wordbook' ? 'MEMORY CARD · 英文正面' : (activeCard.annotationType === 'note' ? 'HIGHLIGHT NOTE' : 'KNOWLEDGE CARD');
+      cardIndex.textContent = '${mode}' === 'wordbook' ? '' : (activeCard.annotationType === 'note' ? '笔记' : '知识卡') + ' ' + (cardIndexValue + 1) + ' / ' + cards.length;
+      cardPrompt.textContent = '${mode}' === 'wordbook' ? front : maskTerms(front, activeCard.hiddenTerms);
+      cardAnswer.textContent = activeCard.answer || activeCard.note || activeCard.selectedText || '写下答案后会显示在这里。';
+      cardAnswer.hidden = true;
+      cardReveal.hidden = false;
+      cardPrevious.hidden = '${mode}' === 'wordbook' || cards.length < 2;
+      cardNext.hidden = '${mode}' === 'wordbook' || cards.length < 2;
+    }
+    function openCards() { cardIndexValue = 0; renderCard(); card.classList.add('is-open'); }
+    function closeCards() { card.classList.remove('is-open'); }
+    function hideSelection() { selectionBar.style.display = 'none'; selectedPassage = ''; }
+    function showSelection() {
+      if ('${mode}' === 'wordbook') return;
+      var selection = window.getSelection();
+      var text = selection && selection.toString().trim();
+      if (!text || text.length < 2 || !selection.rangeCount) { hideSelection(); return; }
+      var range = selection.getRangeAt(0); var rect = range.getBoundingClientRect();
+      if (!rect.width && !rect.height) return;
+      selectedPassage = text;
+      selectionBar.style.left = Math.max(8, rect.left - 12) + 'px';
+      selectionBar.style.top = Math.max(8, rect.top - 48) + 'px';
+      selectionBar.style.display = 'flex';
     }
     function closeReading() { document.body.classList.remove('universe-reading'); }
     function openReading() {
@@ -108,7 +229,63 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     }
     previous.addEventListener('click', function () { turn(-1); });
     next.addEventListener('click', function () { turn(1); });
+    jumpButton.addEventListener('click', function () { goToPage(jumpInput.value); });
+    jumpInput.addEventListener('keydown', function (event) { if (event.key === 'Enter') { event.preventDefault(); goToPage(jumpInput.value); } });
+    bookmarkButton.addEventListener('click', function () {
+      if (!bookmarkId || !pages.length) return;
+      var saved = { page: spreadIndex + 1, updatedAt: Date.now() };
+      bookmark = saved;
+      window.parent.postMessage({ source: 'universe-books', type: 'save-bookmark', id: bookmarkId, bookmark: saved }, '*');
+      bookmarkButton.textContent = '已书签第 ' + saved.page + ' 页';
+      renderBookmark();
+    });
+    openBookmarkButton.addEventListener('click', function () {
+      var saved = bookmark;
+      if (saved && saved.page) goToPage(saved.page);
+    });
     fold.addEventListener('click', closeReading);
+    cardsButton.addEventListener('click', openCards);
+    stage.querySelector('[data-card-prev]').addEventListener('click', function () {
+      if ('${mode}' === 'wordbook' || !cards.length) return;
+      cardIndexValue = (cardIndexValue - 1 + cards.length) % cards.length;
+      renderCard();
+    });
+    stage.querySelector('[data-card-next]').addEventListener('click', function () {
+      if ('${mode}' === 'wordbook' || !cards.length) return;
+      cardIndexValue = (cardIndexValue + 1) % cards.length;
+      renderCard();
+    });
+    cardReveal.addEventListener('click', function () {
+      cardAnswer.hidden = false;
+      cardReveal.hidden = true;
+    });
+    stage.querySelector('[data-card-close]').addEventListener('click', closeCards);
+    stage.querySelector('[data-card-remember]').addEventListener('click', function () {
+      if (!activeCard) return;
+      window.parent.postMessage({ source: 'universe-books', type: '${mode}' === 'wordbook' ? 'review-word' : 'master-annotation', id: activeCard.entryId || activeCard.id, documentId: documentId, remembered: true }, '*');
+      if ('${mode}' === 'wordbook') activeCard.mastered = true;
+      else activeCard.mastered = true;
+      renderCard();
+    });
+    stage.querySelector('[data-card-forgot]').addEventListener('click', function () {
+      if (!activeCard) return;
+      if ('${mode}' === 'wordbook') window.parent.postMessage({ source: 'universe-books', type: 'review-word', id: activeCard.entryId, remembered: false }, '*');
+      renderCard();
+    });
+    stage.querySelector('[data-selection-note]').addEventListener('click', function () {
+      if (!selectedPassage || !documentId) return;
+      window.parent.postMessage({ source: 'universe-books', type: 'create-annotation', id: documentId, selectedText: selectedPassage, annotationType: 'note', goalId: selectionGoal.value || null }, '*');
+      hideSelection(); window.getSelection().removeAllRanges();
+    });
+    stage.querySelector('[data-selection-card]').addEventListener('click', function () {
+      if (!selectedPassage || !documentId) return;
+      window.parent.postMessage({ source: 'universe-books', type: 'create-annotation', id: documentId, selectedText: selectedPassage, annotationType: 'card', prompt: selectedPassage, answer: selectedPassage, goalId: selectionGoal.value || null }, '*');
+      hideSelection(); window.getSelection().removeAllRanges();
+    });
+    stage.addEventListener('pointerup', function (event) {
+      if (event.target.closest && event.target.closest('.ub-copy')) window.setTimeout(showSelection, 0);
+      else if (!event.target.closest || !event.target.closest('#ub-selection')) hideSelection();
+    });
     if (speak) speak.addEventListener('click', function () {
       if (activeEntryId) window.parent.postMessage({ source: 'universe-books', type: 'speak', id: activeEntryId, word: pages[spreadIndex].title }, '*');
     });
@@ -141,7 +318,17 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
       if (!data || data.source !== 'universe-books' || data.type !== 'reader-pages') return;
       documentId = data.id || null;
       metadata = data.book || {};
+      bookmarkId = data.bookmarkId || documentId || metadata.title || null;
+      cards = Array.isArray(data.cards) ? data.cards : [];
+      bookmark = data.bookmark || null;
+      cardIndexValue = 0;
+      goals = Array.isArray(data.goals) ? data.goals : [];
+      selectionGoal.innerHTML = '<option value="">沿用资料目标</option>' + goals.map(function (goal) {
+        return '<option value="' + String(goal.id || '').replace(/"/g, '&quot;') + '">' + String(goal.goalName || goal.name || '学习目标').replace(/</g, '&lt;') + '</option>';
+      }).join('');
       pages = Array.isArray(data.pages) && data.pages.length ? data.pages : [{ content: data.emptyMessage || '资料正在准备可翻阅的页面。' }];
+      var hint = reader.querySelector('.ur-hint');
+      if (hint) hint.textContent = metadata.readingStatus || '轻点左侧书本封面，把它翻开后开始阅读。';
       spreadIndex = 0;
       renderSpread();
     });
@@ -321,25 +508,43 @@ function buildDocument(source, books, shelfPage, totalPages, subjects, subjectFi
         .replace('</body>', `${shelfFilterBridge(subjects, subjectFilter, filterLabel)}${shelfPagerBridge(shelfPage, totalPages)}${readerBridge(canDelete, canEdit, mode === 'wordbook' ? 'VOCABULARY PAGES' : 'KNOWLEDGE PAGES', mode)}</body>`)} `;
 }
 
-function readerPages(detail, documentId, book) {
+function readerPages(detail, documentId, book, goals = [], bookmarks = {}) {
+    const document = detail?.document || {};
+    const isProcessing = ['parsing', 'chunking'].includes(document.processingStatus);
     const metadata = {
         title: book?.title || book?.fileName || '阅读',
-        author: book?.subtitle || book?.fileType || 'KNOWLEDGE'
+        author: book?.subtitle || book?.fileType || 'KNOWLEDGE',
+        ...(isProcessing
+            ? {
+                readingStatus: '持续解析中：已完成的内容现在可以阅读，剩余页面会继续同步。',
+                author: `${book?.subtitle || book?.fileType || 'KNOWLEDGE'} · 持续解析中`
+            }
+            : {})
     };
-    if (Array.isArray(detail?.pages)) return { id: documentId, book: metadata, pages: detail.pages };
+    if (Array.isArray(detail?.pages)) return { id: documentId, bookmarkId: String(documentId), book: metadata, pages: detail.pages, cards: [], goals, bookmark: bookmarks[documentId] || null };
     const chunks = detail?.chunks || [];
     const pages = chunks.flatMap((chunk) => {
         const content = String(chunk.content || '').trim();
         return content.match(/[\s\S]{1,680}(?:\s|$)|[\s\S]{1,680}/g) || [];
     }).filter(Boolean).map((content) => ({ content }));
-    if (pages.length) return { id: documentId, book: metadata, pages };
-    const document = detail?.document || {};
-    const isProcessing = ['parsing', 'chunking'].includes(document.processingStatus);
+    if (pages.length) return {
+        id: documentId,
+        bookmarkId: String(documentId),
+        book: metadata,
+        pages,
+        cards: (detail?.annotations || []).filter((annotation) => annotation.annotationType === 'card' || annotation.annotationType === 'note'),
+        goals,
+        bookmark: bookmarks[documentId] || null
+    };
     const provider = document.provider === 'ragflow' ? 'RAGFlow' : '本地知识库';
     return {
         id: documentId,
+        bookmarkId: String(documentId),
         book: metadata,
         pages: [],
+        cards: (detail?.annotations || []).filter((annotation) => annotation.annotationType === 'card' || annotation.annotationType === 'note'),
+        goals,
+        bookmark: bookmarks[documentId] || null,
         emptyMessage: isProcessing
             ? `${provider} 正在处理这本资料，尚未返回可翻阅的页面。\n状态：${document.providerStatus || document.processingStatus || '处理中'}。`
             : document.errorMessage || '这本资料还没有生成可翻阅的页面。'
@@ -357,6 +562,9 @@ export default function DeployedBooks({
     onEditKnowledge,
     onEditWord,
     onSpeakWord,
+    onCreateAnnotation,
+    onMarkAnnotationMastered,
+    onReviewWord,
     onOpen,
     onOpenKnowledge,
     onOpenWordbook,
@@ -376,6 +584,7 @@ export default function DeployedBooks({
     const [status, setStatus] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [reader, setReader] = useState(null);
+    const [bookmarks, setBookmarks] = useState(loadReaderBookmarks);
     const [shelfPage, setShelfPage] = useState(0);
     const [subjectFilter, setSubjectFilter] = useState('');
     const [goalId, setGoalId] = useState('');
@@ -463,6 +672,52 @@ export default function DeployedBooks({
                 onSpeakWord?.(event.data.word);
                 return;
             }
+            if (event.data.type === 'create-annotation') {
+                Promise.resolve(onCreateAnnotation?.(event.data.id, {
+                    selectedText: event.data.selectedText,
+                    annotationType: event.data.annotationType,
+                    prompt: event.data.prompt,
+                    answer: event.data.answer,
+                    goalId: event.data.goalId
+                }))
+                    .then((annotation) => {
+                        if (!annotation) return;
+                        setReader((current) => current?.id === event.data.id
+                            ? { ...current, cards: [...(current.cards || []), annotation] }
+                            : current);
+                    })
+                    .catch((error) => setStatus(error instanceof Error ? error.message : '无法保存划线内容。'));
+                return;
+            }
+            if (event.data.type === 'master-annotation') {
+                Promise.resolve(onMarkAnnotationMastered?.(event.data.documentId, event.data.id, true))
+                    .then((annotation) => {
+                        if (!annotation) return;
+                        setReader((current) => current?.id === event.data.documentId
+                            ? { ...current, cards: (current.cards || []).map((card) => card.id === annotation.id ? annotation : card) }
+                            : current);
+                    })
+                    .catch((error) => setStatus(error instanceof Error ? error.message : '无法记录背过状态。'));
+                return;
+            }
+            if (event.data.type === 'review-word') {
+                Promise.resolve(onReviewWord?.(event.data.id, Boolean(event.data.remembered)))
+                    .catch((error) => setStatus(error instanceof Error ? error.message : '无法记录单词记忆结果。'));
+                return;
+            }
+            if (event.data.type === 'save-bookmark') {
+                const bookmark = event.data.bookmark;
+                if (!event.data.id || !bookmark?.page) return;
+                setBookmarks((current) => {
+                    const next = { ...current, [String(event.data.id)]: bookmark };
+                    try { window.localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(next)); } catch {
+                        // The current session still retains the bookmark when storage is unavailable.
+                    }
+                    return next;
+                });
+                setReader((current) => String(current?.id) === String(event.data.id) ? { ...current, bookmark } : current);
+                return;
+            }
             if (event.data.type === 'edit-word') {
                 const entry = books.flatMap((item) => item.entries || []).find((item) => String(item.id) === String(event.data.id));
                 if (!entry) return;
@@ -509,7 +764,7 @@ export default function DeployedBooks({
             }
             Promise.resolve(onOpen?.(book))
                 .then((detail) => {
-                    if (detail) setReader(readerPages(detail, book.id, book));
+                    if (detail) setReader(readerPages(detail, book.id, book, goals, bookmarks));
                 })
                 .catch((error) => {
                     setReader({ pages: [], emptyMessage: error instanceof Error ? error.message : '无法读取这本资料。' });
@@ -517,7 +772,7 @@ export default function DeployedBooks({
         };
         window.addEventListener('message', receive);
         return () => window.removeEventListener('message', receive);
-    }, [books, onDelete, onDeleteWord, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onSpeakWord, totalPages]);
+    }, [bookmarks, books, goals, onCreateAnnotation, onDelete, onDeleteWord, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord, totalPages]);
 
     useEffect(() => {
         if (!reader || !frame.current?.contentWindow) return;

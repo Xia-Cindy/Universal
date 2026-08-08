@@ -22,6 +22,7 @@ class MemoryService:
         importance: int = 1,
         metadata: dict | None = None,
         expires_at=None,
+        memory_id: str | None = None,
     ) -> MemoryEntry:
         entry = MemoryEntry(
             user_id=user_id,
@@ -34,6 +35,7 @@ class MemoryService:
             importance=importance,
             metadata=metadata or {},
             expires_at=parse_datetime(expires_at) if expires_at else None,
+            **({"id": memory_id} if memory_id else {}),
         )
         return self._repository.save(entry)
 

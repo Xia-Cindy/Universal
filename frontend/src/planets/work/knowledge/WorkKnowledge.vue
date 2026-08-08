@@ -90,9 +90,9 @@
               v-if="canProcess(document)"
               type="button"
               :disabled="document.processingStatus === 'processed'"
-              @click="processDocument(document.id)"
+              @click="document.processingStatus === 'uploaded' ? processDocument(document.id) : refreshDocument(document.id)"
             >
-              Process
+              {{ document.processingStatus === 'uploaded' ? 'Prepare' : 'Check status' }}
             </button>
           </div>
           <p v-if="document.errorMessage" class="error-text">{{ document.errorMessage }}</p>
@@ -126,7 +126,7 @@
           >
             PDF metadata is available for organization. Text parsing will come in a later milestone.
           </div>
-          <div v-else class="knowledge-state">Process this document to create provider-backed chunks.</div>
+          <div v-else class="knowledge-state">{{ emptyChunkState(selectedDocument.document) }}</div>
         </template>
         <template v-else>
           <div class="knowledge-state">Select a document to inspect its chunks.</div>
@@ -137,13 +137,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   createWorkKnowledgeDocument,
   fetchWorkKnowledgeDocument,
   fetchWorkKnowledgeDocuments,
   fetchTechStacks,
   processWorkKnowledgeDocument,
+  refreshWorkKnowledgeDocument,
   type KnowledgeDocument,
   type KnowledgeDocumentDetail,
   type KnowledgeDocumentPayload,
@@ -174,6 +175,7 @@ const selectedDocument = ref<KnowledgeDocumentDetail | null>(null)
 const statusMessage = ref('Upload txt, markdown, or PDF metadata.')
 const isLoading = ref(false)
 const isUploading = ref(false)
+let statusPollTimer: ReturnType<typeof setInterval> | null = null
 
 const tagList = computed(() =>
   tagsText.value
@@ -228,6 +230,7 @@ onMounted(async () => {
   await loadTechStacks()
   await loadDocuments()
 })
+onUnmounted(() => stopStatusPolling())
 watch(activeView, () => {
   if (
     selectedDocument.value &&
@@ -376,6 +379,11 @@ function providerLabel(document: KnowledgeDocument) {
 
 async function selectDocument(documentId: string) {
   selectedDocument.value = await fetchWorkKnowledgeDocument(documentId)
+  if (isProviderProcessing(selectedDocument.value.document)) {
+    startStatusPolling(documentId)
+  } else {
+    stopStatusPolling()
+  }
 }
 
 async function processDocument(documentId: string) {
@@ -390,6 +398,64 @@ async function processDocument(documentId: string) {
     await selectDocument(documentId)
   } finally {
     isLoading.value = false
+  }
+}
+
+async function refreshDocument(documentId: string) {
+  isLoading.value = true
+  try {
+    selectedDocument.value = await refreshWorkKnowledgeDocument(documentId)
+    statusMessage.value = processResultMessage(selectedDocument.value.document)
+    await loadDocuments()
+    await selectDocument(documentId)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function processResultMessage(document: KnowledgeDocument) {
+  if (document.processingStatus === 'processed') return 'Document is ready for Work Knowledge.'
+  if (document.processingStatus === 'failed') return document.errorMessage || 'Document preparation failed.'
+  return 'Document is being prepared. Its status will refresh automatically.'
+}
+
+function isProviderProcessing(document: KnowledgeDocument) {
+  return document.provider !== 'local' && ['parsing', 'chunking'].includes(document.processingStatus)
+}
+
+function emptyChunkState(document: KnowledgeDocument) {
+  if (document.processingStatus === 'failed') {
+    return 'No source passages were created. Review the provider message before retrying.'
+  }
+  if (isProviderProcessing(document)) {
+    return 'Preparation is in progress. This detail will refresh automatically.'
+  }
+  return 'Prepare this document to create provider-backed chunks.'
+}
+
+function startStatusPolling(documentId: string) {
+  stopStatusPolling()
+  statusPollTimer = setInterval(async () => {
+    try {
+      const detail = await refreshWorkKnowledgeDocument(documentId)
+      selectedDocument.value = detail
+      const item = documents.value.find((document) => document.id === documentId)
+      if (item) {
+        Object.assign(item, detail.document)
+      }
+      if (!isProviderProcessing(detail.document)) {
+        stopStatusPolling()
+      }
+    } catch (error) {
+      statusMessage.value = error instanceof Error ? error.message : 'Unable to refresh provider status.'
+    }
+  }, 2500)
+}
+
+function stopStatusPolling() {
+  if (statusPollTimer) {
+    clearInterval(statusPollTimer)
+    statusPollTimer = null
   }
 }
 </script>

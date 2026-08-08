@@ -4,6 +4,7 @@ from backend.app.persistence.sqlite import SQLitePersistence
 from backend.app.persistence.postgres import (
     PostgresKnowledgeRepository,
     PostgresMemoryRepository,
+    PostgresNovelRepository,
     PostgresPersistence,
     PostgresStudyRepository,
     PostgresWorkRepository,
@@ -12,6 +13,7 @@ from backend.app.persistence.postgres import (
 __all__ = [
     "PostgresKnowledgeRepository",
     "PostgresMemoryRepository",
+    "PostgresNovelRepository",
     "PostgresPersistence",
     "PostgresStudyRepository",
     "PostgresWorkRepository",

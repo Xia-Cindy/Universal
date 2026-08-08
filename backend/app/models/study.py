@@ -354,6 +354,10 @@ class WordEntry:
     phrases: tuple[str, ...] = ()
     examples: tuple[str, ...] = ()
     notes: str = ""
+    dictionary: dict[str, Any] = field(default_factory=dict)
+    mastered: bool = False
+    mistake_count: int = 0
+    last_reviewed_at: datetime | None = None
     source: WordEntrySource = WordEntrySource.MANUAL
     id: str = field(default_factory=_id)
     created_at: datetime = field(default_factory=local_now)
@@ -373,6 +377,10 @@ class WordEntry:
             "phrases": list(self.phrases),
             "examples": list(self.examples),
             "notes": self.notes,
+            "dictionary": self.dictionary,
+            "mastered": self.mastered,
+            "mistakeCount": self.mistake_count,
+            "lastReviewedAt": self.last_reviewed_at.isoformat() if self.last_reviewed_at else None,
             "source": self.source.value,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),

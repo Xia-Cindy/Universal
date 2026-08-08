@@ -1,6 +1,6 @@
 from backend.app.core.dates import local_now
 from backend.app.memory import MemoryService
-from backend.app.models import LearningEvent, MemoryScope, SessionStatus, TaskStatus
+from backend.app.models import LearningEvent, MemoryScope, TaskStatus
 from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.sessions import SessionService
 
@@ -33,13 +33,12 @@ class StudyExecutionService:
         }
 
     def finish(self, user_id: str, session_id: str, payload: dict | None = None) -> dict[str, object]:
-        existing = self._repository.get_session(session_id, user_id)
-        was_finished = existing.status == SessionStatus.FINISHED
         session = self._sessions.finish_session(user_id, session_id, payload)
-        if not was_finished:
-            self._complete_task_for_session(user_id, session)
-            self._record_learning_activity(user_id, session)
-            self._write_session_memory(user_id, session)
+        # All post-session facts are idempotent so a retry repairs an
+        # interrupted finish without double-counting time or learning events.
+        self._complete_task_for_session(user_id, session)
+        self._record_learning_activity(user_id, session)
+        self._write_session_memory(user_id, session)
         return {
             "state": "finished",
             "session": session.to_dict(),
@@ -69,6 +68,7 @@ class StudyExecutionService:
                     "durationMinutes": session.duration_minutes,
                     "feeling": session.feeling,
                 },
+                id=f"study-session:{session.id}",
             )
         )
 
@@ -88,6 +88,7 @@ class StudyExecutionService:
             memory_type="learning_history",
             importance=1,
             metadata={"source": "study_execution"},
+            memory_id=f"study-session:{session.id}:session",
         )
         self._memory.add(
             user_id=user_id,
@@ -102,4 +103,5 @@ class StudyExecutionService:
             memory_type="learning_history",
             importance=1,
             metadata={"source": "study_execution", "sessionId": session.id},
+            memory_id=f"study-session:{session.id}:planet",
         )

@@ -3,15 +3,29 @@ import { ContactShadows, Float, Html, RoundedBox, Sparkles, Text, useGLTF } from
 import { useFrame } from '@react-three/fiber';
 import { Select } from '@react-three/postprocessing';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CanvasTexture, DoubleSide, SRGBColorSpace } from 'three';
+import { BufferGeometry, CanvasTexture, DoubleSide, Float32BufferAttribute, SRGBColorSpace } from 'three';
 
 import { roomApi } from './api';
 import { roomMaterial, roomPalette as palette } from './roomTheme';
+
+const loadKnowledgeBoard = async () => {
+    const documents = await roomApi.knowledgeDocuments();
+    const annotations = await Promise.all(
+        (documents || []).map(async (document) => ({
+            document,
+            annotations: await roomApi.knowledgeAnnotations(document.id)
+        }))
+    );
+    return annotations.flatMap(({ document, annotations: items }) =>
+        (items || []).map((item) => ({ ...item, document }))
+    );
+};
 
 const moduleLoader = (moduleId) => {
     if (moduleId === 'study-review') return roomApi.reviewQueue;
     if (moduleId === 'study-analytics') return roomApi.analytics;
     if (moduleId === 'study-knowledge') return roomApi.knowledgeDocuments;
+    if (moduleId === 'study-cards') return loadKnowledgeBoard;
     if (moduleId === 'study-wordbook') return roomApi.wordbook;
     if (moduleId === 'work-knowledge') return roomApi.workKnowledgeDocuments;
     if (moduleId.startsWith('work-')) return roomApi.workHome;
@@ -2005,6 +2019,408 @@ function NovelWorld({ payload, reload }) {
     );
 }
 
+const concealKeyTerms = (value, terms = []) => {
+    const candidates = terms.length
+        ? terms
+        : String(value || '').match(/[A-Za-z]{5,}|[\u4e00-\u9fff]{3,}/g) || [];
+    return candidates.slice(0, 2).reduce(
+        (text, term) => text.replace(term, '＿＿＿＿'),
+        String(value || '')
+    );
+};
+
+const ROPE_GALLERY = {
+    halfSpan: 8.9,
+    spacing: 2.2,
+    nodes: 20,
+    samples: 68,
+    sides: 6,
+    cardWidth: 2.06,
+    cardHeight: 1.56,
+    cardDrop: 1.32,
+    ropeRadius: 0.035
+};
+
+const wrapRopePosition = (value) => value - Math.floor((value + ROPE_GALLERY.halfSpan) / (ROPE_GALLERY.halfSpan * 2)) * ROPE_GALLERY.halfSpan * 2;
+
+function HangingRopeGallery({ items, onChoose, selected }) {
+    const slotCount = Math.max(5, Math.ceil((2.75 * ROPE_GALLERY.halfSpan) / ROPE_GALLERY.spacing));
+    const ropeGeometry = useMemo(() => {
+        const geometry = new BufferGeometry();
+        const vertexCount = ROPE_GALLERY.samples * ROPE_GALLERY.sides;
+        const positions = new Float32Array(vertexCount * 3);
+        const normals = new Float32Array(vertexCount * 3);
+        const indices = [];
+        for (let sample = 0; sample < ROPE_GALLERY.samples - 1; sample += 1) {
+            for (let side = 0; side < ROPE_GALLERY.sides; side += 1) {
+                const current = sample * ROPE_GALLERY.sides + side;
+                const next = sample * ROPE_GALLERY.sides + (side + 1) % ROPE_GALLERY.sides;
+                const below = (sample + 1) * ROPE_GALLERY.sides + side;
+                const belowNext = (sample + 1) * ROPE_GALLERY.sides + (side + 1) % ROPE_GALLERY.sides;
+                indices.push(current, below, next, next, below, belowNext);
+            }
+        }
+        geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
+        geometry.setIndex(indices);
+        return geometry;
+    }, []);
+    const input = useRef({ offset: 0, velocity: 0, acceleration: 0, previousVelocity: 0, wheel: 0, dragging: false, lastX: 0, lastTime: 0, dragged: false });
+    const rope = useRef({
+        dy: new Float32Array(ROPE_GALLERY.nodes),
+        vy: new Float32Array(ROPE_GALLERY.nodes),
+        dz: new Float32Array(ROPE_GALLERY.nodes),
+        vz: new Float32Array(ROPE_GALLERY.nodes)
+    });
+    const cardRefs = useRef([]);
+    const slotPhysics = useRef(Array.from({ length: slotCount }, (_, slot) => ({
+        slot,
+        lag: 0,
+        lagVelocity: 0,
+        angle: 0,
+        angularVelocity: 0,
+        tilt: 0,
+        tiltVelocity: 0,
+        bounce: 0,
+        bounceVelocity: 0,
+        previousX: null,
+        velocityX: 0,
+        previousSpeed: 0,
+        phase: slot * 1.7,
+        mass: 0.92 + ((slot * 0.137) % 1) * 0.3,
+        assignedIndex: slot % Math.max(items.length, 1)
+    })));
+    const [slotItems, setSlotItems] = useState(() => Array.from({ length: slotCount }, (_, slot) => slot % Math.max(items.length, 1)));
+    const [hovered, setHovered] = useState(false);
+    usePointer(hovered);
+
+    useEffect(() => () => ropeGeometry.dispose(), [ropeGeometry]);
+    useEffect(() => {
+        const next = Array.from({ length: slotCount }, (_, slot) => slot % Math.max(items.length, 1));
+        slotPhysics.current.forEach((physics, slot) => { physics.assignedIndex = next[slot]; });
+        setSlotItems(next);
+    }, [items, slotCount]);
+    useEffect(() => {
+        const moveWithKey = (event) => {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+            event.preventDefault();
+            input.current.offset += (event.key === 'ArrowLeft' ? -1 : 1) * ROPE_GALLERY.spacing;
+            input.current.velocity = (event.key === 'ArrowLeft' ? -1 : 1) * 3.8;
+        };
+        window.addEventListener('keydown', moveWithKey);
+        return () => window.removeEventListener('keydown', moveWithKey);
+    }, []);
+
+    const ropePoint = (normalisedX, target = [0, 0, 0]) => {
+        const dynamics = rope.current;
+        const nodePosition = ((normalisedX + 1) * 0.5) * (ROPE_GALLERY.nodes - 1);
+        const left = Math.max(0, Math.min(ROPE_GALLERY.nodes - 2, Math.floor(nodePosition)));
+        const mix = nodePosition - left;
+        const interpolate = (values) => values[left] * (1 - mix) + values[left + 1] * mix;
+        target[0] = ROPE_GALLERY.halfSpan * (normalisedX + 0.18 * normalisedX ** 3) / 1.18;
+        target[1] = 2.16 - 0.8 * normalisedX ** 2 + interpolate(dynamics.dy);
+        target[2] = 0.42 + 0.12 * normalisedX ** 2 + interpolate(dynamics.dz);
+        return target;
+    };
+
+    const finishDrag = () => {
+        input.current.dragging = false;
+    };
+    const startDrag = (event) => {
+        event.stopPropagation();
+        input.current.dragging = true;
+        input.current.dragged = false;
+        input.current.lastX = event.clientX;
+        input.current.lastTime = performance.now();
+        input.current.velocity = 0;
+        event.target.setPointerCapture?.(event.pointerId);
+    };
+    const drag = (event) => {
+        if (!input.current.dragging) return;
+        event.stopPropagation();
+        const now = performance.now();
+        const elapsed = Math.max(8, now - input.current.lastTime) / 1000;
+        const delta = (event.clientX - input.current.lastX) / 105;
+        input.current.offset += delta;
+        input.current.velocity = input.current.velocity * 0.55 + (delta / elapsed) * 0.45;
+        input.current.dragged ||= Math.abs(event.clientX - input.current.lastX) > 2;
+        input.current.lastX = event.clientX;
+        input.current.lastTime = now;
+    };
+
+    useFrame((state, delta) => {
+        const dt = Math.min(1 / 30, delta);
+        const control = input.current;
+        const wheelMotion = control.wheel * Math.min(1, dt * 14);
+        control.wheel -= wheelMotion;
+        control.offset += wheelMotion;
+        if (!control.dragging) {
+            control.offset += control.velocity * dt;
+            control.velocity *= Math.exp(-6.2 * dt);
+        }
+        control.acceleration = control.acceleration * 0.7 + ((control.velocity - control.previousVelocity) / Math.max(dt, 0.001)) * 0.3;
+        control.previousVelocity = control.velocity;
+
+        const physicsNodes = rope.current;
+        const tension = 22;
+        const rest = 2.5;
+        const damping = 4.9;
+        for (let node = 1; node < ROPE_GALLERY.nodes - 1; node += 1) {
+            physicsNodes.vy[node] += (tension * (physicsNodes.dy[node - 1] + physicsNodes.dy[node + 1] - 2 * physicsNodes.dy[node]) - rest * physicsNodes.dy[node] - damping * physicsNodes.vy[node]) * dt;
+            physicsNodes.vz[node] += (tension * (physicsNodes.dz[node - 1] + physicsNodes.dz[node + 1] - 2 * physicsNodes.dz[node]) - rest * physicsNodes.dz[node] - damping * physicsNodes.vz[node]) * dt;
+            physicsNodes.dy[node] = Math.max(-0.45, Math.min(0.45, physicsNodes.dy[node] + physicsNodes.vy[node] * dt));
+            physicsNodes.dz[node] = Math.max(-0.25, Math.min(0.25, physicsNodes.dz[node] + physicsNodes.vz[node] * dt));
+        }
+        physicsNodes.dy[0] = physicsNodes.dy[ROPE_GALLERY.nodes - 1] = 0;
+        physicsNodes.dz[0] = physicsNodes.dz[ROPE_GALLERY.nodes - 1] = 0;
+
+        let nextItems = null;
+        slotPhysics.current.forEach((card, slot) => {
+            const spring = (-6.8 * card.lag - 4.2 * card.lagVelocity - 0.38 * control.velocity) / card.mass - control.acceleration * 0.08;
+            card.lagVelocity += spring * dt;
+            card.lag = Math.max(-ROPE_GALLERY.spacing * 0.7, Math.min(ROPE_GALLERY.spacing * 0.7, card.lag + card.lagVelocity * dt));
+            card.along = wrapRopePosition(slot * ROPE_GALLERY.spacing + control.offset + card.lag);
+            const normalised = Math.max(-1, Math.min(1, card.along / ROPE_GALLERY.halfSpan));
+            const point = ropePoint(normalised);
+            const group = cardRefs.current[slot];
+            if (!group) return;
+            group.position.set(point[0], point[1], point[2]);
+            if (card.previousX === null) card.previousX = point[0];
+            const speed = (point[0] - card.previousX) / Math.max(dt, 0.001);
+            const acceleration = (speed - card.velocityX) / Math.max(dt, 0.001);
+            card.velocityX = card.velocityX * 0.4 + speed * 0.6;
+            card.previousX = point[0];
+            const gravity = -(2.8 / ROPE_GALLERY.cardDrop) * Math.sin(card.angle) - acceleration / ROPE_GALLERY.cardDrop * Math.cos(card.angle) - 1.8 * card.angularVelocity + Math.sin(state.clock.elapsedTime * 0.63 + card.phase) * 0.07;
+            card.angularVelocity += gravity * dt / card.mass;
+            card.angle = Math.max(-0.62, Math.min(0.62, card.angle + card.angularVelocity * dt));
+            const tiltTarget = -Math.min(0.18, Math.abs(card.velocityX) * 0.008);
+            card.tiltVelocity += ((tiltTarget - card.tilt) * 70 - card.tiltVelocity * 12) * dt;
+            card.tilt += card.tiltVelocity * dt;
+            const currentSpeed = Math.abs(card.velocityX);
+            card.bounceVelocity += (card.previousSpeed - currentSpeed) * 0.01 + (-8 * card.bounce - 2.8 * card.bounceVelocity) * dt;
+            card.bounce = Math.max(-0.06, Math.min(0.06, card.bounce + card.bounceVelocity * dt));
+            card.previousSpeed = currentSpeed;
+            group.rotation.set(card.tilt, 0, (slot * 0.618 % 1 - 0.5) * 0.075 + card.angle);
+            group.children[0].position.y = -ROPE_GALLERY.cardDrop + card.bounce;
+
+            const cycle = Math.floor((slot * ROPE_GALLERY.spacing + control.offset + card.lag + ROPE_GALLERY.halfSpan) / (ROPE_GALLERY.halfSpan * 2));
+            const nextIndex = items.length ? ((slot - cycle * slotCount) % items.length + items.length) % items.length : 0;
+            if (nextIndex !== card.assignedIndex) {
+                card.assignedIndex = nextIndex;
+                nextItems ||= [...slotItems];
+                nextItems[slot] = nextIndex;
+            }
+            const node = Math.max(1, Math.min(ROPE_GALLERY.nodes - 2, Math.round((normalised + 1) * 0.5 * (ROPE_GALLERY.nodes - 1))));
+            physicsNodes.vy[node] += -0.0038 * card.mass - control.acceleration * 0.0005;
+            physicsNodes.vz[node] += -Math.max(-5, Math.min(5, control.velocity)) * 0.002;
+        });
+        if (nextItems) setSlotItems(nextItems);
+
+        const positions = ropeGeometry.attributes.position.array;
+        const normals = ropeGeometry.attributes.normal.array;
+        const sampleStep = 2 / (ROPE_GALLERY.samples - 1);
+        for (let sample = 0; sample < ROPE_GALLERY.samples; sample += 1) {
+            const t = -1 + sample * sampleStep;
+            const center = ropePoint(t);
+            const before = ropePoint(Math.max(-1, t - sampleStep));
+            const after = ropePoint(Math.min(1, t + sampleStep));
+            const tangentX = after[0] - before[0];
+            const tangentY = after[1] - before[1];
+            const tangentZ = after[2] - before[2];
+            const tangentLength = Math.hypot(tangentX, tangentY, tangentZ) || 1;
+            const tx = tangentX / tangentLength;
+            const ty = tangentY / tangentLength;
+            const tz = tangentZ / tangentLength;
+            let nx = ty;
+            let ny = -tx;
+            let nz = 0;
+            const normalLength = Math.hypot(nx, ny, nz) || 1;
+            nx /= normalLength;
+            ny /= normalLength;
+            nz /= normalLength;
+            const bx = ty * nz - tz * ny;
+            const by = tz * nx - tx * nz;
+            const bz = tx * ny - ty * nx;
+            for (let side = 0; side < ROPE_GALLERY.sides; side += 1) {
+                const theta = side / ROPE_GALLERY.sides * Math.PI * 2;
+                const ox = (nx * Math.cos(theta) + bx * Math.sin(theta)) * ROPE_GALLERY.ropeRadius;
+                const oy = (ny * Math.cos(theta) + by * Math.sin(theta)) * ROPE_GALLERY.ropeRadius;
+                const oz = (nz * Math.cos(theta) + bz * Math.sin(theta)) * ROPE_GALLERY.ropeRadius;
+                const offset = (sample * ROPE_GALLERY.sides + side) * 3;
+                positions[offset] = center[0] + ox;
+                positions[offset + 1] = center[1] + oy;
+                positions[offset + 2] = center[2] + oz;
+                normals[offset] = ox / ROPE_GALLERY.ropeRadius;
+                normals[offset + 1] = oy / ROPE_GALLERY.ropeRadius;
+                normals[offset + 2] = oz / ROPE_GALLERY.ropeRadius;
+            }
+        }
+        ropeGeometry.attributes.position.needsUpdate = true;
+        ropeGeometry.attributes.normal.needsUpdate = true;
+    });
+
+    if (!items.length) return null;
+    return (
+        <group
+            onPointerCancel={finishDrag}
+            onPointerDown={startDrag}
+            onPointerMove={drag}
+            onPointerOut={() => setHovered(false)}
+            onPointerOver={() => setHovered(true)}
+            onPointerUp={finishDrag}
+            onWheel={(event) => {
+                event.stopPropagation();
+                input.current.wheel += -(Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY) / 105;
+            }}
+        >
+            <mesh geometry={ropeGeometry} frustumCulled={false}>
+                <meshStandardMaterial color="#b6925f" emissive="#6a4e2d" emissiveIntensity={0.12} metalness={0.12} roughness={0.58} />
+            </mesh>
+            {slotItems.map((itemIndex, slot) => {
+                const item = items[itemIndex];
+                if (!item) return null;
+                const cardColor = item.annotationType === 'note' ? '#d6c08d' : ['#345552', '#4c3b58', '#6a5036'][itemIndex % 3];
+                const inkColor = item.annotationType === 'note' ? '#2b3026' : '#f3ecdb';
+                return (
+                    <group key={slot} ref={(node) => { cardRefs.current[slot] = node; }}>
+                        <group>
+                            <mesh position={[0, 0.01, 0.08]}>
+                                <cylinderGeometry args={[0.07, 0.07, 0.18, 12]} />
+                                <SoftMaterial color="#20bf49" emissive="#176c2f" emissiveIntensity={0.14} />
+                            </mesh>
+                            <mesh position={[0, -0.65, 0]}>
+                                <cylinderGeometry args={[0.013, 0.013, 1.22, 6]} />
+                                <SoftMaterial color="#b6925f" emissive="#6a4e2d" emissiveIntensity={0.08} />
+                            </mesh>
+                            <RoundedBox args={[ROPE_GALLERY.cardWidth, ROPE_GALLERY.cardHeight, 0.13]} castShadow radius={0.045} smoothness={2}>
+                                <SoftMaterial color={cardColor} emissive={selected?.id === item.id ? '#d7b86d' : cardColor} emissiveIntensity={selected?.id === item.id ? 0.18 : 0.025} />
+                            </RoundedBox>
+                            <RoundedBox args={[1.84, 1.32, 0.035]} position={[0, 0, 0.082]} radius={0.025} smoothness={2}>
+                                <SoftMaterial color={item.annotationType === 'note' ? '#e6d9b3' : '#20302e'} />
+                            </RoundedBox>
+                            <WorldLabel className="knowledge-board-sticky" position={[0, 0, 0.13]} scale={0.18}>
+                                <small style={{ color: item.annotationType === 'note' ? '#53625a' : '#8edbd1' }}>{item.annotationType === 'note' ? 'FIELD NOTE' : 'RECALL CARD'}</small>
+                                <strong style={{ color: inkColor }}>{truncate(item.prompt || item.selectedText, 25)}</strong>
+                                <span style={{ color: item.annotationType === 'note' ? '#64756b' : '#a7b8ad' }}>{truncate(item.document.fileName, 16)}</span>
+                            </WorldLabel>
+                            <mesh
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    if (!input.current.dragged) onChoose(item);
+                                }}
+                                position={[0, 0, 0.17]}
+                            >
+                                <planeGeometry args={[ROPE_GALLERY.cardWidth, ROPE_GALLERY.cardHeight]} />
+                                <meshBasicMaterial opacity={0} transparent />
+                            </mesh>
+                        </group>
+                    </group>
+                );
+            })}
+        </group>
+    );
+}
+
+function KnowledgeBoardWorld({ payload, reload }) {
+    const annotations = payload || [];
+    const cards = annotations.filter((item) => item.annotationType === 'card');
+    const notes = annotations.filter((item) => item.annotationType === 'note');
+    const [mode, setMode] = useState('cards');
+    const [selected, setSelected] = useState(cards[0] || notes[0] || null);
+    const [revealed, setRevealed] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const visible = mode === 'cards' ? cards : notes;
+
+    useEffect(() => {
+        const available = mode === 'cards' ? cards : notes;
+        const matching = available.find((item) => item.id === selected?.id);
+        if (!matching) {
+            setSelected(available[0] || null);
+            setRevealed(false);
+        } else if (matching !== selected) {
+            setSelected(matching);
+        }
+    }, [cards, mode, notes, selected?.id]);
+
+    const choose = (item) => {
+        setSelected(item);
+        setRevealed(false);
+    };
+    const markMastered = async () => {
+        if (!selected || saving) return;
+        setSaving(true);
+        try {
+            await roomApi.markKnowledgeAnnotationMastered(
+                selected.document.id,
+                selected.id,
+                !selected.mastered
+            );
+            await reload();
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <>
+            <group position={[0, 3.2, -0.15]}>
+                <RoundedBox args={[13.6, 6.15, 0.28]} castShadow radius={0.18} smoothness={4}>
+                    <SoftMaterial color="#1d2630" emissive={palette.cyan} emissiveIntensity={0.045} />
+                </RoundedBox>
+                <RoundedBox args={[13.15, 5.7, 0.09]} position={[0, 0, 0.2]} radius={0.08} smoothness={3}>
+                    <SoftMaterial color="#27323a" />
+                </RoundedBox>
+                <mesh position={[0, 2.96, 0.29]}>
+                    <boxGeometry args={[12.6, 0.07, 0.07]} />
+                    <SoftMaterial color="#b6925f" emissive="#b6925f" emissiveIntensity={0.13} />
+                </mesh>
+                <HangingRopeGallery items={visible} onChoose={choose} selected={selected} />
+            </group>
+            <Html center position={[0, 0.28, 3.18]} transform scale={0.32} zIndexRange={[70, 20]}>
+                <section className="knowledge-board-instrument" onClick={(event) => event.stopPropagation()}>
+                    <header>
+                        <div>
+                            <small>STUDY RECALL BOARD</small>
+                            <h2>知识黑板</h2>
+                        </div>
+                        <p>{cards.length} 张卡片 · {notes.length} 条笔记</p>
+                    </header>
+                    <nav aria-label="知识黑板内容">
+                        <button className={mode === 'cards' ? 'is-active' : ''} onClick={() => setMode('cards')} type="button">知识卡片</button>
+                        <button className={mode === 'notes' ? 'is-active' : ''} onClick={() => setMode('notes')} type="button">笔记</button>
+                    </nav>
+                    {visible.length > 0 && <p className="knowledge-board-gesture">左右拖动、滚轮或 ← → 可连续浏览</p>}
+                    {selected ? (
+                        <article>
+                            <small>{selected.document.subject || '知识资料'} · {selected.document.fileName}</small>
+                            <h3>{selected.annotationType === 'card' && !revealed
+                                ? concealKeyTerms(selected.prompt || selected.selectedText, selected.hiddenTerms)
+                                : selected.prompt || selected.selectedText}</h3>
+                            {(revealed || selected.annotationType === 'note') && (
+                                <p>{selected.answer || selected.note || selected.selectedText}</p>
+                            )}
+                            <footer>
+                                {selected.annotationType === 'card' && !revealed && (
+                                    <button onClick={() => setRevealed(true)} type="button">翻到背面</button>
+                                )}
+                                <button className={selected.mastered ? 'is-mastered' : ''} disabled={saving} onClick={markMastered} type="button">
+                                    {saving ? '保存中…' : selected.mastered ? '取消背过' : '背过了'}
+                                </button>
+                            </footer>
+                        </article>
+                    ) : (
+                        <p className="knowledge-board-empty">从知识书架打开一本资料，划线后选择“添加到笔记”或“制成知识卡”，内容就会贴到这里。</p>
+                    )}
+                </section>
+            </Html>
+            <WorldLabel position={[-5.9, 6.45, -0.28]}>
+                <strong>知识黑板</strong>
+                <span>点击卡片复习，笔记与资料保持关联</span>
+            </WorldLabel>
+        </>
+    );
+}
+
 function ModuleContent({ moduleId, onOpenSpace, payload, reload }) {
     if (moduleId === 'study-home') {
         return <StudyHomeWorld onOpenSpace={onOpenSpace} payload={payload} reload={reload} />;
@@ -2019,6 +2435,7 @@ function ModuleContent({ moduleId, onOpenSpace, payload, reload }) {
     if (moduleId === 'study-review') return <ReviewWorld payload={payload || []} reload={reload} />;
     if (moduleId === 'study-analytics') return <AnalyticsWorld payload={payload || {}} />;
     if (moduleId === 'study-knowledge') return null;
+    if (moduleId === 'study-cards') return <KnowledgeBoardWorld payload={payload || []} reload={reload} />;
     if (moduleId === 'study-wordbook') return null;
     if (moduleId === 'work-home') return <WorkHomeWorld payload={payload || {}} />;
     if (moduleId === 'work-tech-stack') return <TechStackWorld payload={payload || {}} />;

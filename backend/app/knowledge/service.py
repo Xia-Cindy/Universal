@@ -5,7 +5,15 @@ from copy import copy
 from backend.app.core.dates import local_now
 from backend.app.files import FileService, UnsupportedFileTypeError
 from backend.app.knowledge.providers import KnowledgeProvider
-from backend.app.models import Concept, Document, DocumentChunk, DocumentStatus, DocumentType
+from backend.app.models import (
+    Concept,
+    Document,
+    DocumentChunk,
+    DocumentStatus,
+    DocumentType,
+    KnowledgeAnnotation,
+    KnowledgeAnnotationType,
+)
 from backend.app.knowledge.repository import KnowledgeRepository
 from backend.app.services.evidence import evidence_source
 from backend.app.storage import ObjectStorage
@@ -153,7 +161,7 @@ class KnowledgeService:
             return self.document_detail(user_id, document.id)
 
     def refresh_document(self, user_id: str, document_id: str) -> dict[str, object]:
-        """Refresh provider status and cache chunks once processing completes."""
+        """Refresh provider status and cache every readable chunk RAGFlow has produced."""
         document = self._repository.get_document(document_id, user_id)
         if not self._provider or not document.provider_dataset_id or not document.provider_document_id:
             return self.document_detail(user_id, document.id)
@@ -171,6 +179,7 @@ class KnowledgeService:
                     user_id=user_id,
                     dataset_id=document.provider_dataset_id,
                     document_id=document.provider_document_id,
+                    limit=1000,
                 )
                 self._cache_provider_chunks(user_id, document, chunks)
                 document.processing_status = DocumentStatus.PROCESSED if chunks else DocumentStatus.CHUNKING
@@ -184,11 +193,31 @@ class KnowledgeService:
                     or "RAGFlow document processing failed"
                 )
             else:
+                # RAGFlow emits chunks incrementally for long documents. Cache the
+                # readable portion for the bookshelf while keeping the document out
+                # of retrieval until parsing reaches a terminal success state.
+                chunks = self._provider.list_document_chunks(
+                    user_id=user_id,
+                    dataset_id=document.provider_dataset_id,
+                    document_id=document.provider_document_id,
+                    limit=1000,
+                )
+                self._cache_provider_chunks(user_id, document, chunks)
                 document.processing_status = DocumentStatus.CHUNKING
+                document.error_message = None
+                document.provider_error_code = None
             document.updated_at = local_now()
             self._repository.save_document(document)
             return self.document_detail(user_id, document.id)
         except (RuntimeError, ValueError) as exc:
+            if document.processing_status in {DocumentStatus.PARSING, DocumentStatus.CHUNKING}:
+                # A status refresh must not turn an in-flight document into a
+                # terminal failure when the provider temporarily rejects a
+                # preview request (for example, its chunk page-size limit).
+                document.error_message = str(exc)
+                document.updated_at = local_now()
+                self._repository.save_document(document)
+                return self.document_detail(user_id, document.id)
             document.processing_status = DocumentStatus.FAILED
             document.provider_status = "failed"
             document.provider_error_code = _provider_error_code(str(exc))
@@ -361,7 +390,94 @@ class KnowledgeService:
         return {
             "document": document.to_dict(),
             "chunks": [chunk.to_dict() for chunk in chunks],
+            "annotations": [
+                annotation.to_dict()
+                for annotation in self._repository.list_annotations(document.id, user_id)
+            ],
         }
+
+    def list_annotations(self, user_id: str, document_id: str) -> list[dict[str, object]]:
+        self._repository.get_document(document_id, user_id)
+        return [
+            annotation.to_dict()
+            for annotation in self._repository.list_annotations(document_id, user_id)
+        ]
+
+    def get_annotation(self, user_id: str, document_id: str, annotation_id: str) -> dict[str, object]:
+        annotation = self._repository.get_annotation(annotation_id, user_id)
+        if annotation.document_id != document_id:
+            raise KeyError(annotation_id)
+        return annotation.to_dict()
+
+    def create_annotation(
+        self,
+        user_id: str,
+        document_id: str,
+        payload: dict[str, object],
+    ) -> dict[str, object]:
+        document = self._repository.get_document(document_id, user_id)
+        selected_text = _annotation_text(payload.get("selectedText"))
+        if not selected_text:
+            raise ValueError("selectedText is required")
+        try:
+            annotation_type = KnowledgeAnnotationType(str(payload.get("annotationType", "note")))
+        except ValueError as exc:
+            raise ValueError("annotationType must be note or card") from exc
+        annotation = KnowledgeAnnotation(
+            user_id=user_id,
+            document_id=document.id,
+            selected_text=selected_text,
+            annotation_type=annotation_type,
+            goal_id=_nullable_annotation_text(payload.get("goalId")) or document.goal_id,
+            chunk_id=_nullable_annotation_text(payload.get("chunkId")),
+            note=_annotation_text(payload.get("note")),
+            prompt=_annotation_text(payload.get("prompt")) or selected_text,
+            answer=_annotation_text(payload.get("answer")),
+            hidden_terms=tuple(_annotation_terms(payload.get("hiddenTerms"))),
+        )
+        return self._repository.save_annotation(annotation).to_dict()
+
+    def update_annotation(
+        self,
+        user_id: str,
+        document_id: str,
+        annotation_id: str,
+        payload: dict[str, object],
+    ) -> dict[str, object]:
+        annotation = self._repository.get_annotation(annotation_id, user_id)
+        if annotation.document_id != document_id:
+            raise KeyError(annotation_id)
+        if "goalId" in payload:
+            annotation.goal_id = _nullable_annotation_text(payload.get("goalId"))
+        for field in ("note", "prompt", "answer"):
+            if field in payload:
+                setattr(annotation, field, _annotation_text(payload[field]))
+        if "hiddenTerms" in payload:
+            annotation.hidden_terms = tuple(_annotation_terms(payload["hiddenTerms"]))
+        annotation.updated_at = local_now()
+        return self._repository.save_annotation(annotation).to_dict()
+
+    def set_annotation_mastered(
+        self,
+        user_id: str,
+        document_id: str,
+        annotation_id: str,
+        mastered: bool,
+    ) -> dict[str, object]:
+        annotation = self._repository.get_annotation(annotation_id, user_id)
+        if annotation.document_id != document_id:
+            raise KeyError(annotation_id)
+        annotation.mastered = mastered
+        annotation.mastered_at = local_now() if mastered else None
+        annotation.updated_at = local_now()
+        return self._repository.save_annotation(annotation).to_dict()
+
+    def delete_annotation(self, user_id: str, document_id: str, annotation_id: str) -> dict[str, object]:
+        annotation = self._repository.get_annotation(annotation_id, user_id)
+        if annotation.document_id != document_id:
+            raise KeyError(annotation_id)
+        self._repository.delete_annotation(annotation_id, user_id)
+        return {"id": annotation_id, "deleted": True}
 
     def evidence(self, user_id: str, document_id: str) -> list[dict[str, object]]:
         document = self._repository.get_document(document_id, user_id)
@@ -420,6 +536,23 @@ def _content_type(file_type: str) -> str:
         "markdown": "text/markdown",
         "pdf": "application/pdf",
     }.get(file_type, "application/octet-stream")
+
+
+def _annotation_text(value: object) -> str:
+    return str(value or "").strip()
+
+
+def _nullable_annotation_text(value: object) -> str | None:
+    value = _annotation_text(value)
+    return value or None
+
+
+def _annotation_terms(value: object) -> list[str]:
+    if isinstance(value, str):
+        value = value.split(",")
+    if not isinstance(value, (list, tuple)):
+        return []
+    return list(dict.fromkeys(term for term in (_annotation_text(item) for item in value) if term))
 
 
 def _provider_error_message(value: object) -> str:

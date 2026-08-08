@@ -30,6 +30,8 @@ services:
       MYSQL_PORT: 3306
       MYSQL_DBNAME: ${MYSQL_DATABASE:-rag_flow}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-infini_rag_flow}
+      # Allow parsing a single document up to 512 MiB (the default is 128 MiB).
+      MAX_CONTENT_LENGTH: ${MAX_CONTENT_LENGTH:-536870912}
       MINIO_HOST: minio
       MINIO_PORT: 9000
       MINIO_USER: ${MINIO_USER:-rag_flow}

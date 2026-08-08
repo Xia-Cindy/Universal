@@ -20,7 +20,9 @@ def parse_local_date(value: str | date) -> date:
 
 def parse_datetime(value: str | datetime | None) -> datetime:
     if isinstance(value, datetime):
-        return value
+        if value.tzinfo is None:
+            return value.replace(tzinfo=LOCAL_TIMEZONE)
+        return value.astimezone(LOCAL_TIMEZONE)
     if value is None:
         return local_now()
     parsed = datetime.fromisoformat(value)
@@ -31,4 +33,3 @@ def parse_datetime(value: str | datetime | None) -> datetime:
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
-

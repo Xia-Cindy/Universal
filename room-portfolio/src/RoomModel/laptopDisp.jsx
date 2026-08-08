@@ -13,28 +13,28 @@ const LaptopDisp = React.memo(({ nodes }) => {
     const comeAndGet = useRef();
     const sunflower = useRef();
 
-    const AutumnPause = useTexture('./assets/laptopDisp/AutumnPaus.jpg');
-    const AutumnPlay = useTexture('./assets/laptopDisp/AutumnPlay.jpg');
+    const AutumnPause = useTexture('/assets/laptopDisp/AutumnPaus.jpg');
+    const AutumnPlay = useTexture('/assets/laptopDisp/AutumnPlay.jpg');
 
     const christmasPause = useTexture(
-        './assets/laptopDisp/christmasLightPaus.jpg'
+        '/assets/laptopDisp/christmasLightPaus.jpg'
     );
     const christmasPlay = useTexture(
-        './assets/laptopDisp/christmasLightPlay.jpg'
+        '/assets/laptopDisp/christmasLightPlay.jpg'
     );
 
-    const clarityPause = useTexture('./assets/laptopDisp/clarityPaus.jpg');
-    const clarityPlay = useTexture('./assets/laptopDisp/clarityPlay.jpg');
+    const clarityPause = useTexture('/assets/laptopDisp/clarityPaus.jpg');
+    const clarityPlay = useTexture('/assets/laptopDisp/clarityPlay.jpg');
 
     const comeAndGetPause = useTexture(
-        './assets/laptopDisp/comeAndGetYourLovePause.jpg'
+        '/assets/laptopDisp/comeAndGetYourLovePause.jpg'
     );
     const comeAndGetPlay = useTexture(
-        './assets/laptopDisp/comeAndGetYourLovePlay.jpg'
+        '/assets/laptopDisp/comeAndGetYourLovePlay.jpg'
     );
 
-    const sunflowerPause = useTexture('./assets/laptopDisp/sunflowerPaus.jpg');
-    const sunflowerPlay = useTexture('./assets/laptopDisp/sunflowerPlay.jpg');
+    const sunflowerPause = useTexture('/assets/laptopDisp/sunflowerPaus.jpg');
+    const sunflowerPlay = useTexture('/assets/laptopDisp/sunflowerPlay.jpg');
 
     const [hovered, setHover] = useState(false);
 
@@ -46,11 +46,11 @@ const LaptopDisp = React.memo(({ nodes }) => {
 
     // Audio files
     const audioFiles = useRef({
-        Autumn: './assets/laptopDisp/audio/AutumnLeavesCover.mp3',
-        Christmas: './assets/laptopDisp/audio/ChristmasLights.mp3',
-        Clarity: './assets/laptopDisp/audio/Clarity.mp3',
-        ComeAndGet: './assets/laptopDisp/audio/ComeAndGetYourLove.mp3',
-        Sunflower: './assets/laptopDisp/audio/Sunflower.mp3'
+        Autumn: '/assets/laptopDisp/audio/AutumnLeavesCover.mp3',
+        Christmas: '/assets/laptopDisp/audio/ChristmasLights.mp3',
+        Clarity: '/assets/laptopDisp/audio/Clarity.mp3',
+        ComeAndGet: '/assets/laptopDisp/audio/ComeAndGetYourLove.mp3',
+        Sunflower: '/assets/laptopDisp/audio/Sunflower.mp3'
     }).current;
 
     useEffect(() => {
@@ -187,13 +187,13 @@ const LaptopDisp = React.memo(({ nodes }) => {
 
 export default LaptopDisp;
 
-useTexture.preload('./assets/laptopDisp/AutumnPaus.jpg');
-useTexture.preload('./assets/laptopDisp/AutumnPlay.jpg');
-useTexture.preload('./assets/laptopDisp/christmasLightPaus.jpg');
-useTexture.preload('./assets/laptopDisp/christmasLightPlay.jpg');
-useTexture.preload('./assets/laptopDisp/clarityPaus.jpg');
-useTexture.preload('./assets/laptopDisp/clarityPlay.jpg');
-useTexture.preload('./assets/laptopDisp/comeAndGetYourLovePause.jpg');
-useTexture.preload('./assets/laptopDisp/comeAndGetYourLovePlay.jpg');
-useTexture.preload('./assets/laptopDisp/sunflowerPaus.jpg');
-useTexture.preload('./assets/laptopDisp/sunflowerPlay.jpg');
+useTexture.preload('/assets/laptopDisp/AutumnPaus.jpg');
+useTexture.preload('/assets/laptopDisp/AutumnPlay.jpg');
+useTexture.preload('/assets/laptopDisp/christmasLightPaus.jpg');
+useTexture.preload('/assets/laptopDisp/christmasLightPlay.jpg');
+useTexture.preload('/assets/laptopDisp/clarityPaus.jpg');
+useTexture.preload('/assets/laptopDisp/clarityPlay.jpg');
+useTexture.preload('/assets/laptopDisp/comeAndGetYourLovePause.jpg');
+useTexture.preload('/assets/laptopDisp/comeAndGetYourLovePlay.jpg');
+useTexture.preload('/assets/laptopDisp/sunflowerPaus.jpg');
+useTexture.preload('/assets/laptopDisp/sunflowerPlay.jpg');

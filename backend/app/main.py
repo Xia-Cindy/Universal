@@ -304,6 +304,10 @@ def create_app():
     def refresh_wordbook_dictionary(entry_id: str):
         return api.refresh_wordbook_dictionary(entry_id)
 
+    @app.post("/api/study/wordbook/entries/{entry_id}/review")
+    def review_wordbook_entry(entry_id: str, payload: dict):
+        return api.review_wordbook_entry(entry_id, payload)
+
     @app.post("/api/study/tutor/events")
     def save_tutor_answer_event(payload: dict):
         return api.save_tutor_answer_event(payload)
@@ -335,6 +339,26 @@ def create_app():
     @app.get("/api/study/knowledge/documents/{document_id}")
     def get_knowledge_document(document_id: str):
         return api.get_knowledge_document(document_id)
+
+    @app.get("/api/study/knowledge/documents/{document_id}/annotations")
+    def list_knowledge_annotations(document_id: str):
+        return api.list_knowledge_annotations(document_id)
+
+    @app.post("/api/study/knowledge/documents/{document_id}/annotations")
+    def create_knowledge_annotation(document_id: str, payload: dict):
+        return api.create_knowledge_annotation(document_id, payload)
+
+    @app.patch("/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}")
+    def update_knowledge_annotation(document_id: str, annotation_id: str, payload: dict):
+        return api.update_knowledge_annotation(document_id, annotation_id, payload)
+
+    @app.post("/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}/mastered")
+    def mark_knowledge_annotation_mastered(document_id: str, annotation_id: str, payload: dict):
+        return api.mark_knowledge_annotation_mastered(document_id, annotation_id, payload)
+
+    @app.delete("/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}")
+    def delete_knowledge_annotation(document_id: str, annotation_id: str):
+        return api.delete_knowledge_annotation(document_id, annotation_id)
 
     @app.get("/api/study/knowledge/documents/{document_id}/evidence")
     def get_knowledge_evidence(document_id: str):

@@ -1,30 +1,31 @@
 <template>
-  <main class="portal-shell">
+  <main class="portal-shell universe-screen">
+    <UniverseBackdrop tone="portal" />
     <section class="portal-hero" aria-labelledby="portal-title">
       <div class="portal-copy">
-        <p class="eyebrow">Universe OS</p>
-        <h1 id="portal-title">Enter your personal intelligent world</h1>
-        <p>
-          Study Planet holds your learning loop. Work Planet turns knowledge and practice into career evidence.
-        </p>
+        <p class="portal-mark">UNIVERSE OS</p>
+        <h1 id="portal-title">UNIVERSE</h1>
+        <p class="portal-subtitle">YOUR PERSONAL AI OPERATING SYSTEM</p>
       </div>
-      <div class="planet-field">
-        <article
+      <div class="planet-field" aria-label="Universe planets">
+        <component
           v-for="planet in planets"
           :key="planet.name"
+          :is="planet.enterable ? 'button' : 'article'"
+          :disabled="planet.enterable ? false : undefined"
           class="planet-object"
           :class="[planet.name, { active: planet.enterable }]"
+          :aria-label="planet.primaryAction"
+          :type="planet.enterable ? 'button' : undefined"
+          @click="enterPlanet(planet)"
         >
           <div class="planet-orbit" aria-hidden="true"></div>
-          <span class="status-pill">{{ planet.status === 'active' ? 'Active' : 'Coming later' }}</span>
-          <h2>{{ planet.displayName }}</h2>
-          <p>{{ planet.description }}</p>
-          <button type="button" :disabled="!planet.enterable" @click="enterPlanet(planet)">
-            {{ planet.primaryAction }}
-          </button>
-        </article>
+          <span class="planet-code">{{ planet.displayName.replace(' Planet', '') }}</span>
+          <span class="planet-name">{{ planet.displayName }}</span>
+          <span class="planet-description">{{ planet.description }}</span>
+          <span class="planet-status">{{ planet.status === 'active' ? 'Enter workspace' : 'Coming later' }}</span>
+        </component>
       </div>
-      <p class="portal-status">AI Core ready · Global Memory available · Study Agent standing by</p>
     </section>
   </main>
 </template>
@@ -33,6 +34,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { PlanetSummary } from '../../services/api'
+import UniverseBackdrop from '../../ui/UniverseBackdrop.vue'
 
 const router = useRouter()
 const planets = ref<PlanetSummary[]>([

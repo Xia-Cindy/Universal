@@ -334,6 +334,36 @@ class RAGFlowProviderTests(unittest.TestCase):
         )
         self.assertEqual(deleted["status"], "deleted")
 
+    def test_running_ragflow_document_exposes_completed_chunks_without_becoming_processed(self):
+        provider = RAGFlowKnowledgeProvider(client=StubRAGFlowClient(status_run="RUNNING"))
+        repository = KnowledgeRepository()
+        document = repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="long-running.pdf",
+                file_type=DocumentType.PDF,
+                subject="systems",
+                topic="queue",
+                provider="ragflow",
+                provider_dataset_id="dataset-1",
+                provider_document_id="doc-1",
+                processing_status=DocumentStatus.CHUNKING,
+            )
+        )
+
+        detail = KnowledgeService(repository=repository, provider=provider).refresh_document(
+            "local-user", document.id
+        )
+
+        self.assertEqual(detail["document"]["processingStatus"], "chunking")
+        self.assertEqual(detail["document"]["providerStatus"], "running")
+        self.assertEqual(detail["chunks"][0]["content"], "Normalized chunk")
+        chunk_request = next(
+            request for request in provider._client.requests
+            if request[0] == "GET" and request[1].endswith("/chunks")
+        )
+        self.assertEqual(chunk_request[3]["page_size"], 100)
+
     def test_ragflow_embedding_failure_exposes_actionable_error_code(self):
         client = StubRAGFlowClient(
             status_run="FAIL",

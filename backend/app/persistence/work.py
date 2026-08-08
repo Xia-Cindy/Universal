@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import json
-
 from backend.app.models import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
 from backend.app.persistence.codec import (
     article_from_payload,
     dumps,
+    loads,
     learning_record_from_payload,
     project_from_payload,
     resume_from_payload,
@@ -72,7 +71,7 @@ class SQLiteWorkRepository:
         ).fetchone()
         if not row:
             raise KeyError(record_id)
-        payload = json.loads(row["payload"])
+        payload = loads(row["payload"])
         if payload.get("userId") != user_id:
             raise PermissionError("Work record does not belong to user")
         return payload
@@ -84,7 +83,7 @@ class SQLiteWorkRepository:
             query += " AND tech_stack_id = ?"
             params.append(tech_stack_id)
         query += " ORDER BY updated_at DESC"
-        return [json.loads(row["payload"]) for row in self._db.connection.execute(query, params).fetchall()]
+        return [loads(row["payload"]) for row in self._db.connection.execute(query, params).fetchall()]
 
 
 def payload_to_model(record_type: str, payload: dict):

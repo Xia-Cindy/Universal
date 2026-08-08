@@ -58,22 +58,22 @@ const RoomModel = React.memo(({ activeSpace, onOpen }) => {
         }
     });
 
-    const roomModel = useGLTF('./assets/RoomModelExpanded.glb');
-    const chair = useGLTF('./assets/chairtopDraco.glb');
+    const roomModel = useGLTF('/assets/RoomModelExpanded.glb');
+    const chair = useGLTF('/assets/chairtopDraco.glb');
 
-    const dBaked = useTexture('./assets/bakedTextureDaycmp.webp');
+    const dBaked = useTexture('/assets/bakedTextureDaycmp.webp');
     dBaked.flipY = false;
     dBaked.magFilter = THREE.LinearFilter;
     dBaked.minFilter = THREE.NearestFilter;
     dBaked.generateMipmaps = false;
 
-    const nBaked = useTexture('./assets/roomTextureNightcmp.webp');
+    const nBaked = useTexture('/assets/roomTextureNightcmp.webp');
     nBaked.flipY = false;
     nBaked.magFilter = THREE.LinearFilter;
     nBaked.minFilter = THREE.NearestFilter;
     nBaked.generateMipmaps = false;
 
-    const lightMap = useTexture('./assets/roomTextureLightMapcmp.webp');
+    const lightMap = useTexture('/assets/roomTextureLightMapcmp.webp');
     lightMap.flipY = false;
     lightMap.magFilter = THREE.LinearFilter;
     lightMap.minFilter = THREE.NearestFilter;
@@ -150,7 +150,7 @@ const RoomModel = React.memo(({ activeSpace, onOpen }) => {
                     />
                 </mesh>
                 <PhotoFrame toggle={toggle} nodes={roomModel.nodes} />
-                <DispFrame nodes={roomModel.nodes} />
+                <DispFrame nodes={roomModel.nodes} onOpen={onOpen} />
                 <DispItem toggle={toggle} nodes={roomModel.nodes} />
                 <Clock />
                 <Windows toggle={toggle} nodes={roomModel.nodes} />
@@ -163,8 +163,8 @@ const RoomModel = React.memo(({ activeSpace, onOpen }) => {
 
 export default RoomModel;
 
-useGLTF.preload('./assets/RoomModelExpanded.glb');
-useGLTF.preload('./assets/chairtopDraco.glb');
-useTexture.preload('./assets/bakedTextureDaycmp.webp');
-useTexture.preload('./assets/roomTextureNightcmp.webp');
-useTexture.preload('./assets/roomTextureLightMapcmp.webp');
+useGLTF.preload('/assets/RoomModelExpanded.glb');
+useGLTF.preload('/assets/chairtopDraco.glb');
+useTexture.preload('/assets/bakedTextureDaycmp.webp');
+useTexture.preload('/assets/roomTextureNightcmp.webp');
+useTexture.preload('/assets/roomTextureLightMapcmp.webp');

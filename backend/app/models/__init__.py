@@ -1,6 +1,7 @@
 from backend.app.models.memory import MemoryEntry, MemoryScope, MemoryStatus
-from backend.app.models.knowledge import Concept, Document, DocumentChunk, DocumentStatus, DocumentType
+from backend.app.models.knowledge import Concept, Document, DocumentChunk, DocumentStatus, DocumentType, KnowledgeAnnotation, KnowledgeAnnotationType
 from backend.app.models.planet import Planet, PlanetModule, PlanetStatus
+from backend.app.models.novel import NovelDraft
 from backend.app.models.study import (
     DailyTask,
     GoalStatus,
@@ -31,6 +32,8 @@ __all__ = [
     "DocumentChunk",
     "DocumentStatus",
     "DocumentType",
+    "KnowledgeAnnotation",
+    "KnowledgeAnnotationType",
     "GoalStatus",
     "GoalType",
     "LearningEvent",
@@ -40,6 +43,7 @@ __all__ = [
     "MemoryScope",
     "MemoryStatus",
     "MonthPlan",
+    "NovelDraft",
     "PlanStatus",
     "PlanType",
     "Planet",

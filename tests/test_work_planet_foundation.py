@@ -214,6 +214,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn(("GET", "/api/work/home"), contracts)
         self.assertIn(("GET", "/api/work/knowledge/documents"), contracts)
         self.assertIn(("POST", "/api/work/knowledge/documents"), contracts)
+        self.assertIn(("GET", "/api/work/knowledge/documents/{document_id}/status"), contracts)
         self.assertIn(("POST", "/api/work/tech-stacks"), contracts)
         self.assertIn(("PATCH", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
         self.assertIn(("DELETE", "/api/work/tech-stacks/{tech_stack_id}"), contracts)
