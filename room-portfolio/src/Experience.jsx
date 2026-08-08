@@ -1,0 +1,372 @@
+/* eslint-disable react/display-name */
+import { Loader, Stars } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import {
+    Bloom,
+    EffectComposer,
+    Outline,
+    Selection
+} from '@react-three/postprocessing';
+// import { Perf } from 'r3f-perf';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+
+import { roomApi } from './api';
+import AppShell from './AppShell';
+import { CameraManager } from './CameraManager/CameraManager';
+import DeployedBooks from './DeployedBooks';
+import { useCameraStore } from './helper/CameraStore';
+import ModuleWorld from './ModuleWorld';
+import RoomModel from './RoomModel/roomModel';
+import { SPACE_GROUPS } from './spaces';
+
+const moduleRoute = (moduleId) => Object.values(SPACE_GROUPS)
+    .flatMap((group) => group.modules)
+    .find((module) => module.id === moduleId)?.path || '';
+
+const moduleFromRoute = (pathname) => Object.entries(SPACE_GROUPS)
+    .flatMap(([space, group]) => group.modules.map((module) => ({ space, module })))
+    .find(({ module }) => module.path === pathname) || null;
+
+const asWordbookBooks = (entries) => {
+    const groups = new Map();
+    (entries || []).forEach((entry) => {
+        const tags = entry.tags?.length ? entry.tags : ['未分类'];
+        tags.forEach((tag) => {
+            const key = String(tag || '未分类').trim() || '未分类';
+            groups.set(key, [...(groups.get(key) || []), entry]);
+        });
+    });
+    return [...groups.entries()]
+        .sort(([left], [right]) => left.localeCompare(right, 'zh-CN'))
+        .map(([tag, taggedEntries]) => {
+            const languages = [...new Set(taggedEntries.map((entry) => entry.language).filter(Boolean))];
+            return {
+                id: `wordbook-tag:${tag}`,
+                title: tag,
+                subtitle: languages.length === 1 ? `${languages[0]} WORDS` : 'VOCABULARY TAG',
+                status: `${taggedEntries.length} 个单词`,
+                subject: languages.length === 1 ? languages[0] : languages.length ? '多语言' : '',
+                description: `标签词汇书 · ${taggedEntries.length} 个单词\n${languages.join(' · ') || '未设置语言'}`,
+                entries: taggedEntries
+            };
+        });
+};
+
+const wordbookPages = (book) => ({
+    pages: (book.entries || []).map((entry, index) => ({
+        entryId: entry.id,
+        eyebrow: `${entry.language || 'VOCABULARY'} · ${index + 1} / ${book.entries.length}`,
+        title: entry.word || '未命名词条',
+        subtitle: entry.pronunciation ? `/${entry.pronunciation.replace(/^\/+|\/+$/g, '')}/` : book.title,
+        content: [
+            entry.meaning || '尚未填写个人释义。',
+            entry.phrases?.length ? `短语：${entry.phrases.join(' · ')}` : '',
+            entry.examples?.length ? `例句：${entry.examples.join('\n')}` : '',
+            entry.notes ? `笔记：${entry.notes}` : ''
+        ].filter(Boolean).join('\n\n')
+    }))
+});
+
+const Experience = React.memo(() => {
+    const [activeSpace, setActiveSpace] = useState(null);
+    const [activeModule, setActiveModule] = useState(null);
+    const [knowledgeBooks, setKnowledgeBooks] = useState([]);
+    const [knowledgeRevision, setKnowledgeRevision] = useState(0);
+    const [knowledgeLoadError, setKnowledgeLoadError] = useState('');
+    const [wordbookEntries, setWordbookEntries] = useState([]);
+    const [wordbookRevision, setWordbookRevision] = useState(0);
+    const [wordbookLoadError, setWordbookLoadError] = useState('');
+    const [studyGoals, setStudyGoals] = useState([]);
+    const portalTimer = useRef(null);
+    const focusSpace = useCameraStore((state) => state.focusSpace);
+    const focusModule = useCameraStore((state) => state.focusModule);
+    const resetCamera = useCameraStore((state) => state.default);
+
+    useEffect(
+        () => () => {
+            if (portalTimer.current) window.clearTimeout(portalTimer.current);
+        },
+        []
+    );
+
+    const selectModule = (moduleId, { replace = false } = {}) => {
+        const route = moduleRoute(moduleId);
+        setActiveModule(moduleId);
+        focusModule(moduleId);
+        if (route && window.location.pathname !== route) {
+            window.history[replace ? 'replaceState' : 'pushState']({ moduleId }, '', route);
+        }
+    };
+
+    const openSpace = (space) => {
+        const moduleId = SPACE_GROUPS[space]?.modules[0]?.id;
+        if (!moduleId) return;
+        if (portalTimer.current) window.clearTimeout(portalTimer.current);
+        setActiveSpace(space);
+        setActiveModule(null);
+        focusSpace(space);
+        portalTimer.current = window.setTimeout(() => {
+            selectModule(moduleId);
+            portalTimer.current = null;
+        }, 620);
+    };
+
+    const closeSpace = () => {
+        if (portalTimer.current) window.clearTimeout(portalTimer.current);
+        portalTimer.current = null;
+        setActiveSpace(null);
+        setActiveModule(null);
+        resetCamera();
+        if (window.location.pathname !== '/') window.history.pushState({}, '', '/');
+    };
+
+    useEffect(() => {
+        const openFromRoute = () => {
+            const resolved = moduleFromRoute(window.location.pathname);
+            if (!resolved) {
+                setActiveSpace(null);
+                setActiveModule(null);
+                resetCamera();
+                return;
+            }
+            setActiveSpace(resolved.space);
+            setActiveModule(resolved.module.id);
+            focusSpace(resolved.space);
+            focusModule(resolved.module.id);
+        };
+        openFromRoute();
+        window.addEventListener('popstate', openFromRoute);
+        return () => window.removeEventListener('popstate', openFromRoute);
+    }, [focusModule, focusSpace, resetCamera]);
+
+    const isWordbookBooks = activeModule === 'study-wordbook';
+    const isReferenceBooks = activeModule === 'study-knowledge' || activeModule === 'work-knowledge' || isWordbookBooks;
+    const isWorkKnowledge = activeModule === 'work-knowledge';
+
+    useEffect(() => {
+        if (!isReferenceBooks) return undefined;
+        let current = true;
+        const load = isWordbookBooks
+            ? roomApi.wordbook
+            : isWorkKnowledge ? roomApi.workKnowledgeDocuments : roomApi.knowledgeDocuments;
+        const cacheKey = isWordbookBooks
+            ? 'universe-room:study-wordbook-books'
+            : isWorkKnowledge ? 'universe-room:work-knowledge-books' : 'universe-room:study-knowledge-books';
+        try {
+            const cached = window.localStorage.getItem(cacheKey);
+            if (cached && current) {
+                const cachedData = JSON.parse(cached);
+                if (isWordbookBooks) setWordbookEntries(cachedData);
+                else setKnowledgeBooks(cachedData);
+            }
+        } catch {
+            // A cache miss or a blocked storage context must not hide the API result.
+        }
+        if (isWordbookBooks) setWordbookLoadError('');
+        else setKnowledgeLoadError('');
+        load()
+            .then((items) => {
+                if (current) {
+                    if (isWordbookBooks) setWordbookEntries(items || []);
+                    else setKnowledgeBooks(items || []);
+                    try {
+                        window.localStorage.setItem(cacheKey, JSON.stringify(items || []));
+                    } catch {
+                        // API data stays authoritative when storage is unavailable.
+                    }
+                    if (isWordbookBooks) setWordbookLoadError('');
+                    else setKnowledgeLoadError('');
+                }
+            })
+            .catch((error) => {
+                if (current) {
+                    if (isWordbookBooks) setWordbookLoadError(error instanceof Error ? error.message : '无法读取 Wordbook API。');
+                    else setKnowledgeLoadError(error instanceof Error ? error.message : '无法读取 Knowledge API。');
+                }
+            });
+        return () => {
+            current = false;
+        };
+    }, [isReferenceBooks, isWorkKnowledge, isWordbookBooks, knowledgeRevision, wordbookRevision]);
+
+    useEffect(() => {
+        if (!isReferenceBooks || isWorkKnowledge) return undefined;
+        let current = true;
+        roomApi.studyWorkspace()
+            .then((workspace) => {
+                if (current) setStudyGoals(workspace.goals || []);
+            })
+            .catch(() => {
+                if (current) setStudyGoals([]);
+            });
+        return () => {
+            current = false;
+        };
+    }, [isReferenceBooks, isWorkKnowledge]);
+
+    const createKnowledge = async ({ file, goalId, subject, topic }) => {
+        const extension = file.name.split('.').pop()?.toLowerCase();
+        const fileType = extension === 'pdf' ? 'pdf' : ['md', 'markdown'].includes(extension) ? 'markdown' : extension === 'txt' ? 'txt' : null;
+        if (!fileType) throw new Error('仅支持 TXT、Markdown 与 PDF。');
+        const content = fileType === 'pdf'
+            ? await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '');
+                reader.onerror = () => reject(reader.error || new Error('文件读取失败。'));
+                reader.readAsDataURL(file);
+            })
+            : await file.text();
+        const create = isWorkKnowledge ? roomApi.createWorkKnowledgeDocument : roomApi.createKnowledgeDocument;
+        const process = isWorkKnowledge ? roomApi.processWorkKnowledgeDocument : roomApi.processKnowledgeDocument;
+        const document = await create({
+            fileName: file.name,
+            fileType,
+            subject,
+            topic,
+            goalId: isWorkKnowledge ? null : goalId,
+            content,
+            contentEncoding: fileType === 'pdf' ? 'base64' : 'text',
+            storagePath: file.name,
+            planetType: isWorkKnowledge ? 'work' : 'study'
+        });
+        if (document.provider !== 'local' || document.fileType !== 'pdf') await process(document.id);
+        setKnowledgeRevision((revision) => revision + 1);
+    };
+
+    const deleteKnowledge = async (book) => {
+        if (isWorkKnowledge) throw new Error('Work Knowledge 暂不支持从书架删除。');
+        await roomApi.deleteKnowledgeDocument(book.id);
+        setKnowledgeRevision((revision) => revision + 1);
+    };
+
+    const openKnowledgeBook = async (book) => {
+        const getDetail = isWorkKnowledge ? roomApi.workKnowledgeDocument : roomApi.knowledgeDocument;
+        const refresh = isWorkKnowledge ? roomApi.refreshWorkKnowledgeDocument : roomApi.refreshKnowledgeDocument;
+        const detail = await getDetail(book.id);
+        if (detail.document?.provider === 'ragflow' && ['parsing', 'chunking'].includes(detail.document.processingStatus)) {
+            const refreshed = await refresh(book.id);
+            setKnowledgeRevision((revision) => revision + 1);
+            return refreshed;
+        }
+        return detail;
+    };
+
+    const createWordbookEntry = async (payload) => {
+        await roomApi.createWordbookEntry(payload);
+        setWordbookRevision((revision) => revision + 1);
+    };
+
+    const editKnowledge = async (book, payload) => {
+        if (isWorkKnowledge) throw new Error('Work Knowledge 暂不支持从书架编辑。');
+        await roomApi.updateKnowledgeDocument(book.id, payload);
+        setKnowledgeRevision((revision) => revision + 1);
+    };
+
+    const editWordbookEntry = async (entry, payload) => {
+        await roomApi.updateWordbookEntry(entry.id, payload);
+        setWordbookRevision((revision) => revision + 1);
+    };
+
+    const deleteWordbookEntry = async (entry) => {
+        await roomApi.deleteWordbookEntry(entry.id);
+        setWordbookRevision((revision) => revision + 1);
+    };
+
+    const speakWord = (word) => {
+        if (!word || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        const voices = window.speechSynthesis.getVoices();
+        const naturalVoice = voices.find((voice) => /^en(-|_)/i.test(voice.lang) && /samantha|ava|allison|karen|moira|daniel|rishi|zira|jenny|aria|google us english/i.test(voice.name))
+            || voices.find((voice) => /^en(-|_)/i.test(voice.lang));
+        utterance.lang = naturalVoice?.lang || 'en-US';
+        if (naturalVoice) utterance.voice = naturalVoice;
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+    };
+
+    const wordbookBooks = useMemo(() => asWordbookBooks(wordbookEntries), [wordbookEntries]);
+
+    return (
+        <>
+            <Canvas
+                dpr={[1, 1.5]}
+                shadows="soft"
+                camera={{
+                    fov: 38,
+                    near: 0.1,
+                    far: 200,
+                    position: [28, 18, -28]
+                }}
+                gl={{
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: 'high-performance'
+                }}
+            >
+                <Suspense fallback={null}>
+                    <Selection>
+                        <EffectComposer autoClear={false}>
+                            <Outline
+                                blur
+                                visibleEdgeColor="white"
+                                edgeStrength={60}
+                                width={2000}
+                            />
+                            <Bloom mipmapBlur intensity={0.9} />
+                        </EffectComposer>
+                        {/* <Perf position={'top-left'} /> */}
+                        <CameraManager />
+                        {!activeModule && (
+                            <RoomModel activeSpace={activeSpace} onOpen={openSpace} />
+                        )}
+                        <ModuleWorld
+                            activeModule={activeModule}
+                            activeSpace={activeSpace}
+                            onOpenSpace={openSpace}
+                        />
+                        <Stars count={900} depth={40} factor={2.2} fade radius={80} speed={0.22} />
+                    </Selection>
+                </Suspense>
+            </Canvas>
+            <Loader />
+            <AppShell
+                activeModule={activeModule}
+                activeSpace={activeSpace}
+                onClose={closeSpace}
+                onOpen={openSpace}
+                onSelectModule={selectModule}
+            />
+            {isReferenceBooks && (
+                <DeployedBooks
+                    books={isWordbookBooks ? wordbookBooks : knowledgeBooks.map((document) => ({
+                        ...document,
+                        title: document.fileName,
+                        subtitle: document.fileType?.toUpperCase() || 'KNOWLEDGE',
+                        status: document.processingStatus || 'ready',
+                        description: `${isWorkKnowledge ? 'Work Knowledge' : 'Study Knowledge'} · ${document.subject || '未分类'} · ${document.topic || '未分类主题'}${document.scopeName ? ` · 目标：${document.scopeName}` : ''}\n${document.errorMessage || document.processingStatus || '资料已加入书架'}`
+                    }))}
+                    loadError={isWordbookBooks ? wordbookLoadError : knowledgeLoadError}
+                    mode={isWordbookBooks ? 'wordbook' : 'knowledge'}
+                    onCreate={isWordbookBooks ? createWordbookEntry : createKnowledge}
+                    onDelete={isWordbookBooks || isWorkKnowledge ? undefined : deleteKnowledge}
+                    onDeleteWord={isWordbookBooks ? deleteWordbookEntry : undefined}
+                    onEditKnowledge={isWordbookBooks || isWorkKnowledge ? undefined : editKnowledge}
+                    onEditWord={isWordbookBooks ? editWordbookEntry : undefined}
+                    onSpeakWord={isWordbookBooks ? speakWord : undefined}
+                    onOpen={isWordbookBooks ? wordbookPages : openKnowledgeBook}
+                    onOpenKnowledge={() => selectModule('study-knowledge')}
+                    onOpenWordbook={() => selectModule('study-wordbook')}
+                    onReturn={closeSpace}
+                    onRetry={() => isWordbookBooks
+                        ? setWordbookRevision((revision) => revision + 1)
+                        : setKnowledgeRevision((revision) => revision + 1)}
+                    goals={isWorkKnowledge ? [] : studyGoals}
+                />
+            )}
+        </>
+    );
+});
+
+export default Experience;

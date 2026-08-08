@@ -1,6 +1,13 @@
 from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
 from backend.app.core.settings import settings
-from backend.app.knowledge import KnowledgeRepository, KnowledgeService
+from backend.app.knowledge import (
+    EnglishDictionaryService,
+    FallbackEnglishDictionaryProvider,
+    FreeDictionaryProvider,
+    KnowledgeRepository,
+    KnowledgeService,
+    StaticEnglishDictionaryProvider,
+)
 from backend.app.knowledge.repository import SQLiteKnowledgeRepository
 from backend.app.knowledge.providers import RAGFlowClient, RAGFlowKnowledgeProvider
 from backend.app.memory import MemoryService
@@ -22,9 +29,11 @@ from backend.app.planets.study.review import ReviewService
 from backend.app.planets.study.wordbook import WordbookService
 from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
 from backend.app.planets.work.repository import SQLiteWorkRepository
+from backend.app.planets.novel import NovelDraftService, NovelRepository, SQLiteNovelRepository
 from backend.app.persistence import (
     PostgresKnowledgeRepository,
     PostgresMemoryRepository,
+    PostgresNovelRepository,
     PostgresPersistence,
     PostgresStudyRepository,
     PostgresWorkRepository,
@@ -45,6 +54,7 @@ class ApiFacade:
         database_path: str | None = None,
         persistence_backend: str | None = None,
         database_url: str | None = None,
+        english_dictionary_provider=None,
     ) -> None:
         self.registry = create_default_registry()
         self.universe = UniverseService(self.registry)
@@ -57,18 +67,21 @@ class ApiFacade:
             study_repository = PostgresStudyRepository(self.persistence)
             knowledge_repository = PostgresKnowledgeRepository(self.persistence)
             memory_repository = PostgresMemoryRepository(self.persistence)
+            novel_repository = PostgresNovelRepository(self.persistence)
             work_repository = PostgresWorkRepository(self.persistence)
         elif backend == "sqlite":
             self.persistence = SQLitePersistence(database_path) if database_path else None
             study_repository = SQLiteStudyRepository(self.persistence) if self.persistence else StudyRepository()
             knowledge_repository = SQLiteKnowledgeRepository(self.persistence) if self.persistence else KnowledgeRepository()
             memory_repository = SQLiteMemoryRepository(self.persistence) if self.persistence else None
+            novel_repository = SQLiteNovelRepository(self.persistence) if self.persistence else NovelRepository()
             work_repository = SQLiteWorkRepository(self.persistence) if self.persistence else WorkRepository()
         elif backend == "memory":
             self.persistence = None
             study_repository = StudyRepository()
             knowledge_repository = KnowledgeRepository()
             memory_repository = None
+            novel_repository = NovelRepository()
             work_repository = WorkRepository()
         else:
             raise ValueError("PERSISTENCE_BACKEND must be postgres, sqlite, or memory")
@@ -96,6 +109,10 @@ class ApiFacade:
             repository=self.knowledge_repository,
             provider=self.knowledge_provider,
             storage=self.object_storage,
+        )
+        self.english_dictionary = EnglishDictionaryService(
+            repository=self.knowledge_repository,
+            provider=english_dictionary_provider or self._create_english_dictionary_provider(backend),
         )
         self.retrieval = RetrievalService(
             knowledge_repository=self.knowledge_repository,
@@ -157,7 +174,10 @@ class ApiFacade:
             memory=self.memory,
         )
         self.study_review = ReviewService(self.study_repository)
-        self.study_wordbook = WordbookService(self.study_repository)
+        self.study_wordbook = WordbookService(
+            self.study_repository,
+            dictionary=self.english_dictionary,
+        )
         self.study_tutor = TutorService(
             repository=self.study_repository,
             ai_core=self.ai_core,
@@ -172,6 +192,7 @@ class ApiFacade:
         self.work_repository = work_repository
         self.work = WorkService(self.work_repository)
         self.work_community = CSDNCommunityService()
+        self.novel_drafts = NovelDraftService(novel_repository)
 
     def _create_knowledge_provider(self):
         if settings.knowledge_provider != "ragflow":
@@ -211,6 +232,17 @@ class ApiFacade:
             email=payload["email"],
             password=payload["password"],
             display_name=payload.get("displayName", ""),
+        )
+
+    def _create_english_dictionary_provider(self, backend: str):
+        static = StaticEnglishDictionaryProvider()
+        # Unit tests use the offline reference. Runtime services retain a
+        # replaceable remote provider for vocabulary outside the bundled set.
+        if backend == "memory":
+            return static
+        return FallbackEnglishDictionaryProvider(
+            static=static,
+            remote=FreeDictionaryProvider(),
         )
 
     def verify_registration(self, payload: dict) -> dict[str, object]:
@@ -304,6 +336,15 @@ class ApiFacade:
     def create_work_resume_draft(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         return self.work.create_resume_draft(user.id, payload)
+
+    def list_novel_drafts(self) -> list[dict[str, object]]:
+        return self.novel_drafts.list_drafts(self.users.current_user().id)
+
+    def create_novel_draft(self, payload: dict) -> dict[str, object]:
+        return self.novel_drafts.create_draft(self.users.current_user().id, payload)
+
+    def update_novel_draft(self, draft_id: str, payload: dict) -> dict[str, object]:
+        return self.novel_drafts.update_draft(self.users.current_user().id, draft_id, payload)
 
     def get_study_home(self) -> dict[str, object]:
         user = self.users.current_user()
@@ -470,10 +511,18 @@ class ApiFacade:
         payload = self._with_wordbook_goal(payload, user.id, default_current_goal=False)
         return self.study_wordbook.update_entry(user.id, entry_id, payload)
 
+    def delete_wordbook_entry(self, entry_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_wordbook.delete_entry(user.id, entry_id)
+
     def import_wordbook_entries(self, payload: dict[str, object]) -> dict[str, object]:
         user = self.users.current_user()
         payload = self._with_wordbook_goal(payload, user.id)
         return self.study_wordbook.import_entries(user.id, payload)
+
+    def refresh_wordbook_dictionary(self, entry_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_wordbook.refresh_dictionary_entry(user.id, entry_id)
 
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
@@ -527,6 +576,26 @@ class ApiFacade:
             topic=topic,
             goal_id=goal_id,
             planet_type=planet_type,
+            tech_stack_id=tech_stack_id,
+        )
+
+    def list_study_knowledge_documents(
+        self,
+        *,
+        subject: str | None = None,
+        topic: str | None = None,
+        goal_id: str | None = None,
+        planet_type: str | None = None,
+        tech_stack_id: str | None = None,
+    ) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        self.english_dictionary.ensure_reference(user.id)
+        return self.knowledge.list_documents(
+            user.id,
+            subject=subject,
+            topic=topic,
+            goal_id=goal_id,
+            planet_type=planet_type or "study",
             tech_stack_id=tech_stack_id,
         )
 

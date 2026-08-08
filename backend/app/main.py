@@ -136,6 +136,18 @@ def create_app():
     def create_work_resume_draft(payload: dict):
         return api.create_work_resume_draft(payload)
 
+    @app.get("/api/novel/drafts")
+    def list_novel_drafts():
+        return api.list_novel_drafts()
+
+    @app.post("/api/novel/drafts")
+    def create_novel_draft(payload: dict):
+        return api.create_novel_draft(payload)
+
+    @app.patch("/api/novel/drafts/{draft_id}")
+    def update_novel_draft(draft_id: str, payload: dict):
+        return api.update_novel_draft(draft_id, payload)
+
     @app.post("/api/work/knowledge/documents")
     def create_work_knowledge_document(payload: dict):
         return api.create_knowledge_document(payload)
@@ -167,6 +179,10 @@ def create_app():
     @app.post("/api/work/knowledge/documents/{document_id}/process")
     def process_work_knowledge_document(document_id: str):
         return api.process_knowledge_document(document_id)
+
+    @app.get("/api/work/knowledge/documents/{document_id}/status")
+    def refresh_work_knowledge_document(document_id: str):
+        return api.refresh_knowledge_document(document_id)
 
     @app.get("/api/study/workspace")
     def get_study_workspace():
@@ -276,9 +292,17 @@ def create_app():
     def update_wordbook_entry(entry_id: str, payload: dict):
         return api.update_wordbook_entry(entry_id, payload)
 
+    @app.delete("/api/study/wordbook/entries/{entry_id}")
+    def delete_wordbook_entry(entry_id: str):
+        return api.delete_wordbook_entry(entry_id)
+
     @app.post("/api/study/wordbook/import")
     def import_wordbook_entries(payload: dict):
         return api.import_wordbook_entries(payload)
+
+    @app.post("/api/study/wordbook/entries/{entry_id}/dictionary/refresh")
+    def refresh_wordbook_dictionary(entry_id: str):
+        return api.refresh_wordbook_dictionary(entry_id)
 
     @app.post("/api/study/tutor/events")
     def save_tutor_answer_event(payload: dict):
@@ -300,7 +324,7 @@ def create_app():
         planetType: str | None = None,
         techStackId: str | None = None,
     ):
-        return api.list_knowledge_documents(
+        return api.list_study_knowledge_documents(
             subject=subject,
             topic=topic,
             goal_id=goalId,

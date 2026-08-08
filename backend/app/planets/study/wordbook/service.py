@@ -6,10 +6,11 @@ from backend.app.models import WordEntry, WordEntrySource
 
 
 class WordbookService:
-    """Study-domain vocabulary workflow; it does not own a second Knowledge system."""
+    """Study-owned vocabulary records enriched by the shared Knowledge dictionary."""
 
-    def __init__(self, repository) -> None:
+    def __init__(self, repository, *, dictionary=None) -> None:
         self._repository = repository
+        self._dictionary = dictionary
 
     def list_entries(
         self,
@@ -32,7 +33,7 @@ class WordbookService:
         existing = self._repository.find_word_entry(user_id, entry.normalized_word, entry.goal_id, entry.language)
         if existing:
             raise ValueError(f"'{entry.word}' is already in this Wordbook scope")
-        return self._repository.save_word_entry(entry).to_dict()
+        return self._save_with_dictionary(entry).to_dict()
 
     def update_entry(self, user_id: str, entry_id: str, payload: dict[str, object]) -> dict[str, object]:
         entry = self._repository.get_word_entry(entry_id, user_id)
@@ -58,6 +59,15 @@ class WordbookService:
         entry.updated_at = local_now()
         return self._repository.save_word_entry(entry).to_dict()
 
+    def delete_entry(self, user_id: str, entry_id: str) -> dict[str, object]:
+        entry = self._repository.get_word_entry(entry_id, user_id)
+        self._repository.delete_word_entry(entry_id, user_id)
+        return {"id": entry.id, "deleted": True}
+
+    def refresh_dictionary_entry(self, user_id: str, entry_id: str) -> dict[str, object]:
+        entry = self._repository.get_word_entry(entry_id, user_id)
+        return self._save_with_dictionary(entry).to_dict()
+
     def import_entries(self, user_id: str, payload: dict[str, object]) -> dict[str, object]:
         content = _clean_text(payload.get("content"))
         if not content:
@@ -81,8 +91,37 @@ class WordbookService:
                 {**row, "goalId": goal_id, "language": payload.get("language")},
                 source=WordEntrySource.IMPORT,
             )
-            imported.append(self._repository.save_word_entry(entry).to_dict())
+            imported.append(self._save_with_dictionary(entry).to_dict())
         return {"imported": imported, "importedCount": len(imported), "skipped": skipped, "skippedCount": len(skipped)}
+
+    def _save_with_dictionary(self, entry: WordEntry) -> WordEntry:
+        """Attach reference data without replacing learner-authored content."""
+        if self._dictionary:
+            try:
+                dictionary = self._dictionary.sync(
+                    entry.user_id,
+                    word=entry.word,
+                    language=entry.language,
+                )
+            except (RuntimeError, ValueError, OSError) as exc:
+                dictionary = {
+                    "status": "unavailable",
+                    "word": entry.word,
+                    "pronunciations": [],
+                    "usages": [],
+                    "sourceName": "English-English Dictionary",
+                    "sourceUrl": None,
+                    "documentId": None,
+                    "errorMessage": f"Dictionary sync is unavailable: {exc}",
+                    "queriedAt": local_now().isoformat(),
+                }
+            entry.dictionary = dictionary
+            if not entry.pronunciation:
+                pronunciations = dictionary.get("pronunciations", [])
+                if isinstance(pronunciations, list) and pronunciations:
+                    entry.pronunciation = _clean_text(pronunciations[0])
+        entry.updated_at = local_now()
+        return self._repository.save_word_entry(entry)
 
     def _entry_from_payload(self, user_id: str, payload: dict[str, object], *, source: WordEntrySource) -> WordEntry:
         word = _clean_text(payload.get("word"))

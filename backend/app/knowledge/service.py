@@ -63,6 +63,11 @@ class KnowledgeService:
 
     def update_document(self, user_id: str, document_id: str, payload: dict) -> Document:
         document = self._repository.get_document(document_id, user_id)
+        if "fileName" in payload:
+            file_name = str(payload["fileName"]).strip()
+            if not file_name:
+                raise ValueError("fileName is required")
+            document.file_name = file_name
         if "subject" in payload:
             document.subject = payload["subject"]
         if "topic" in payload:

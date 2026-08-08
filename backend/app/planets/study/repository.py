@@ -252,6 +252,10 @@ class StudyRepository:
             raise PermissionError("Word entry does not belong to user")
         return entry
 
+    def delete_word_entry(self, entry_id: str, user_id: str) -> None:
+        self.get_word_entry(entry_id, user_id)
+        del self.word_entries[entry_id]
+
     def list_word_entries(
         self,
         user_id: str,

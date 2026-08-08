@@ -129,6 +129,17 @@ export interface WordEntry {
   phrases: string[]
   examples: string[]
   notes: string
+  dictionary?: {
+    status: 'available' | 'not_found' | 'unavailable' | 'not_applicable'
+    word: string
+    pronunciations: string[]
+    usages: Array<{ partOfSpeech: string; definition: string; example?: string }>
+    sourceName: string
+    sourceUrl?: string | null
+    documentId?: string | null
+    errorMessage?: string | null
+    queriedAt?: string
+  }
   source: 'manual' | 'import'
   createdAt: string
   updatedAt: string
@@ -866,6 +877,20 @@ export async function updateWordbookEntry(entryId: string, payload: Partial<Word
   return response.json()
 }
 
+export async function deleteWordbookEntry(entryId: string): Promise<{ id: string; deleted: boolean }> {
+  const response = await apiFetch(`${API_BASE}/study/wordbook/entries/${entryId}`, { method: 'DELETE' })
+  if (!response.ok) throw new Error(await errorMessage(response, 'Unable to delete this word'))
+  return response.json()
+}
+
+export async function refreshWordbookDictionary(entryId: string): Promise<WordEntry> {
+  const response = await apiFetch(`${API_BASE}/study/wordbook/entries/${entryId}/dictionary/refresh`, {
+    method: 'POST',
+  })
+  if (!response.ok) throw new Error(await errorMessage(response, 'Unable to sync dictionary reference'))
+  return response.json()
+}
+
 export async function importWordbookEntries(payload: {
   fileName: string
   content: string
@@ -989,9 +1014,17 @@ export async function processWorkKnowledgeDocument(documentId: string): Promise<
   return response.json()
 }
 
+export async function refreshWorkKnowledgeDocument(documentId: string): Promise<KnowledgeDocumentDetail> {
+  const response = await apiFetch(`${API_BASE}/work/knowledge/documents/${documentId}/status`)
+  if (!response.ok) {
+    throw new Error('Unable to refresh Work Knowledge document status')
+  }
+  return response.json()
+}
+
 export async function updateKnowledgeDocument(
   documentId: string,
-  payload: Partial<Pick<KnowledgeDocumentPayload, 'subject' | 'topic' | 'goalId'>>,
+  payload: Partial<Pick<KnowledgeDocumentPayload, 'fileName' | 'subject' | 'topic' | 'goalId'>>,
 ) {
   const response = await apiFetch(`${API_BASE}/study/knowledge/documents/${documentId}`, {
     method: 'PATCH',

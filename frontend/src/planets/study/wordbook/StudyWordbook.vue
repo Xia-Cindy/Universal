@@ -25,13 +25,17 @@
       </button>
     </div>
 
-    <div class="wordbook-tag-rail" aria-label="Wordbook tags">
-      <span>Tags</span>
-      <button type="button" :class="{ selected: tagFilter === 'all' }" @click="selectTag('all')">All tags</button>
-      <button v-for="tag in availableTags" :key="tag" type="button" :class="{ selected: tagFilter === tag }" @click="selectTag(tag)">
-        {{ tag }}
-      </button>
+    <div class="wordbook-shelf-intro">
+      <p class="eyebrow">Tag bookshelf</p>
+      <p>Every tag is a vocabulary book. Select one to open the words collected under that theme.</p>
     </div>
+
+    <StudyBookshelf
+      :books="tagBooks"
+      :selected-id="tagFilter"
+      label="Wordbook tag bookshelf"
+      @select="selectTag"
+    />
 
     <div class="wordbook-list-heading">
       <div>
@@ -77,7 +81,15 @@
       </div>
 
       <form v-if="selectedEntry" class="wordbook-detail" @submit.prevent="saveDetail">
-        <div class="wordbook-detail-heading"><div><p class="eyebrow">Word detail</p><h3>{{ selectedEntry.word }}</h3></div><span class="status-pill">{{ selectedEntry.source === 'import' ? 'Imported' : 'Manual' }}</span></div>
+        <div class="wordbook-detail-heading"><div><p class="eyebrow">Word detail</p><h3>{{ selectedEntry.word }}</h3><button class="word-pronunciation-action" type="button" :aria-label="`Read ${selectedEntry.word}`" title="Click to hear this word" @click="speakWord(selectedEntry.word)"><span aria-hidden="true">{{ isSpeaking ? '◌' : '◉' }}</span>{{ selectedEntry.pronunciation || 'Click to hear' }}</button></div><span class="status-pill">{{ selectedEntry.source === 'import' ? 'Imported' : 'Manual' }}</span></div>
+        <section class="wordbook-dictionary-reference">
+          <div class="wordbook-dictionary-heading"><strong>English-English Dictionary</strong><button type="button" :disabled="isSyncing" @click="syncDictionary">{{ isSyncing ? 'Syncing...' : 'Sync dictionary' }}</button></div>
+          <p v-if="selectedEntry.dictionary?.status === 'available'">{{ selectedEntry.dictionary.sourceName }} · {{ selectedEntry.dictionary.pronunciations.join(' · ') || 'No pronunciation supplied' }}</p>
+          <p v-else>{{ dictionaryState(selectedEntry) }}</p>
+          <ul v-if="selectedEntry.dictionary?.usages?.length">
+            <li v-for="usage in selectedEntry.dictionary.usages" :key="`${usage.partOfSpeech}-${usage.definition}`"><strong>{{ usage.partOfSpeech }}</strong> {{ usage.definition }}<span v-if="usage.example">{{ usage.example }}</span></li>
+          </ul>
+        </section>
         <div class="wordbook-detail-basics">
           <label>Word<input v-model="detailDraft.word" required /></label>
           <label>Language<select v-model="detailDraft.language"><option v-for="language in languages" :key="language" :value="language">{{ language }}</option></select></label>
@@ -88,7 +100,7 @@
         <label>Phrases<textarea v-model="detailDraft.phrases" rows="3" placeholder="One phrase per line&#10;a resilient system" /></label>
         <label>Example sentences<textarea v-model="detailDraft.examples" rows="4" placeholder="One sentence per line&#10;The system remained resilient under load." /></label>
         <label>Personal notes<textarea v-model="detailDraft.notes" rows="4" placeholder="Where you met it, contrast words, memory hooks..." /></label>
-        <div class="wordbook-detail-actions"><button type="submit" :disabled="isSaving">Save detail</button><span>{{ selectedGoalLabel(selectedEntry.goalId) }}</span></div>
+        <div class="wordbook-detail-actions"><button type="submit" :disabled="isSaving">Save detail</button><button type="button" class="secondary-action" :disabled="isSaving" @click="deleteSelectedEntry">Delete word</button><span>{{ selectedGoalLabel(selectedEntry.goalId) }}</span></div>
       </form>
     </div>
   </section>
@@ -96,7 +108,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { createWordbookEntry, fetchStudyWorkspace, fetchWordbookEntries, importWordbookEntries, updateWordbookEntry, type StudyGoal, type WordEntry } from '../../../services/api'
+import { createWordbookEntry, deleteWordbookEntry, fetchStudyWorkspace, fetchWordbookEntries, importWordbookEntries, refreshWordbookDictionary, updateWordbookEntry, type StudyGoal, type WordEntry } from '../../../services/api'
+import StudyBookshelf, { type StudyShelfBook } from '../components/StudyBookshelf.vue'
 
 const defaultLanguages = ['English', 'Chinese', 'Japanese', 'Korean', 'French', 'German', 'Spanish', 'Other']
 const goals = ref<StudyGoal[]>([])
@@ -111,6 +124,8 @@ const activeTool = ref<'add' | 'import' | null>(null)
 const isLoading = ref(false)
 const isSaving = ref(false)
 const isImporting = ref(false)
+const isSyncing = ref(false)
+const isSpeaking = ref(false)
 const statusMessage = ref('')
 const importStatus = ref('Choose a TXT or CSV list.')
 const importFileName = ref('')
@@ -123,6 +138,29 @@ const languages = computed(() => Array.from(new Set([...defaultLanguages, ...sco
 const availableTags = computed(() => Array.from(new Set(scopeEntries.value.flatMap((entry) => entry.tags))).sort())
 const selectedLanguageLabel = computed(() => languageFilter.value === 'all' ? 'All languages' : languageFilter.value)
 const selectedTagLabel = computed(() => tagFilter.value === 'all' ? 'All tags' : tagFilter.value)
+const shelfColors = ['#d3a452', '#d27756', '#6a9dc2', '#9a739b', '#589d87', '#7485bd', '#a9865d']
+const tagBooks = computed<StudyShelfBook[]>(() => {
+  const counts = new Map<string, number>()
+  scopeEntries.value.forEach((entry) => entry.tags.forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1)))
+  return [
+    {
+      id: 'all',
+      title: 'All words',
+      spine: 'INDEX',
+      meta: `${selectedLanguageLabel.value} vocabulary`,
+      status: `${scopeEntries.value.length} words`,
+      color: '#4d9d8f',
+    },
+    ...Array.from(counts.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([tag, count], index) => ({
+      id: tag,
+      title: tag,
+      spine: 'TAG',
+      meta: `${selectedLanguageLabel.value} vocabulary`,
+      status: `${count} ${count === 1 ? 'word' : 'words'}`,
+      color: shelfColors[index % shelfColors.length],
+    })),
+  ]
+})
 
 onMounted(loadContext)
 
@@ -225,6 +263,53 @@ async function saveDetail() {
   } catch (error) { statusMessage.value = wordbookErrorMessage(error, 'Unable to save this word.') } finally { isSaving.value = false }
 }
 
+async function deleteSelectedEntry() {
+  if (!selectedEntry.value || !window.confirm(`Delete “${selectedEntry.value.word}” from Wordbook?`)) return
+  isSaving.value = true
+  try {
+    const word = selectedEntry.value.word
+    await deleteWordbookEntry(selectedEntry.value.id)
+    selectedEntry.value = null
+    statusMessage.value = `${word} was deleted from your Wordbook.`
+    await loadEntries()
+  } catch (error) { statusMessage.value = wordbookErrorMessage(error, 'Unable to delete this word.') } finally { isSaving.value = false }
+}
+
+async function syncDictionary() {
+  if (!selectedEntry.value) return
+  isSyncing.value = true
+  try {
+    const updated = await refreshWordbookDictionary(selectedEntry.value.id)
+    statusMessage.value = updated.dictionary?.status === 'available'
+      ? `${updated.word} dictionary reference is synced.`
+      : dictionaryState(updated)
+    await revealEntry(updated)
+  } catch (error) { statusMessage.value = wordbookErrorMessage(error, 'Unable to sync dictionary reference.') } finally { isSyncing.value = false }
+}
+
+function speakWord(word: string) {
+  if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+    statusMessage.value = 'This browser does not support local pronunciation.'
+    return
+  }
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(word)
+  const voices = window.speechSynthesis.getVoices()
+  const naturalVoice = voices.find((voice) => /^en(-|_)/i.test(voice.lang) && /samantha|ava|allison|karen|moira|daniel|rishi|zira|jenny|aria|google us english/i.test(voice.name))
+    || voices.find((voice) => /^en(-|_)/i.test(voice.lang))
+  utterance.lang = naturalVoice?.lang || 'en-US'
+  if (naturalVoice) utterance.voice = naturalVoice
+  utterance.rate = 0.9
+  utterance.pitch = 1
+  utterance.onstart = () => { isSpeaking.value = true }
+  utterance.onend = () => { isSpeaking.value = false }
+  utterance.onerror = () => {
+    isSpeaking.value = false
+    statusMessage.value = 'Pronunciation could not play. Check your browser voice settings.'
+  }
+  window.speechSynthesis.speak(utterance)
+}
+
 async function revealEntry(entry: WordEntry) {
   languageFilter.value = entry.language
   tagFilter.value = 'all'
@@ -242,6 +327,12 @@ function wordbookErrorMessage(error: unknown, fallback: string) {
 
 function selectedGoalId() { const goalId = goalFilter.value === 'current' ? currentGoalId.value : goalFilter.value; return goalFilter.value === 'all' || goalFilter.value === 'independent' ? null : goalId || null }
 function selectedGoalLabel(goalId?: string | null) { return goals.value.find((goal) => goal.id === goalId)?.goalName || 'Independent Wordbook' }
+function dictionaryState(entry: WordEntry) {
+  if (entry.dictionary?.status === 'not_found') return 'No entry was found in the linked English dictionary yet.'
+  if (entry.dictionary?.status === 'not_applicable') return 'English-English Dictionary applies to English entries only.'
+  if (entry.dictionary?.status === 'unavailable') return entry.dictionary.errorMessage || 'Dictionary source is temporarily unavailable.'
+  return 'Dictionary reference has not been synced yet.'
+}
 function splitComma(value: string) { return value.split(',').map((item) => item.trim()).filter(Boolean) }
 function splitLines(value: string) { return value.split('\n').map((item) => item.trim()).filter(Boolean) }
 </script>
