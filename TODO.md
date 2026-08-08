@@ -2,6 +2,7 @@
 
 ## Study Bookshelf Module
 
+- [x] Retire the old local Vue page from the normal startup/shutdown path and make the 5180 spatial room the sole product entry.
 - [x] Remove the Planning Table's visible room outline and make the existing wall blackboard the direct entrance to a Study Knowledge Board for document-owned notes and recall cards.
 - [x] Add `/study/cards`: a physical blackboard review space that groups existing Knowledge annotations into cards and notes, supports answer reveal and toggling the durable “背过了” state.
 - [x] Apply the Rope Gallery hanging-rope visual language to the knowledge blackboard: paired cords, pin anchors, inset card stock and gentle motion, without replacing the learner-owned card data flow.

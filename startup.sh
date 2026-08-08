@@ -5,13 +5,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_DIR="$ROOT_DIR/.universe-os"
 LOG_DIR="$RUN_DIR/logs"
 BACKEND_PID_FILE="$RUN_DIR/backend.pid"
-FRONTEND_PID_FILE="$RUN_DIR/frontend.pid"
 ROOM_PID_FILE="$RUN_DIR/room.pid"
 
 BACKEND_HOST="${BACKEND_HOST:-127.0.0.1}"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
-FRONTEND_HOST="${FRONTEND_HOST:-127.0.0.1}"
-FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 ROOM_HOST="${ROOM_HOST:-127.0.0.1}"
 ROOM_PORT="${ROOM_PORT:-5180}"
 
@@ -27,12 +24,7 @@ is_http_available() {
   curl --silent --fail --max-time 2 "$url" >/dev/null 2>&1
 }
 
-require_frontend_dependencies() {
-  if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
-    echo "frontend/node_modules is missing. Run this first:"
-    echo "  cd $ROOT_DIR/frontend && npm install"
-    exit 1
-  fi
+require_room_dependencies() {
   if [ ! -d "$ROOT_DIR/room-portfolio/node_modules" ]; then
     echo "room-portfolio/node_modules is missing. Run this first:"
     echo "  cd $ROOT_DIR/room-portfolio && npm install"
@@ -110,41 +102,11 @@ start_backend() {
   fi
 }
 
-start_frontend() {
-  if is_running "$FRONTEND_PID_FILE"; then
-    echo "Frontend already running: pid $(cat "$FRONTEND_PID_FILE")"
-    return
-  fi
-  if is_http_available "http://$FRONTEND_HOST:$FRONTEND_PORT/"; then
-    rm -f "$FRONTEND_PID_FILE"
-    echo "Frontend already running: http://$FRONTEND_HOST:$FRONTEND_PORT"
-    return
-  fi
-
-  (
-    cd "$ROOT_DIR/frontend"
-    exec npm run dev -- --host "$FRONTEND_HOST" --port "$FRONTEND_PORT"
-  ) >"$LOG_DIR/frontend.log" 2>&1 &
-
-  echo "$!" > "$FRONTEND_PID_FILE"
-  sleep 1
-
-  if is_running "$FRONTEND_PID_FILE"; then
-    echo "Frontend started: http://$FRONTEND_HOST:$FRONTEND_PORT"
-    echo "Frontend log: $LOG_DIR/frontend.log"
-  else
-    echo "Frontend failed to start. See: $LOG_DIR/frontend.log"
-    exit 1
-  fi
-}
-
-require_frontend_dependencies
+require_room_dependencies
 start_backend
-start_frontend
 start_room
 
 echo
 echo "Universe OS is running:"
-echo "  Room:     http://$ROOM_HOST:$ROOM_PORT"
-echo "  App:      http://$FRONTEND_HOST:$FRONTEND_PORT"
+echo "  Entry:    http://$ROOM_HOST:$ROOM_PORT"
 echo "  API docs: http://$BACKEND_HOST:$BACKEND_PORT/docs"

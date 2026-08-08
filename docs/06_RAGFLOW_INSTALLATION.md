@@ -186,17 +186,17 @@ set +a
 uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Start Universe frontend:
+Start the Universe spatial entry:
 
 ```bash
-cd /Users/xiaxin/Documents/Codex/Universal/frontend
-npm run dev -- --host 127.0.0.1 --port 5173
+cd /Users/xiaxin/Documents/Codex/Universal/room-portfolio
+npm run dev -- --host 127.0.0.1 --port 5180
 ```
 
 Open Universe:
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1:5180/
 ```
 
 ---

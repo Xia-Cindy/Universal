@@ -32,7 +32,7 @@ Universe OS
             └── Data Layer
 ```
 
-MVP 只实现 Universe Portal 和 Study Planet。Future Planets 只作为 Portal placeholders。
+当前运行时以 Study Planet 为核心，同时提供 Work 的业务工作区和 Novel 草稿服务；Life 与 Creator 仍为未来方向。不会为 Work 或 Novel 新建独立 AI Core。
 
 ---
 
@@ -105,36 +105,30 @@ Frontend 和 Backend 只能通过 API 通信。
 
 # 4. Frontend Architecture
 
-Recommended technology:
+Current runtime technology:
 
-- Vue 3。
-- TypeScript。
+- React + React Three Fiber + Three.js。
 - Vite。
-- Pinia。
-- Vue Router。
-- TailwindCSS。
+- Zustand for room interaction state。
+- FastAPI-backed `/api` proxy。
+
+The only user-facing local runtime is `room-portfolio/` on port 5180. The
+existing `frontend/` Vue source remains for migration and contract-test
+coverage, but `startup.sh` does not launch it as a product page.
 
 ## 4.1 Frontend Structure
 
 ```text
-frontend/
+room-portfolio/
 └── src/
-    ├── universe/
-    │   ├── portal/
-    │   └── planet-loader/
-    ├── planets/
-    │   └── study/
-    │       ├── home/
-    │       ├── plan/
-    │       ├── session/
-    │       ├── knowledge/
-    │       ├── tutor/
-    │       ├── review/
-    │       └── analytics/
-    ├── components/
-    ├── services/
-    ├── stores/
-    └── router/
+    ├── Experience.jsx
+    ├── RoomModel/
+    ├── ModuleWorld.jsx
+    ├── DeployedBooks.jsx
+    ├── KnowledgeCardsGallery.jsx
+    ├── SpatialModuleScene.jsx
+    ├── spaces.js
+    └── api.js
 ```
 
 ## 4.2 Routing Architecture

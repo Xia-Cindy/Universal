@@ -40,7 +40,7 @@ Universe OS
 | --- | --- | --- |
 | Universe OS | 个人 AI 操作系统整体 | 产品总称 |
 | Universe Portal | 所有 Planet 的入口 | MVP 首屏 |
-| Planet | 独立智能应用空间 | Study Planet 是唯一可进入 Planet |
+| Planet | 独立智能应用空间 | Study 为核心空间；Work 与 Novel 提供已实现的受限工作区 |
 | Workspace | Planet 内完整工作空间 | Study Workspace |
 | Module | Workspace 内功能模块 | Study Home、Learning Plan 等 |
 | Agent | 专门执行任务的 AI 角色 | Study Agent |
@@ -59,21 +59,23 @@ Universe Portal 只负责“进入世界”。它不承载复杂业务数据，�
 用户在 Portal 中应感受到：
 
 - 自己拥有一个个人智能宇宙。
-- Study Planet 是当前可进入的学习空间。
-- 其他 Planet 是未来扩展方向。
+- Study Planet 是当前的核心学习空间。
+- Work Planet 提供已实现的业务工作区；Novel 只提供草稿写作入口。
+- Life 与 Creator 是未来扩展方向。
 
 ## 3.2 Portal 结构
 
 ```text
-Universe Portal
-├── Product Identity: Universe OS
-├── Planet Field
-│   ├── Study Planet: active
-│   ├── Work Planet: future placeholder
-│   ├── Novel Planet: future placeholder
-│   ├── Life Planet: future placeholder
-│   └── Creator Planet: future placeholder
-└── Global AI / Memory Status
+Universe OS Room
+├── Study: active
+│   ├── Home / Goals / Tutor
+│   ├── Plan / Review / Analytics
+│   └── Knowledge / Wordbook / Recall Board
+├── Work: active
+│   └── Home / Tech Stack / Knowledge / Projects / Resume
+├── Novel: persisted draft workspace
+├── Life: future
+└── Creator: future
 ```
 
 ## 3.3 Planet Card/Object 信息
@@ -91,6 +93,11 @@ Study Planet：
 - Status：active。
 - Primary action：Enter Study Planet。
 - 可展示今日学习提示，例如 Today: 1 task / Review: 2 items。
+
+Work / Novel：
+
+- Work：可进入，使用既有 Work service 与共享 Knowledge。
+- Novel：仅提供草稿写作，不新增 Novel Agent。
 
 Future Planet：
 

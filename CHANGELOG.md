@@ -4,6 +4,7 @@
 
 ### Current feature summary
 
+- **Single local entry:** `startup.sh` now launches only the Universe API and the 5180 spatial room. The retired Vue page is no longer started or documented as a user entry; its source stays only for compatibility and contract tests.
 - **Spatial Study room:** the monitor screen is the direct Study entry, the planning table remains the Plan/Review/Analytics entry, the bookshelf opens Knowledge/Wordbook, and the wall blackboard opens the card-and-note review space. The old large white hotspot outlines are removed; the bottom dock remains a shortcut.
 - **Knowledge bookshelf:** uploaded documents render as physical books in the reference shelf composition, with three books per shelf page, subject filtering, Goal association, edit/delete controls, a cover-click open step, paired-page reading, page jumping and browser-local bookmarks. RAGFlow processing state remains visible and already-returned chunks stay readable.
 - **Source-owned review:** selecting a passage creates a durable document-owned note or recall card. Cards support hidden-term recall, reveal and first-time `背过了` progress; the review gallery opens cards/notes without moving them into a separate data store.
