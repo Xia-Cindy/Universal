@@ -169,6 +169,12 @@ FOCUS_READER_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("DELETE", "/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}", "delete_knowledge_annotation", "focus_reader"),
 )
 
+STUDY_RECALL_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("GET", "/api/study/recall/schedules", "list_recall_schedules", "study_recall_v2"),
+    ApiContract("GET", "/api/study/recall/schedules/{source_type}/{source_id}", "get_recall_schedule", "study_recall_v2"),
+    ApiContract("PATCH", "/api/study/recall/schedules/{source_type}/{source_id}", "adjust_recall_schedule", "study_recall_v2"),
+)
+
 MILESTONE_10_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/work/home", "work_home", "milestone_10"),
     ApiContract("POST", "/api/work/knowledge/documents", "create_work_knowledge_document", "milestone_10"),
@@ -244,6 +250,7 @@ def list_contracts() -> list[dict[str, str]]:
             *MILESTONE_8_REVIEW_CONTRACTS,
             *WORD_BOOK_CONTRACTS,
             *FOCUS_READER_CONTRACTS,
+            *STUDY_RECALL_CONTRACTS,
             *MILESTONE_10_CONTRACTS,
             *SPATIAL_STUDIO_CONTRACTS,
         )

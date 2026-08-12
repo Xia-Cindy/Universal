@@ -54,6 +54,11 @@ class ReviewStatus(StrEnum):
     SKIPPED = "skipped"
 
 
+class RecallSourceType(StrEnum):
+    ANNOTATION = "knowledge_annotation"
+    WORD_ENTRY = "wordbook_entry"
+
+
 class WordEntrySource(StrEnum):
     MANUAL = "manual"
     IMPORT = "import"
@@ -334,6 +339,44 @@ class ReviewItem:
             "status": self.status.value,
             "result": self.result,
             "completedAt": self.completed_at.isoformat() if self.completed_at else None,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class RecallSchedule:
+    """A user-controlled spaced-recall schedule for an existing Study object."""
+
+    user_id: str
+    source_type: RecallSourceType
+    source_id: str
+    next_review_date: date
+    goal_id: str | None = None
+    interval_days: int = 0
+    review_count: int = 0
+    last_result: str | None = None
+    rationale: str = "新建内容，今天可以开始复习。"
+    manually_adjusted: bool = False
+    last_reviewed_at: datetime | None = None
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "sourceType": self.source_type.value,
+            "sourceId": self.source_id,
+            "goalId": self.goal_id,
+            "nextReviewDate": self.next_review_date.isoformat(),
+            "intervalDays": self.interval_days,
+            "reviewCount": self.review_count,
+            "lastResult": self.last_result,
+            "rationale": self.rationale,
+            "manuallyAdjusted": self.manually_adjusted,
+            "lastReviewedAt": self.last_reviewed_at.isoformat() if self.last_reviewed_at else None,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
         }

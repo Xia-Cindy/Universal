@@ -110,6 +110,13 @@ export const roomApi = {
             method: 'POST',
             body: JSON.stringify({ remembered })
         }),
+    recallSchedules: (goalId = '') =>
+        apiRequest(`/api/study/recall/schedules${goalId ? `?goalId=${encodeURIComponent(goalId)}` : ''}`),
+    adjustRecallSchedule: (sourceType, sourceId, payload) =>
+        apiRequest(`/api/study/recall/schedules/${encodeURIComponent(sourceType)}/${encodeURIComponent(sourceId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        }),
     importWordbook: (payload) =>
         apiRequest('/api/study/wordbook/import', {
             method: 'POST',

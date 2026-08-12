@@ -12,6 +12,8 @@ from backend.app.models import (
     WeekPlan,
     YearPlan,
     ReviewItem,
+    RecallSchedule,
+    RecallSourceType,
     WrongQuestion,
     WordEntry,
 )
@@ -39,6 +41,7 @@ class StudyRepository:
         self.current_goal_ids: dict[tuple[str, str], str] = {}
         self.wrong_questions: dict[str, WrongQuestion] = {}
         self.review_items: dict[str, ReviewItem] = {}
+        self.recall_schedules: dict[tuple[str, str, str], RecallSchedule] = {}
         self.word_entries: dict[str, WordEntry] = {}
 
     def save_goal(self, goal: StudyGoal) -> StudyGoal:
@@ -241,6 +244,23 @@ class StudyRepository:
         if wrong_question_id:
             items = [item for item in items if item.wrong_question_id == wrong_question_id]
         return sorted(items, key=lambda item: (item.due_date, item.stage, item.created_at))
+
+    def save_recall_schedule(self, schedule: RecallSchedule) -> RecallSchedule:
+        self.recall_schedules[(schedule.user_id, schedule.source_type.value, schedule.source_id)] = schedule
+        return schedule
+
+    def get_recall_schedule(
+        self, user_id: str, source_type: RecallSourceType, source_id: str
+    ) -> RecallSchedule | None:
+        return self.recall_schedules.get((user_id, source_type.value, source_id))
+
+    def list_recall_schedules(
+        self, user_id: str, *, goal_id: str | None = None
+    ) -> list[RecallSchedule]:
+        schedules = [item for item in self.recall_schedules.values() if item.user_id == user_id]
+        if goal_id:
+            schedules = [item for item in schedules if item.goal_id == goal_id]
+        return sorted(schedules, key=lambda item: (item.next_review_date, item.created_at))
 
     def save_word_entry(self, entry: WordEntry) -> WordEntry:
         self.word_entries[entry.id] = entry

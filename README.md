@@ -36,7 +36,8 @@ Novel actions continue to use the existing backend services and migrations.
   jump and browser-local bookmarks.
 - A selected passage can become a source-document-owned note or recall card.
   Cards can hide key terms, reveal the answer and be marked `背过了`; the first
-  mastery event contributes once to the linked Goal progress.
+  mastery event contributes once to the linked Goal progress. Recall cards also
+  show an explainable next-review date and allow a learner to manually adjust it.
 - The blackboard route `/study/cards` contains only these cards and notes. It
   keeps their original document ownership and presents them in an expandable
   hanging-card gallery.
@@ -46,6 +47,8 @@ Novel actions continue to use the existing backend services and migrations.
 - Wordbook tags are physical vocabulary books in the same reader. Word pages
   retain pronunciation, personal meaning, phrases, examples and notes; memory
   cards flip from English to the learner meaning and record `背过了` or `记错了`.
+  The same durable recall schedule supplies the next-review date, reason and
+  learner override without changing the original Wordbook record.
 - Work retains Tech Stack, linked Knowledge, projects, articles, learning
   records and resume-draft APIs. Novel provides persisted draft creation and
   editing. Neither introduces a new AI Core or a separate Knowledge system.

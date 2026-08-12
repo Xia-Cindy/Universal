@@ -7,8 +7,8 @@
 - **Single local entry:** `startup.sh` now launches only the Universe API and the 5180 spatial room. The retired Vue page is no longer started or documented as a user entry; its source stays only for compatibility and contract tests.
 - **Spatial Study room:** the monitor screen is the direct Study entry, the planning table remains the Plan/Review/Analytics entry, the bookshelf opens Knowledge/Wordbook, and the wall blackboard opens the card-and-note review space. The old large white hotspot outlines are removed; the bottom dock remains a shortcut.
 - **Knowledge bookshelf:** uploaded documents render as physical books in the reference shelf composition, with three books per shelf page, subject filtering, Goal association, edit/delete controls, a cover-click open step, paired-page reading, page jumping and browser-local bookmarks. RAGFlow processing state remains visible and already-returned chunks stay readable.
-- **Source-owned review:** selecting a passage creates a durable document-owned note or recall card. Cards support hidden-term recall, reveal and first-time `背过了` progress; the review gallery opens cards/notes without moving them into a separate data store.
-- **Wordbook review:** each tag is a vocabulary book using the same shelf/reader flow. Memory cards flip from English to the learner meaning, with durable remembered/mistake results and the existing Wordbook fields intact.
+- **Source-owned review:** selecting a passage creates a durable document-owned note or recall card. Cards support hidden-term recall, reveal and first-time `背过了` progress; a durable, explainable next-review schedule can be manually adjusted without moving card data into a separate store. Notes remain notes and do not enter the interval queue.
+- **Wordbook review:** each tag is a vocabulary book using the same shelf/reader flow. Memory cards flip from English to the learner meaning, with durable remembered/mistake results, next-review dates/reasons and learner overrides while retaining the existing Wordbook fields.
 
 ### Fixed
 
@@ -17,6 +17,7 @@
 
 ### Changed
 
+- **2026-08-13 F3 interval review V2:** added the shared `study_recall_schedules` persistence model and SQLite/PostgreSQL migrations for source-owned knowledge cards and Wordbook entries. The review API now exposes each item’s due date, rationale and manual adjustment, resets a forgotten item for immediate re-review, and makes identical same-day results idempotent so it cannot inflate word mistakes or Goal mastery. The physical reader renders and adjusts the same schedule; first-time Goal progress remains a separate fact layer.
 - **2026-08-13 O5 Study Session transaction design:** documented the approved no-schema-change unit-of-work boundary for Session, Task, Learning Event and two Memory writes. This is a design record only; the current implementation still has separate repository transactions and is not represented as an atomic delivery.
 - **2026-08-13 O3 spatial style scoping:** moved the Knowledge bookshelf overlay/composer and Blackboard instrument styles out of the room shell into dedicated CSS modules. Existing visual values, responsive rules and z-index ordering remain unchanged; shared spatial layer tokens are now explicit in the root theme.
 - **2026-08-13 O2 bookshelf responsibility split:** separated the physical shelf catalog, reader-page model and parent-side iframe protocol from `DeployedBooks.jsx`. The deployed reference HTML, visual motion, `postMessage` names and Universe API callbacks remain unchanged; new Node tests cover the pure catalog and page-model behavior.

@@ -75,7 +75,7 @@ export function useBookshelfBridge({
                 return;
             }
             if (message.type === 'master-annotation') {
-                Promise.resolve(callbacks.onMarkAnnotationMastered?.(message.documentId, message.id, true))
+                Promise.resolve(callbacks.onMarkAnnotationMastered?.(message.documentId, message.id, Boolean(message.remembered)))
                     .then((annotation) => {
                         if (!annotation) return;
                         state.setReader((current) => current?.id === message.documentId
@@ -87,7 +87,36 @@ export function useBookshelfBridge({
             }
             if (message.type === 'review-word') {
                 Promise.resolve(callbacks.onReviewWord?.(message.id, Boolean(message.remembered)))
+                    .then((entry) => {
+                        if (!entry?.recallSchedule) return;
+                        state.setReader((current) => current ? {
+                            ...current,
+                            pages: (current.pages || []).map((page) => page.entryId === entry.id
+                                ? { ...page, recallSchedule: entry.recallSchedule }
+                                : page)
+                        } : current);
+                    })
                     .catch((error) => state.setStatus(error instanceof Error ? error.message : '无法记录单词记忆结果。'));
+                return;
+            }
+            if (message.type === 'adjust-recall') {
+                Promise.resolve(callbacks.onAdjustRecall?.(message.sourceType, message.sourceId, {
+                    nextReviewDate: message.nextReviewDate,
+                    reason: message.reason
+                }))
+                    .then((schedule) => {
+                        if (!schedule) return;
+                        state.setReader((current) => current ? {
+                            ...current,
+                            pages: (current.pages || []).map((page) => page.entryId === schedule.sourceId
+                                ? { ...page, recallSchedule: schedule }
+                                : page),
+                            cards: (current.cards || []).map((card) => card.id === schedule.sourceId
+                                ? { ...card, recallSchedule: schedule }
+                                : card)
+                        } : current);
+                    })
+                    .catch((error) => state.setStatus(error instanceof Error ? error.message : '无法调整复习日期。'));
                 return;
             }
             if (message.type === 'save-bookmark') {

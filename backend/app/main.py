@@ -308,6 +308,18 @@ def create_app():
     def review_wordbook_entry(entry_id: str, payload: dict):
         return api.review_wordbook_entry(entry_id, payload)
 
+    @app.get("/api/study/recall/schedules")
+    def list_recall_schedules(goalId: str | None = None):
+        return api.list_recall_schedules(goal_id=goalId)
+
+    @app.get("/api/study/recall/schedules/{source_type}/{source_id}")
+    def get_recall_schedule(source_type: str, source_id: str):
+        return api.get_recall_schedule(source_type, source_id)
+
+    @app.patch("/api/study/recall/schedules/{source_type}/{source_id}")
+    def adjust_recall_schedule(source_type: str, source_id: str, payload: dict):
+        return api.adjust_recall_schedule(source_type, source_id, payload)
+
     @app.post("/api/study/tutor/events")
     def save_tutor_answer_event(payload: dict):
         return api.save_tutor_answer_event(payload)

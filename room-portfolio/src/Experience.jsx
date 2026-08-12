@@ -53,13 +53,16 @@ const asWordbookBooks = (entries) => {
         });
 };
 
-const wordbookPages = (book) => ({
+const wordbookPages = (book, recallSchedules = []) => {
+    const schedulesByEntry = new Map((recallSchedules || []).map((schedule) => [schedule.sourceId, schedule]));
+    return {
     pages: (book.entries || []).map((entry, index) => ({
         entryId: entry.id,
         eyebrow: `${entry.language || 'VOCABULARY'} · ${index + 1} / ${book.entries.length}`,
         title: entry.word || '未命名词条',
         subtitle: entry.pronunciation ? `/${entry.pronunciation.replace(/^\/+|\/+$/g, '')}/` : book.title,
         meaning: entry.meaning || '尚未填写个人释义。',
+        recallSchedule: schedulesByEntry.get(entry.id) || entry.recallSchedule || null,
         content: [
             entry.meaning || '尚未填写个人释义。',
             entry.phrases?.length ? `短语：${entry.phrases.join(' · ')}` : '',
@@ -67,7 +70,8 @@ const wordbookPages = (book) => ({
             entry.notes ? `笔记：${entry.notes}` : ''
         ].filter(Boolean).join('\n\n')
     }))
-});
+    };
+};
 
 const KNOWLEDGE_RESOURCES = {
     study: {
@@ -101,6 +105,7 @@ const Experience = React.memo(() => {
     const [wordbookEntries, setWordbookEntries] = useState([]);
     const [wordbookRevision, setWordbookRevision] = useState(0);
     const [wordbookLoadError, setWordbookLoadError] = useState('');
+    const [recallSchedules, setRecallSchedules] = useState([]);
     const [studyGoals, setStudyGoals] = useState([]);
     const portalTimer = useRef(null);
     const focusSpace = useCameraStore((state) => state.focusSpace);
@@ -228,6 +233,15 @@ const Experience = React.memo(() => {
         };
     }, [isReferenceBooks, isWorkKnowledge]);
 
+    useEffect(() => {
+        if (!isReferenceBooks || isWorkKnowledge) return undefined;
+        let current = true;
+        roomApi.recallSchedules()
+            .then((items) => { if (current) setRecallSchedules(items || []); })
+            .catch(() => { if (current) setRecallSchedules([]); });
+        return () => { current = false; };
+    }, [isReferenceBooks, isWorkKnowledge, knowledgeRevision, wordbookRevision]);
+
     const createKnowledge = async ({ file, goalId, subject, topic }) => {
         const extension = file.name.split('.').pop()?.toLowerCase();
         const fileType = extension === 'pdf' ? 'pdf' : ['md', 'markdown'].includes(extension) ? 'markdown' : extension === 'txt' ? 'txt' : null;
@@ -308,6 +322,15 @@ const Experience = React.memo(() => {
         const entry = await roomApi.reviewWordbookEntry(entryId, remembered);
         setWordbookRevision((revision) => revision + 1);
         return entry;
+    };
+
+    const adjustRecallSchedule = async (sourceType, sourceId, payload) => {
+        const schedule = await roomApi.adjustRecallSchedule(sourceType, sourceId, payload);
+        setRecallSchedules((current) => [
+            ...current.filter((item) => !(item.sourceType === schedule.sourceType && item.sourceId === schedule.sourceId)),
+            schedule
+        ]);
+        return schedule;
     };
 
     const speakWord = (word) => {
@@ -405,7 +428,11 @@ const Experience = React.memo(() => {
                     onCreateAnnotation={isWorkKnowledge || isWordbookBooks ? undefined : createKnowledgeAnnotation}
                     onMarkAnnotationMastered={isWorkKnowledge || isWordbookBooks ? undefined : markKnowledgeAnnotationMastered}
                     onReviewWord={isWordbookBooks ? reviewWordbookEntry : undefined}
-                    onOpen={isWordbookBooks ? wordbookPages : openKnowledgeBook}
+                    onAdjustRecall={isWorkKnowledge ? undefined : adjustRecallSchedule}
+                    onOpen={isWordbookBooks ? (book) => wordbookPages(book, recallSchedules) : async (book) => {
+                        const detail = await openKnowledgeBook(book);
+                        return { ...detail, recallSchedules };
+                    }}
                     onOpenKnowledge={() => selectModule('study-knowledge')}
                     onOpenWordbook={() => selectModule('study-wordbook')}
                     onReturn={closeSpace}

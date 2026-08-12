@@ -1,4 +1,5 @@
 from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
+from backend.app.core.dates import local_today
 from backend.app.core.settings import settings
 from backend.app.knowledge import (
     EnglishDictionaryService,
@@ -12,7 +13,7 @@ from backend.app.knowledge.repository import SQLiteKnowledgeRepository
 from backend.app.knowledge.providers import RAGFlowClient, RAGFlowKnowledgeProvider
 from backend.app.memory import MemoryService
 from backend.app.memory.repository import SQLiteMemoryRepository
-from backend.app.models import LearningEvent, MemoryScope
+from backend.app.models import LearningEvent, MemoryScope, RecallSourceType
 from backend.app.planet_engine import create_default_registry
 from backend.app.planets.study.analytics import StudyAnalystContextProvider, StudyAnalyticsService
 from backend.app.planets.study.dashboard import StudyHomeService
@@ -26,6 +27,7 @@ from backend.app.planets.study.tutor import TutorService
 from backend.app.planets.study.tutor.context_provider import StudyTutorContextProvider
 from backend.app.planets.study.workspace import StudyWorkspaceService
 from backend.app.planets.study.review import ReviewService
+from backend.app.planets.study.recall import StudyRecallService
 from backend.app.planets.study.wordbook import WordbookService
 from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
 from backend.app.planets.work.repository import SQLiteWorkRepository
@@ -178,6 +180,7 @@ class ApiFacade:
             self.study_repository,
             dictionary=self.english_dictionary,
         )
+        self.study_recall = StudyRecallService(self.study_repository, self.knowledge)
         self.study_tutor = TutorService(
             repository=self.study_repository,
             ai_core=self.ai_core,
@@ -511,7 +514,11 @@ class ApiFacade:
     def create_wordbook_entry(self, payload: dict[str, object]) -> dict[str, object]:
         user = self.users.current_user()
         payload = self._with_wordbook_goal(payload, user.id)
-        return self.study_wordbook.create_entry(user.id, payload)
+        entry = self.study_wordbook.create_entry(user.id, payload)
+        entry["recallSchedule"] = self.study_recall.ensure(
+            user.id, RecallSourceType.WORD_ENTRY, str(entry["id"])
+        ).to_dict()
+        return entry
 
     def update_wordbook_entry(self, entry_id: str, payload: dict[str, object]) -> dict[str, object]:
         user = self.users.current_user()
@@ -535,8 +542,23 @@ class ApiFacade:
         user = self.users.current_user()
         remembered = bool(payload.get("remembered"))
         before = self.study_wordbook.get_entry(user.id, entry_id)
-        entry = self.study_wordbook.review_entry(user.id, entry_id, remembered=remembered)
-        if remembered and not bool(before.get("mastered")):
+        result = "remembered" if remembered else "forgot"
+        existing_schedule = self.study_recall.ensure(
+            user.id,
+            RecallSourceType.WORD_ENTRY,
+            entry_id,
+        )
+        same_day_repeat = (
+            existing_schedule.last_reviewed_at is not None
+            and existing_schedule.last_reviewed_at.date() == local_today()
+            and existing_schedule.last_result == result
+        )
+        entry = (
+            before
+            if same_day_repeat
+            else self.study_wordbook.review_entry(user.id, entry_id, remembered=remembered)
+        )
+        if remembered and not same_day_repeat and not bool(before.get("mastered")):
             self._record_goal_mastery(
                 user.id,
                 entry.get("goalId"),
@@ -544,6 +566,12 @@ class ApiFacade:
                 summary=f"背过单词：{entry.get('word') or '未命名单词'}",
                 metadata={"entryId": entry["id"]},
             )
+        entry["recallSchedule"] = self.study_recall.review(
+            user.id,
+            RecallSourceType.WORD_ENTRY,
+            entry_id,
+            result=result,
+        ).to_dict()
         return entry
 
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
@@ -570,7 +598,12 @@ class ApiFacade:
         payload = dict(payload)
         if payload.get("goalId"):
             self.study_repository.get_goal(str(payload["goalId"]), user.id)
-        return self.knowledge.create_annotation(user.id, document_id, payload)
+        annotation = self.knowledge.create_annotation(user.id, document_id, payload)
+        if annotation.get("annotationType") == "card":
+            annotation["recallSchedule"] = self.study_recall.ensure(
+                user.id, RecallSourceType.ANNOTATION, str(annotation["id"])
+            ).to_dict()
+        return annotation
 
     def update_knowledge_annotation(
         self,
@@ -607,7 +640,30 @@ class ApiFacade:
                 summary="背过知识卡片" if annotation.get("annotationType") == "card" else "背过知识笔记",
                 metadata={"annotationId": annotation["id"], "documentId": document_id},
             )
+        if annotation.get("annotationType") == "card":
+            annotation["recallSchedule"] = self.study_recall.review(
+                user.id,
+                RecallSourceType.ANNOTATION,
+                annotation_id,
+                result="remembered" if mastered else "forgot",
+            ).to_dict()
         return annotation
+
+    def list_recall_schedules(self, *, goal_id: str | None = None) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        if goal_id:
+            self.study_repository.get_goal(goal_id, user.id)
+        return self.study_recall.list(user.id, goal_id=goal_id)
+
+    def get_recall_schedule(self, source_type: str, source_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_recall.for_source(user.id, RecallSourceType(source_type), source_id)
+
+    def adjust_recall_schedule(
+        self, source_type: str, source_id: str, payload: dict[str, object]
+    ) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_recall.adjust(user.id, RecallSourceType(source_type), source_id, payload).to_dict()
 
     def delete_knowledge_annotation(self, document_id: str, annotation_id: str) -> dict[str, object]:
         user = self.users.current_user()

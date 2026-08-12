@@ -17,6 +17,8 @@ from backend.app.models import (
     GoalStatus,
     GoalType,
     LearningEvent,
+    RecallSchedule,
+    RecallSourceType,
     MemoryEntry,
     MemoryScope,
     MemoryStatus,
@@ -173,6 +175,20 @@ def review_item_from_payload(payload: dict[str, Any]) -> ReviewItem:
         due_date=_required_date(payload["dueDate"]),
         status=ReviewStatus(payload.get("status", "pending")), result=payload.get("result"),
         completed_at=parse_datetime(payload["completedAt"]) if payload.get("completedAt") else None,
+        id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
+def recall_schedule_from_payload(payload: dict[str, Any]) -> RecallSchedule:
+    return RecallSchedule(
+        user_id=payload["userId"], source_type=RecallSourceType(payload["sourceType"]),
+        source_id=payload["sourceId"], goal_id=payload.get("goalId"),
+        next_review_date=_required_date(payload["nextReviewDate"]),
+        interval_days=int(payload.get("intervalDays", 0)), review_count=int(payload.get("reviewCount", 0)),
+        last_result=payload.get("lastResult"), rationale=payload.get("rationale", ""),
+        manually_adjusted=bool(payload.get("manuallyAdjusted", False)),
+        last_reviewed_at=parse_datetime(payload["lastReviewedAt"]) if payload.get("lastReviewedAt") else None,
         id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
         updated_at=parse_datetime(payload["updatedAt"]),
     )

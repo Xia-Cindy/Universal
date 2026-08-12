@@ -1,7 +1,7 @@
 # Universe OS 代码优化与功能新增计划
 
 日期：2026-08-12
-状态：O1、F1、O2、O3 已完成；O5 的实施设计已确认、代码尚未实施；其余阶段待按顺序实施
+状态：O1、F1、O2、O3、F3 已完成；O5 的实施设计已确认、代码尚未实施；其余阶段待按顺序实施
 依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
 
 ## 0. 审计结论与边界
@@ -104,6 +104,14 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **5180 验收：** `/study/knowledge?documentId=…` 载入书架 iframe，展开 PDF 后显示真实 chunk 文本和 `第 1 / 1 页`，上一页/下一页均正确禁用，浏览器无 error。
 - **测试：** `python3 -m unittest tests.test_ragflow_provider tests.test_knowledge_upload_flow`：16 通过；`python3 -m unittest discover -s tests`：178 通过；`room-portfolio npm run build` 通过；`scripts/smoke_spatial_routes.py` 覆盖的 5180 核心路由和 API proxy 全部通过。
 - **风险与限制：** Apple Silicon 上的 amd64 RAGFlow 冷启动约五分钟；这不是对任意大型 PDF、历史队列或其他 embedding provider 的完成承诺。后续只在单独授权下处理遗留长资料。
+
+### F3 交付记录（2026-08-13）
+
+- **目标：** 在既有“背过/记错”事实层之上，为资料归属知识卡和 Wordbook 词条提供同一份可解释、可手动覆盖的间隔复习日程；不把笔记混入复习队列。
+- **受影响文件：** `backend/app/models/study.py`、`backend/app/planets/study/recall/service.py`、Study repository 与 SQLite/PostgreSQL persistence、`backend/app/api/{contracts,routes}.py`、`backend/app/main.py`、空间书架的 `api.js`、`Experience.jsx`、`readerModel.js`、`useBookshelfBridge.js`、`DeployedBooks.jsx` 及相应测试。
+- **数据库/API：** 新增 PostgreSQL `020_study_recall_schedules.sql` 和 SQLite `008_study_recall_schedules.sql`；以 `(user_id, source_type, source_id)` 唯一约束保存 source-owned schedule。新增 `GET /api/study/recall/schedules`、`GET /api/study/recall/schedules/{source_type}/{source_id}` 与 `PATCH` 同路径手动调整合同；不改变原卡片、词条或 Goal API 形状。
+- **调度与风险控制：** 背过依序采用 1/3/7/14/30 天，记错立即回到当天且理由明确说明不会把一次记错当作永久能力判断。完全相同的同日结果只保存一次，既不重复增加 Wordbook 错误数，也不重复写 Goal mastery；首次背过的 Goal 事实仍由既有 Learning Event 逻辑处理。笔记可以保留原有背过事实，但不会显示或调整间隔日程。
+- **验收：** 新增 `tests/test_study_recall_v2.py` 覆盖卡片创建、背过、记错、同日幂等、Wordbook 手动调整、SQLite 重启、Goal 过滤与公开合同；完整后端 `unittest discover` 为 183 通过。书架纯模型测试、eslint 与生产构建均通过。实际 8000 API 重启后新 schedule 路由返回 200，项目 `scripts/smoke_spatial_routes.py` 对 5180 的所有核心路径和 API proxy 全部通过。
 
 ## 3. 优先级与依赖
 

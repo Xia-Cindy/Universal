@@ -1,4 +1,6 @@
-export function readerPages(detail, documentId, book, goals = [], bookmarks = {}) {
+export function readerPages(
+    detail, documentId, book, goals = [], bookmarks = {}, recallSchedules = detail?.recallSchedules || []
+) {
     const document = detail?.document || {};
     const isProcessing = ['parsing', 'chunking'].includes(document.processingStatus);
     const metadata = {
@@ -18,7 +20,16 @@ export function readerPages(detail, documentId, book, goals = [], bookmarks = {}
         const content = String(chunk.content || '').trim();
         return content.match(/[\s\S]{1,680}(?:\s|$)|[\s\S]{1,680}/g) || [];
     }).filter(Boolean).map((content) => ({ content }));
-    const cards = (detail?.annotations || []).filter((annotation) => annotation.annotationType === 'card' || annotation.annotationType === 'note');
+    const schedulesBySource = new Map((recallSchedules || []).map((schedule) => [
+        `${schedule.sourceType}:${schedule.sourceId}`,
+        schedule
+    ]));
+    const cards = (detail?.annotations || [])
+        .filter((annotation) => annotation.annotationType === 'card' || annotation.annotationType === 'note')
+        .map((annotation) => ({
+            ...annotation,
+            recallSchedule: schedulesBySource.get(`knowledge_annotation:${annotation.id}`) || null
+        }));
     if (pages.length) {
         return { id: documentId, bookmarkId: String(documentId), book: metadata, pages, cards, goals, bookmark: bookmarks[documentId] || null };
     }

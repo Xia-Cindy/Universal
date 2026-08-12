@@ -23,10 +23,17 @@ test('reader pages preserve real chunks, annotations and local bookmarks', () =>
     const model = readerPages({
         document: { processingStatus: 'processed', provider: 'ragflow' },
         chunks: [{ content: 'A processed Knowledge chunk.' }],
-        annotations: [{ id: 'card-1', annotationType: 'card' }, { id: 'ignored', annotationType: 'other' }]
+        annotations: [{ id: 'card-1', annotationType: 'card' }, { id: 'ignored', annotationType: 'other' }],
+        recallSchedules: [{
+            sourceType: 'knowledge_annotation',
+            sourceId: 'card-1',
+            nextReviewDate: '2026-08-14',
+            rationale: '首次复习。'
+        }]
     }, 'doc-1', { fileName: 'source.pdf', fileType: 'pdf' }, [], { 'doc-1': { page: 1 } });
 
     assert.equal(model.pages[0].content, 'A processed Knowledge chunk.');
     assert.deepEqual(model.cards.map((card) => card.id), ['card-1']);
+    assert.equal(model.cards[0].recallSchedule.nextReviewDate, '2026-08-14');
     assert.deepEqual(model.bookmark, { page: 1 });
 });

@@ -77,7 +77,7 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     var stage = document.createElement('section');
     stage.id = 'universe-bookstage';
     stage.setAttribute('aria-live', 'polite');
-    stage.innerHTML = '<div class="ub-book"><article class="ub-page ub-left"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><article class="ub-page ub-right"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><i class="ub-spine"></i><button class="ub-front" type="button" aria-label="翻开封面"><span></span><strong></strong><span>点击封面翻开</span></button></div><div class="ub-controls"><button type="button" data-reader-prev>上一页</button><span class="ub-page-count"></span><button type="button" data-reader-next>下一页</button><label class="ub-jump">跳至<input type="number" min="1" inputmode="numeric" aria-label="跳至指定页" data-reader-jump-input><button type="button" data-reader-jump>前往</button></label><button class="ub-fold" type="button" data-reader-bookmark>添加书签</button><button class="ub-fold" type="button" data-reader-open-bookmark hidden></button>${mode === 'wordbook' ? '<button type="button" data-reader-speak>发音</button>' : ''}<button class="ub-fold" type="button" data-reader-cards>${mode === 'wordbook' ? '记忆卡' : '知识卡片'}</button><button class="ub-fold" type="button" data-reader-fold>合上书本</button>${canEdit ? '<button class="ub-fold" type="button" data-reader-edit>编辑</button>' : ''}${canDelete ? `<button class="ub-delete" type="button" data-reader-delete>${mode === 'wordbook' ? '删除单词' : '删除资料'}</button>` : ''}</div><div id="ub-selection"><select data-selection-goal aria-label="关联目标"><option value="">沿用资料目标</option></select><button type="button" data-selection-note>添加到笔记</button><button type="button" data-selection-card>制成知识卡</button></div><section id="ub-card" aria-live="polite"><p class="ub-card-eyebrow"></p><div class="ub-card-content"><p class="ub-card-index"></p><p class="ub-card-prompt"></p><p class="ub-card-answer" hidden></p></div><div class="ub-card-actions"><button type="button" data-card-prev>上一张</button><button type="button" data-card-reveal>翻到背面</button><button type="button" data-card-next>下一张</button><button type="button" data-card-remember>背过了</button><button type="button" data-card-forgot>记错了</button><button type="button" data-card-close>回到书页</button></div></section>';
+    stage.innerHTML = '<div class="ub-book"><article class="ub-page ub-left"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><article class="ub-page ub-right"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><i class="ub-spine"></i><button class="ub-front" type="button" aria-label="翻开封面"><span></span><strong></strong><span>点击封面翻开</span></button></div><div class="ub-controls"><button type="button" data-reader-prev>上一页</button><span class="ub-page-count"></span><button type="button" data-reader-next>下一页</button><label class="ub-jump">跳至<input type="number" min="1" inputmode="numeric" aria-label="跳至指定页" data-reader-jump-input><button type="button" data-reader-jump>前往</button></label><button class="ub-fold" type="button" data-reader-bookmark>添加书签</button><button class="ub-fold" type="button" data-reader-open-bookmark hidden></button>${mode === 'wordbook' ? '<button type="button" data-reader-speak>发音</button>' : ''}<button class="ub-fold" type="button" data-reader-cards>${mode === 'wordbook' ? '记忆卡' : '知识卡片'}</button><button class="ub-fold" type="button" data-reader-fold>合上书本</button>${canEdit ? '<button class="ub-fold" type="button" data-reader-edit>编辑</button>' : ''}${canDelete ? `<button class="ub-delete" type="button" data-reader-delete>${mode === 'wordbook' ? '删除单词' : '删除资料'}</button>` : ''}</div><div id="ub-selection"><select data-selection-goal aria-label="关联目标"><option value="">沿用资料目标</option></select><button type="button" data-selection-note>添加到笔记</button><button type="button" data-selection-card>制成知识卡</button></div><section id="ub-card" aria-live="polite"><p class="ub-card-eyebrow"></p><div class="ub-card-content"><p class="ub-card-index"></p><p class="ub-card-prompt"></p><p class="ub-card-answer" hidden></p><p class="ub-card-schedule"></p></div><div class="ub-card-actions"><button type="button" data-card-prev>上一张</button><button type="button" data-card-reveal>翻到背面</button><button type="button" data-card-next>下一张</button><button type="button" data-card-remember>背过了</button><button type="button" data-card-forgot>记错了</button><button type="button" data-card-adjust>调整复习</button><button type="button" data-card-close>回到书页</button></div></section>';
     document.body.appendChild(stage);
     var pages = [];
     var spreadIndex = 0;
@@ -107,9 +107,11 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     var cardIndex = stage.querySelector('.ub-card-index');
     var cardPrompt = stage.querySelector('.ub-card-prompt');
     var cardAnswer = stage.querySelector('.ub-card-answer');
+    var cardSchedule = stage.querySelector('.ub-card-schedule');
     var cardReveal = stage.querySelector('[data-card-reveal]');
     var cardPrevious = stage.querySelector('[data-card-prev]');
     var cardNext = stage.querySelector('[data-card-next]');
+    var cardAdjust = stage.querySelector('[data-card-adjust]');
     var activeCard = null;
     var cardIndexValue = 0;
     var cards = [];
@@ -167,7 +169,7 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     function currentCard() {
       if ('${mode}' === 'wordbook') {
         var page = pages[spreadIndex] || pages[0] || {};
-        return { entryId: page.entryId, prompt: page.title || '单词', answer: page.meaning || page.content || '尚未填写释义。', hiddenTerms: [] };
+        return { entryId: page.entryId, prompt: page.title || '单词', answer: page.meaning || page.content || '尚未填写释义。', hiddenTerms: [], recallSchedule: page.recallSchedule || null };
       }
       if (!cards.length) return null;
       cardIndexValue = Math.max(0, Math.min(cards.length - 1, cardIndexValue));
@@ -183,6 +185,7 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
         cardReveal.hidden = true;
         cardPrevious.hidden = true;
         cardNext.hidden = true;
+        cardAdjust.hidden = true;
         return;
       }
       var front = activeCard.prompt || activeCard.selectedText || '回忆这段内容';
@@ -191,9 +194,17 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
       cardPrompt.textContent = '${mode}' === 'wordbook' ? front : maskTerms(front, activeCard.hiddenTerms);
       cardAnswer.textContent = activeCard.answer || activeCard.note || activeCard.selectedText || '写下答案后会显示在这里。';
       cardAnswer.hidden = true;
+      var isNote = '${mode}' !== 'wordbook' && activeCard.annotationType === 'note';
+      var schedule = activeCard.recallSchedule;
+      cardSchedule.textContent = isNote
+        ? '学习笔记不会自动加入间隔复习。'
+        : (schedule && schedule.nextReviewDate
+          ? '下次复习：' + schedule.nextReviewDate + ' · ' + (schedule.rationale || '按当前间隔安排。')
+          : '复习日程将在第一次作答后保存。');
       cardReveal.hidden = false;
       cardPrevious.hidden = '${mode}' === 'wordbook' || cards.length < 2;
       cardNext.hidden = '${mode}' === 'wordbook' || cards.length < 2;
+      cardAdjust.hidden = isNote;
     }
     function openCards() { cardIndexValue = 0; renderCard(); card.classList.add('is-open'); }
     function closeCards() { card.classList.remove('is-open'); }
@@ -272,8 +283,17 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     });
     stage.querySelector('[data-card-forgot]').addEventListener('click', function () {
       if (!activeCard) return;
-      if ('${mode}' === 'wordbook') window.parent.postMessage({ source: 'universe-books', type: 'review-word', id: activeCard.entryId, remembered: false }, '*');
+      window.parent.postMessage({ source: 'universe-books', type: '${mode}' === 'wordbook' ? 'review-word' : 'master-annotation', id: activeCard.entryId || activeCard.id, documentId: documentId, remembered: false }, '*');
       renderCard();
+    });
+    stage.querySelector('[data-card-adjust]').addEventListener('click', function () {
+      if (!activeCard) return;
+      var current = activeCard.recallSchedule && activeCard.recallSchedule.nextReviewDate || '';
+      var nextReviewDate = window.prompt('下次复习日期（YYYY-MM-DD）', current);
+      if (!nextReviewDate) return;
+      var reason = window.prompt('调整原因（会显示在复习计划中）', '按自己的学习安排调整');
+      if (!reason) return;
+      window.parent.postMessage({ source: 'universe-books', type: 'adjust-recall', sourceType: '${mode}' === 'wordbook' ? 'wordbook_entry' : 'knowledge_annotation', sourceId: activeCard.entryId || activeCard.id, nextReviewDate: nextReviewDate, reason: reason }, '*');
     });
     stage.querySelector('[data-selection-note]').addEventListener('click', function () {
       if (!selectedPassage || !documentId) return;
@@ -506,6 +526,7 @@ export default function DeployedBooks({
     onCreateAnnotation,
     onMarkAnnotationMastered,
     onReviewWord,
+    onAdjustRecall,
     onOpen,
     onOpenKnowledge,
     onOpenWordbook,
@@ -576,7 +597,7 @@ export default function DeployedBooks({
         goals,
         bookmarks,
         totalPages,
-        callbacks: { onCreateAnnotation, onDelete, onDeleteWord, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord },
+        callbacks: { onAdjustRecall, onCreateAnnotation, onDelete, onDeleteWord, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord },
         state: { setBookTitle, setComposerOpen, setEditing, setGoalId, setLanguage, setMeaning, setReader, setShelfPage, setStatus, setSubject, setSubjectFilter, setTags, setTopic, setWord, setBookmarks }
     });
 

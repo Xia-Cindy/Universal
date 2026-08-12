@@ -6,6 +6,8 @@ from backend.app.models import (
     DailyTask,
     LearningEvent,
     ReviewItem,
+    RecallSchedule,
+    RecallSourceType,
     WrongQuestion,
     WordEntry,
     MonthPlan,
@@ -22,6 +24,7 @@ from backend.app.persistence.codec import (
     loads,
     event_from_payload,
     review_item_from_payload,
+    recall_schedule_from_payload,
     goal_from_payload,
     month_plan_from_payload,
     session_from_payload,
@@ -326,6 +329,45 @@ class SQLiteStudyRepository:
         query += " ORDER BY due_date, created_at"
         rows = self._db.connection.execute(query, params).fetchall()
         return [review_item_from_payload(loads(row["payload"])) for row in rows]
+
+    def save_recall_schedule(self, schedule: RecallSchedule) -> RecallSchedule:
+        payload = schedule.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO study_recall_schedules
+                (id,user_id,source_type,source_id,goal_id,next_review_date,payload,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,source_type,source_id) DO UPDATE SET
+                goal_id=excluded.goal_id,next_review_date=excluded.next_review_date,payload=excluded.payload,
+                updated_at=excluded.updated_at""",
+                (
+                    schedule.id, schedule.user_id, schedule.source_type.value, schedule.source_id,
+                    schedule.goal_id, payload["nextReviewDate"], dumps(payload), payload["createdAt"],
+                    payload["updatedAt"],
+                ),
+            )
+        return schedule
+
+    def get_recall_schedule(
+        self, user_id: str, source_type: RecallSourceType, source_id: str
+    ) -> RecallSchedule | None:
+        row = self._db.connection.execute(
+            """SELECT payload FROM study_recall_schedules
+               WHERE user_id = ? AND source_type = ? AND source_id = ?""",
+            (user_id, source_type.value, source_id),
+        ).fetchone()
+        return recall_schedule_from_payload(loads(row["payload"])) if row else None
+
+    def list_recall_schedules(
+        self, user_id: str, *, goal_id: str | None = None
+    ) -> list[RecallSchedule]:
+        query = "SELECT payload FROM study_recall_schedules WHERE user_id = ?"
+        parameters: list[object] = [user_id]
+        if goal_id:
+            query += " AND goal_id = ?"
+            parameters.append(goal_id)
+        query += " ORDER BY next_review_date, created_at"
+        rows = self._db.connection.execute(query, parameters).fetchall()
+        return [recall_schedule_from_payload(loads(row["payload"])) for row in rows]
 
     def save_word_entry(self, entry: WordEntry) -> WordEntry:
         payload = entry.to_dict()

@@ -12,7 +12,8 @@
 - [x] Complete F1 runtime acceptance with one approved new PDF after restoring a stuck worker; leave existing long PDFs unsubmitted and record the evidence in the dated plan and installation guide.
 - [x] Design the Study Session unit-of-work before changing Task/Event/Memory write behavior; preserve the execution-finish API and require failure-injection coverage before implementation.
 - [ ] Implement the approved Study Session unit-of-work across SQLite/PostgreSQL adapters, including partial-write rollback, concurrent-finish and legacy-repair evidence.
-- [ ] Design migrations and API contracts for optional synced reading progress, interval review scheduling, Knowledge-share grants and multi-Goal document links before implementation.
+- [x] Add an explainable, user-adjustable interval-review schedule for source-owned knowledge cards and Wordbook entries; keep repeated same-day results idempotent and preserve first-time Goal mastery accounting.
+- [ ] Design migrations and API contracts for optional synced reading progress, Knowledge-share grants and multi-Goal document links before implementation.
 
 ## Study Bookshelf Module
 
