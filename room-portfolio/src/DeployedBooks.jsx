@@ -1,6 +1,9 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { asReferenceBook, createShelfCatalog } from './bookshelf/shelfCatalog';
+import { useBookshelfBridge } from './bookshelf/useBookshelfBridge';
+
 const REFERENCE_URL = 'https://books-sigma-ashen.vercel.app/';
 const BOOKMARKS_STORAGE_KEY = 'universe-books:reader-bookmarks';
 
@@ -460,25 +463,6 @@ const painter = `
       }
 `;
 
-function asReferenceBook(book, index) {
-    const variants = [
-        { backBg: '#6fa55f', backInk: '19,49,32', edge: '#e6efcf', spineBg: '#6fa55f', spineInk: '#143421' },
-        { backBg: '#af3b2b', backInk: '253,230,184', edge: '#edcf91', spineBg: '#af3b2b', spineInk: '#f2c960' },
-        { backBg: '#1687a4', backInk: '255,255,255', edge: '#d8e9e1', spineBg: '#1687a4', spineInk: '#f3d16d' }
-    ];
-    return {
-        id: String(book.id || index),
-        title: book.title || book.fileName || '学习资料',
-        author: book.subtitle || book.fileType || 'KNOWLEDGE',
-        year: book.status || book.processingStatus || 'READY',
-        stars: 4,
-        desc: book.description || book.summary || `${book.subject || '未分类'} · ${book.topic || '未分类主题'}\n${book.processingStatus || book.status || '资料已加入书架'}`,
-        spineFont: '700 42px Georgia',
-        universeVariant: index % 3,
-        ...variants[index % variants.length]
-    };
-}
-
 function buildDocument(source, books, shelfPage, totalPages, subjects, subjectFilter, {
     canDelete,
     canEdit,
@@ -506,49 +490,6 @@ function buildDocument(source, books, shelfPage, totalPages, subjects, subjectFi
       universeOpenButton.addEventListener("click", () => open(state.hovered || state.pillLock || books[1] || books[0]));`
         )
         .replace('</body>', `${shelfFilterBridge(subjects, subjectFilter, filterLabel)}${shelfPagerBridge(shelfPage, totalPages)}${readerBridge(canDelete, canEdit, mode === 'wordbook' ? 'VOCABULARY PAGES' : 'KNOWLEDGE PAGES', mode)}</body>`)} `;
-}
-
-function readerPages(detail, documentId, book, goals = [], bookmarks = {}) {
-    const document = detail?.document || {};
-    const isProcessing = ['parsing', 'chunking'].includes(document.processingStatus);
-    const metadata = {
-        title: book?.title || book?.fileName || '阅读',
-        author: book?.subtitle || book?.fileType || 'KNOWLEDGE',
-        ...(isProcessing
-            ? {
-                readingStatus: '持续解析中：已完成的内容现在可以阅读，剩余页面会继续同步。',
-                author: `${book?.subtitle || book?.fileType || 'KNOWLEDGE'} · 持续解析中`
-            }
-            : {})
-    };
-    if (Array.isArray(detail?.pages)) return { id: documentId, bookmarkId: String(documentId), book: metadata, pages: detail.pages, cards: [], goals, bookmark: bookmarks[documentId] || null };
-    const chunks = detail?.chunks || [];
-    const pages = chunks.flatMap((chunk) => {
-        const content = String(chunk.content || '').trim();
-        return content.match(/[\s\S]{1,680}(?:\s|$)|[\s\S]{1,680}/g) || [];
-    }).filter(Boolean).map((content) => ({ content }));
-    if (pages.length) return {
-        id: documentId,
-        bookmarkId: String(documentId),
-        book: metadata,
-        pages,
-        cards: (detail?.annotations || []).filter((annotation) => annotation.annotationType === 'card' || annotation.annotationType === 'note'),
-        goals,
-        bookmark: bookmarks[documentId] || null
-    };
-    const provider = document.provider === 'ragflow' ? 'RAGFlow' : '本地知识库';
-    return {
-        id: documentId,
-        bookmarkId: String(documentId),
-        book: metadata,
-        pages: [],
-        cards: (detail?.annotations || []).filter((annotation) => annotation.annotationType === 'card' || annotation.annotationType === 'note'),
-        goals,
-        bookmark: bookmarks[documentId] || null,
-        emptyMessage: isProcessing
-            ? `${provider} 正在处理这本资料，尚未返回可翻阅的页面。\n状态：${document.providerStatus || document.processingStatus || '处理中'}。`
-            : document.errorMessage || '这本资料还没有生成可翻阅的页面。'
-    };
 }
 
 export default function DeployedBooks({
@@ -590,16 +531,11 @@ export default function DeployedBooks({
     const [goalId, setGoalId] = useState('');
     const [editing, setEditing] = useState(null);
     const frame = useRef(null);
-    const subjects = useMemo(
-        () => [...new Set(books.map((book) => book.subject).filter(Boolean))].sort((a, b) => a.localeCompare(b, mode === 'wordbook' ? 'en' : 'zh-CN')),
-        [books, mode]
+    const catalog = useMemo(
+        () => createShelfCatalog(books, subjectFilter, shelfPage, mode),
+        [books, mode, shelfPage, subjectFilter]
     );
-    const filteredBooks = useMemo(
-        () => subjectFilter ? books.filter((book) => book.subject === subjectFilter) : books,
-        [books, subjectFilter]
-    );
-    const totalPages = Math.max(1, Math.ceil(filteredBooks.length / 3));
-    const visibleBooks = useMemo(() => filteredBooks.slice(shelfPage * 3, shelfPage * 3 + 3), [filteredBooks, shelfPage]);
+    const { subjects, totalPages, visibleBooks } = catalog;
     const bookDocument = useMemo(
         () => source ? buildDocument(source, visibleBooks, shelfPage, totalPages, subjects, subjectFilter, {
             canDelete: Boolean(onDelete || onDeleteWord),
@@ -634,145 +570,15 @@ export default function DeployedBooks({
         };
     }, []);
 
-    useEffect(() => {
-        const receive = (event) => {
-            if (event.source !== frame.current?.contentWindow || event.data?.source !== 'universe-books') return;
-            if (event.data.type === 'return') {
-                onReturn?.();
-                return;
-            }
-            if (event.data.type === 'create') {
-                setEditing(null);
-                setComposerOpen(true);
-                setStatus('');
-                return;
-            }
-            if (event.data.type === 'wordbook') {
-                onOpenWordbook?.();
-                return;
-            }
-            if (event.data.type === 'knowledge') {
-                onOpenKnowledge?.();
-                return;
-            }
-            if (event.data.type === 'shelf-previous') {
-                setShelfPage((page) => Math.max(0, page - 1));
-                return;
-            }
-            if (event.data.type === 'shelf-next') {
-                setShelfPage((page) => Math.min(totalPages - 1, page + 1));
-                return;
-            }
-            if (event.data.type === 'shelf-filter') {
-                setSubjectFilter(event.data.subject || '');
-                setShelfPage(0);
-                return;
-            }
-            if (event.data.type === 'speak') {
-                onSpeakWord?.(event.data.word);
-                return;
-            }
-            if (event.data.type === 'create-annotation') {
-                Promise.resolve(onCreateAnnotation?.(event.data.id, {
-                    selectedText: event.data.selectedText,
-                    annotationType: event.data.annotationType,
-                    prompt: event.data.prompt,
-                    answer: event.data.answer,
-                    goalId: event.data.goalId
-                }))
-                    .then((annotation) => {
-                        if (!annotation) return;
-                        setReader((current) => current?.id === event.data.id
-                            ? { ...current, cards: [...(current.cards || []), annotation] }
-                            : current);
-                    })
-                    .catch((error) => setStatus(error instanceof Error ? error.message : '无法保存划线内容。'));
-                return;
-            }
-            if (event.data.type === 'master-annotation') {
-                Promise.resolve(onMarkAnnotationMastered?.(event.data.documentId, event.data.id, true))
-                    .then((annotation) => {
-                        if (!annotation) return;
-                        setReader((current) => current?.id === event.data.documentId
-                            ? { ...current, cards: (current.cards || []).map((card) => card.id === annotation.id ? annotation : card) }
-                            : current);
-                    })
-                    .catch((error) => setStatus(error instanceof Error ? error.message : '无法记录背过状态。'));
-                return;
-            }
-            if (event.data.type === 'review-word') {
-                Promise.resolve(onReviewWord?.(event.data.id, Boolean(event.data.remembered)))
-                    .catch((error) => setStatus(error instanceof Error ? error.message : '无法记录单词记忆结果。'));
-                return;
-            }
-            if (event.data.type === 'save-bookmark') {
-                const bookmark = event.data.bookmark;
-                if (!event.data.id || !bookmark?.page) return;
-                setBookmarks((current) => {
-                    const next = { ...current, [String(event.data.id)]: bookmark };
-                    try { window.localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(next)); } catch {
-                        // The current session still retains the bookmark when storage is unavailable.
-                    }
-                    return next;
-                });
-                setReader((current) => String(current?.id) === String(event.data.id) ? { ...current, bookmark } : current);
-                return;
-            }
-            if (event.data.type === 'edit-word') {
-                const entry = books.flatMap((item) => item.entries || []).find((item) => String(item.id) === String(event.data.id));
-                if (!entry) return;
-                setEditing({ kind: 'wordbook', item: entry });
-                setWord(entry.word || '');
-                setMeaning(entry.meaning || '');
-                setLanguage(entry.language || 'English');
-                setTags((entry.tags || []).join(', '));
-                setGoalId(entry.goalId || '');
-                setStatus('');
-                setComposerOpen(true);
-                return;
-            }
-            if (event.data.type === 'delete-word') {
-                const entry = books.flatMap((item) => item.entries || []).find((item) => String(item.id) === String(event.data.id));
-                if (!entry) return;
-                Promise.resolve(onDeleteWord?.(entry))
-                    .then(() => { setReader(null); setShelfPage(0); })
-                    .catch((error) => setStatus(error instanceof Error ? error.message : '删除单词失败。'));
-                return;
-            }
-            const book = books.find((item) => String(item.id) === String(event.data.id));
-            if (!book) return;
-            if (event.data.type === 'edit') {
-                setEditing({ kind: 'knowledge', item: book });
-                setBookTitle(book.title || book.fileName || '');
-                setSubject(book.subject || '');
-                setTopic(book.topic || '');
-                setGoalId(book.goalId || '');
-                setStatus('');
-                setComposerOpen(true);
-                return;
-            }
-            if (event.data.type === 'delete') {
-                Promise.resolve(onDelete?.(book))
-                    .then(() => {
-                        setReader(null);
-                        setShelfPage(0);
-                    })
-                    .catch((error) => {
-                        setReader({ id: book.id, pages: [], emptyMessage: error instanceof Error ? error.message : '删除资料失败。' });
-                    });
-                return;
-            }
-            Promise.resolve(onOpen?.(book))
-                .then((detail) => {
-                    if (detail) setReader(readerPages(detail, book.id, book, goals, bookmarks));
-                })
-                .catch((error) => {
-                    setReader({ pages: [], emptyMessage: error instanceof Error ? error.message : '无法读取这本资料。' });
-                });
-        };
-        window.addEventListener('message', receive);
-        return () => window.removeEventListener('message', receive);
-    }, [bookmarks, books, goals, onCreateAnnotation, onDelete, onDeleteWord, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord, totalPages]);
+    useBookshelfBridge({
+        frame,
+        books,
+        goals,
+        bookmarks,
+        totalPages,
+        callbacks: { onCreateAnnotation, onDelete, onDeleteWord, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord },
+        state: { setBookTitle, setComposerOpen, setEditing, setGoalId, setLanguage, setMeaning, setReader, setShelfPage, setStatus, setSubject, setSubjectFilter, setTags, setTopic, setWord, setBookmarks }
+    });
 
     useEffect(() => {
         if (!reader || !frame.current?.contentWindow) return;

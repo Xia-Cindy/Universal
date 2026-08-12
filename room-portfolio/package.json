@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "vite serve --host",
         "build": "vite build",
+        "test:bookshelf": "node --test src/bookshelf/*.test.mjs",
         "eslint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
         "preview": "vite preview --host",
         "prettier": "prettier --write ."

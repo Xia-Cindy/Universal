@@ -1,7 +1,7 @@
 # Universe OS 代码优化与功能新增计划
 
 日期：2026-08-12
-状态：O1、F1 已完成；其余阶段待按顺序实施
+状态：O1、F1、O2 已完成；其余阶段待按顺序实施
 依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
 
 ## 0. 审计结论与边界
@@ -47,6 +47,14 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **风险：** HTTP 成功只能证明 SPA fallback 与代理可达，不能单独证明 Three.js 场景已经挂载或视觉正确。
 - **验收结果：** 脚本覆盖 `/`、`/study`、`/study/plan`、`/study/knowledge`、`/study/wordbook`、`/study/cards`、`/work`、`/novel` 及 `/api/health`；真实本地服务全部通过。浏览器级抽查确认每条路由的 React 根节点已挂载，Knowledge/Wordbook 包含书架 iframe，且未捕获运行时 error。
 - **后续门槛：** O2/O3 拆分前必须先运行此脚本、路由合同测试、完整后端测试和浏览器级核心路径抽查。
+
+### O2 交付记录（2026-08-13）
+
+- **目标：** 在不改变已确认的参考书架画面、实体翻页、API 或 iframe 通信事件的条件下，降低 `DeployedBooks.jsx` 的职责耦合。
+- **受影响文件：** `room-portfolio/src/DeployedBooks.jsx`、`room-portfolio/src/bookshelf/shelfCatalog.js`、`readerModel.js`、`useBookshelfBridge.js`、`bookshelfModels.test.mjs`、`room-portfolio/package.json`。
+- **数据库/API：** 无 migration、后端 API 或 `postMessage` event/payload 变更。新模块只承接既有目录计算、真实 chunk 到阅读页的映射，以及父窗口的消息分派。
+- **风险与控制：** 参考书架仍来自受控 iframe 文档，事件桥接是高风险边界；保留原始事件名、回调和书签 localStorage key，未移动 iframe 内已验收的 CSS/动画脚本。
+- **验收：** `npm run test:bookshelf` 覆盖三册分页、筛选、真实 chunk、注释与书签模型；eslint、Vite build、5180 核心 route smoke 通过。浏览器重新打开已处理 PDF，封面展开后仍显示原始 chunk 和 `第 1 / 1 页`，无 console error。
 
 ## 2. 新增功能计划
 

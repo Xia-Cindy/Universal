@@ -5,7 +5,7 @@
 - [x] Audit the active runtime, renderer boundary, Git history and stale documentation; document that the room is Three.js while the active bookshelf is DOM/CSS 3D.
 - [x] Consolidate the spatial client's duplicate Study/Work Knowledge resource selection without changing the API contract.
 - [x] Add a 5180 core-route smoke suite for the normal entry, Study, Plan, Knowledge, Wordbook, Cards, Work, Novel and the Vite API proxy before splitting any large spatial client module.
-- [ ] Split bookshelf bridge, reader and annotation presentation responsibilities after the regression baseline passes.
+- [x] Split bookshelf catalog, reader-page model and iframe bridge responsibilities after the regression baseline passes; retain the confirmed reference scene and `postMessage` contract.
 - [ ] Verify source license and actual implementation before localizing any external bookshelf resources.
 - [x] Run one controlled RAGFlow TXT, Markdown and PDF acceptance set with a valid embedding provider; record `processed`, chunk evidence, reader content and Tutor source links without requeueing existing long PDFs.
 - [x] Complete F1 runtime acceptance with one approved new PDF after restoring a stuck worker; leave existing long PDFs unsubmitted and record the evidence in the dated plan and installation guide.

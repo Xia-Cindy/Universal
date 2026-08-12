@@ -1,0 +1,38 @@
+export function readerPages(detail, documentId, book, goals = [], bookmarks = {}) {
+    const document = detail?.document || {};
+    const isProcessing = ['parsing', 'chunking'].includes(document.processingStatus);
+    const metadata = {
+        title: book?.title || book?.fileName || '阅读',
+        author: book?.subtitle || book?.fileType || 'KNOWLEDGE',
+        ...(isProcessing
+            ? {
+                readingStatus: '持续解析中：已完成的内容现在可以阅读，剩余页面会继续同步。',
+                author: `${book?.subtitle || book?.fileType || 'KNOWLEDGE'} · 持续解析中`
+            }
+            : {})
+    };
+    if (Array.isArray(detail?.pages)) {
+        return { id: documentId, bookmarkId: String(documentId), book: metadata, pages: detail.pages, cards: [], goals, bookmark: bookmarks[documentId] || null };
+    }
+    const pages = (detail?.chunks || []).flatMap((chunk) => {
+        const content = String(chunk.content || '').trim();
+        return content.match(/[\s\S]{1,680}(?:\s|$)|[\s\S]{1,680}/g) || [];
+    }).filter(Boolean).map((content) => ({ content }));
+    const cards = (detail?.annotations || []).filter((annotation) => annotation.annotationType === 'card' || annotation.annotationType === 'note');
+    if (pages.length) {
+        return { id: documentId, bookmarkId: String(documentId), book: metadata, pages, cards, goals, bookmark: bookmarks[documentId] || null };
+    }
+    const provider = document.provider === 'ragflow' ? 'RAGFlow' : '本地知识库';
+    return {
+        id: documentId,
+        bookmarkId: String(documentId),
+        book: metadata,
+        pages: [],
+        cards,
+        goals,
+        bookmark: bookmarks[documentId] || null,
+        emptyMessage: isProcessing
+            ? `${provider} 正在处理这本资料，尚未返回可翻阅的页面。\n状态：${document.providerStatus || document.processingStatus || '处理中'}。`
+            : document.errorMessage || '这本资料还没有生成可翻阅的页面。'
+    };
+}
