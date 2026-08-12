@@ -37,3 +37,28 @@ test('reader pages preserve real chunks, annotations and local bookmarks', () =>
     assert.equal(model.cards[0].recallSchedule.nextReviewDate, '2026-08-14');
     assert.deepEqual(model.bookmark, { page: 1 });
 });
+
+test('reader uses a newer synced reading position but retains a newer local fallback', () => {
+    const detail = {
+        document: { processingStatus: 'processed' },
+        chunks: [{ content: 'A' }],
+        readingProgress: {
+            spreadIndex: 4,
+            pageNumber: 5,
+            bookmarkLabel: '同步位置',
+            clientUpdatedAt: '2026-08-13T10:10:00+08:00',
+            updatedAt: '2026-08-13T10:10:01+08:00'
+        }
+    };
+    const remote = readerPages(detail, 'doc-sync', {}, [], {
+        'doc-sync': { page: 1, updatedAt: '2026-08-13T10:00:00+08:00' }
+    });
+    const local = readerPages(detail, 'doc-sync', {}, [], {
+        'doc-sync': { page: 3, spreadIndex: 2, updatedAt: '2026-08-13T10:20:00+08:00' }
+    });
+
+    assert.equal(remote.bookmark.page, 5);
+    assert.equal(remote.bookmark.label, '同步位置');
+    assert.equal(local.bookmark.page, 3);
+    assert.equal(local.bookmark.spreadIndex, 2);
+});

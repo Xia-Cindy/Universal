@@ -97,6 +97,13 @@ export const roomApi = {
             method: 'PUT',
             body: JSON.stringify(payload)
         }),
+    knowledgeReadingProgress: (documentId) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/reading-progress`),
+    saveKnowledgeReadingProgress: (documentId, payload) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/reading-progress`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        }),
     createKnowledgeShareGrant: (documentId, payload) =>
         apiRequest(`/api/study/knowledge/documents/${documentId}/share-grants`, {
             method: 'POST',

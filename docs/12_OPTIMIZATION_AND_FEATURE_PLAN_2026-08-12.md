@@ -151,6 +151,13 @@ F4 授权 ──> F5 多 Goal 资料关联
 - **数据库/API：** 拟新增 `reading_progress`，唯一键 `(user_id, document_id)`；拟新增 `GET/PUT /api/study/knowledge/documents/{id}/reading-progress`。`spreadIndex` 是可恢复的权威位置，`pageNumber` 仅为读者提示；不回填浏览器私有 localStorage。
 - **风险与控制：** 不把页码当作 PDF/provider 页码、学习时长、Goal 完成或 Wordbook 复习事实。客户端先落 localStorage，再 best-effort 同步；跨设备用 `clientUpdatedAt` 与服务端时间解决 last-write-wins 冲突。资料删除清理进度，Goal link/Work grant 变化不影响源资料进度。
 - **实施门槛与验收：** SQLite/PostgreSQL 重启、离线回退、双设备新旧冲突、页码 clamp、资料删除和 5180 断网/恢复均需覆盖；不得新增 RAGFlow 任务或 Goal mastery。完整设计见 `docs/14_READING_PROGRESS_SYNC_DESIGN_2026-08-13.md`。
+
+### F2 2026-08-13 实施记录
+
+- **完成内容：** 新增 PostgreSQL `023_reading_progress.sql` 与 SQLite `011_reading_progress.sql`，以 `(user_id, document_id)` 保存可选资料阅读位置。新增 `GET/PUT /api/study/knowledge/documents/{id}/reading-progress`；服务端验证资料归属，并在数据库 upsert 冲突条件中原子保留最新 `clientUpdatedAt`，过期客户端写入返回 `server_newer` 而不覆盖。
+- **阅读器语义：** iframe 的书签仍立即写入 `universe-books:reader-bookmarks`；随后尽力 PUT。打开书本先用本地值，只有远端位置更新时才采用远端。同步失败只显示“仅保存在本设备”，不阻塞翻页或把 API 故障误报为资料失败。
+- **边界：** 位置只包含双页 `spreadIndex`、显示页码和可选短标签；不保存内容、划线、阅读历史、Goal mastery、Wordbook 事实或 RAGFlow 任务。资料删除清理对应进度；Goal 链接与 Work 授权变动不会删除源资料进度。
+- **验收：** 新增 `tests/test_reading_progress.py` 覆盖接受/拒绝过期写入、原子 upsert、字段校验、资料删除、无 Learning Event 与 SQLite 重启；完整后端回归 199 通过。书架模型覆盖本地/远端最新位置选择；eslint、书架测试和 Vite build 通过。重启 API 后，真实 5180 proxy PUT/GET 对现有资料返回 `accepted` 和相同的 page/spread/label，过期 PUT 返回 `server_newer`，未调用 parse/retry。
 O4 必须在来源许可与实际参考实现确认后再开始，不能以“外观类似”为依据自行重写。
 
 ## 4. 每个阶段的交付要求

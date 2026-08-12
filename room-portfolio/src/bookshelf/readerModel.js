@@ -13,8 +13,9 @@ export function readerPages(
             }
             : {})
     };
+    const bookmark = newestBookmark(bookmarks[documentId], detail?.readingProgress);
     if (Array.isArray(detail?.pages)) {
-        return { id: documentId, bookmarkId: String(documentId), book: metadata, pages: detail.pages, cards: [], goals, bookmark: bookmarks[documentId] || null };
+        return { id: documentId, bookmarkId: String(documentId), book: metadata, pages: detail.pages, cards: [], goals, bookmark };
     }
     const pages = (detail?.chunks || []).flatMap((chunk) => {
         const content = String(chunk.content || '').trim();
@@ -31,7 +32,7 @@ export function readerPages(
             recallSchedule: schedulesBySource.get(`knowledge_annotation:${annotation.id}`) || null
         }));
     if (pages.length) {
-        return { id: documentId, bookmarkId: String(documentId), book: metadata, pages, cards, goals, bookmark: bookmarks[documentId] || null };
+        return { id: documentId, bookmarkId: String(documentId), book: metadata, pages, cards, goals, bookmark };
     }
     const provider = document.provider === 'ragflow' ? 'RAGFlow' : '本地知识库';
     return {
@@ -41,9 +42,28 @@ export function readerPages(
         pages: [],
         cards,
         goals,
-        bookmark: bookmarks[documentId] || null,
+        bookmark,
         emptyMessage: isProcessing
             ? `${provider} 正在处理这本资料，尚未返回可翻阅的页面。\n状态：${document.providerStatus || document.processingStatus || '处理中'}。`
             : document.errorMessage || '这本资料还没有生成可翻阅的页面。'
     };
+}
+
+function newestBookmark(localBookmark, remoteProgress) {
+    const remoteBookmark = remoteProgress ? {
+        page: remoteProgress.pageNumber,
+        spreadIndex: remoteProgress.spreadIndex,
+        label: remoteProgress.bookmarkLabel || null,
+        updatedAt: remoteProgress.clientUpdatedAt || remoteProgress.updatedAt,
+        syncStatus: '已同步'
+    } : null;
+    const localTime = timestamp(localBookmark?.updatedAt);
+    const remoteTime = timestamp(remoteBookmark?.updatedAt);
+    return remoteTime > localTime ? remoteBookmark : localBookmark || remoteBookmark;
+}
+
+function timestamp(value) {
+    if (typeof value === 'number') return value;
+    const parsed = Date.parse(value || '');
+    return Number.isFinite(parsed) ? parsed : 0;
 }

@@ -175,6 +175,8 @@ KNOWLEDGE_SHARE_GRANT_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("DELETE", "/api/study/knowledge/share-grants/{grant_id}", "revoke_knowledge_share_grant", "knowledge_share_grants"),
     ApiContract("GET", "/api/study/knowledge/documents/{document_id}/goal-links", "get_knowledge_document_goal_links", "knowledge_goal_links"),
     ApiContract("PUT", "/api/study/knowledge/documents/{document_id}/goal-links", "replace_knowledge_document_goal_links", "knowledge_goal_links"),
+    ApiContract("GET", "/api/study/knowledge/documents/{document_id}/reading-progress", "get_knowledge_reading_progress", "reading_progress"),
+    ApiContract("PUT", "/api/study/knowledge/documents/{document_id}/reading-progress", "save_knowledge_reading_progress", "reading_progress"),
 )
 
 STUDY_RECALL_CONTRACTS: tuple[ApiContract, ...] = (

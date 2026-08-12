@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from backend.app.models import Concept, Document, DocumentChunk, DocumentGoalLink, KnowledgeAnnotation, KnowledgeShareGrant
-from backend.app.persistence.codec import annotation_from_payload, chunk_from_payload, concept_from_payload, document_from_payload, document_goal_link_from_payload, dumps, knowledge_share_grant_from_payload, loads
+from backend.app.models import Concept, Document, DocumentChunk, DocumentGoalLink, KnowledgeAnnotation, KnowledgeShareGrant, ReadingProgress
+from backend.app.persistence.codec import annotation_from_payload, chunk_from_payload, concept_from_payload, document_from_payload, document_goal_link_from_payload, dumps, knowledge_share_grant_from_payload, loads, reading_progress_from_payload
 from backend.app.persistence.sqlite import SQLitePersistence
 
 
@@ -103,11 +103,39 @@ class SQLiteKnowledgeRepository:
         document = self.get_document(document_id, user_id)
         with self._db.transaction() as db:
             db.execute("DELETE FROM knowledge_annotations WHERE document_id = ?", (document_id,))
+            db.execute("DELETE FROM reading_progress WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM knowledge_share_grants WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM document_goal_links WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM document_chunks WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM documents WHERE id = ?", (document_id,))
         return document
+
+    def get_reading_progress(self, user_id: str, document_id: str) -> ReadingProgress | None:
+        row = self._db.connection.execute(
+            "SELECT payload FROM reading_progress WHERE user_id = ? AND document_id = ?",
+            (user_id, document_id),
+        ).fetchone()
+        return reading_progress_from_payload(loads(row["payload"])) if row else None
+
+    def save_reading_progress(self, progress: ReadingProgress) -> ReadingProgress:
+        payload = progress.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO reading_progress
+                (id,user_id,document_id,spread_index,page_number,bookmark_label,client_updated_at,payload,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(user_id,document_id) DO UPDATE SET
+                spread_index=excluded.spread_index,page_number=excluded.page_number,
+                bookmark_label=excluded.bookmark_label,client_updated_at=excluded.client_updated_at,
+                payload=excluded.payload,updated_at=excluded.updated_at
+                WHERE excluded.client_updated_at > reading_progress.client_updated_at""",
+                (
+                    progress.id, progress.user_id, progress.document_id, progress.spread_index,
+                    progress.page_number, progress.bookmark_label, payload["clientUpdatedAt"],
+                    dumps(payload), payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+        return self.get_reading_progress(progress.user_id, progress.document_id) or progress
 
     def replace_document_goal_links(
         self, user_id: str, document_id: str, goal_ids: list[str]

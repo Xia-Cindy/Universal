@@ -153,7 +153,7 @@ function readerBridge(canDelete, canEdit, canManageShareGrants, readerLabel, mod
       var saved = bookmark;
       if (!saved || !saved.page) { openBookmarkButton.hidden = true; return; }
       openBookmarkButton.hidden = false;
-      openBookmarkButton.textContent = '书签第 ' + saved.page + ' 页';
+      openBookmarkButton.textContent = (saved.label || ('书签第 ' + saved.page + ' 页')) + (saved.syncStatus ? ' · ' + saved.syncStatus : '');
     }
     function goToPage(page) {
       var total = pages.length;
@@ -248,7 +248,7 @@ function readerBridge(canDelete, canEdit, canManageShareGrants, readerLabel, mod
     jumpInput.addEventListener('keydown', function (event) { if (event.key === 'Enter') { event.preventDefault(); goToPage(jumpInput.value); } });
     bookmarkButton.addEventListener('click', function () {
       if (!bookmarkId || !pages.length) return;
-      var saved = { page: spreadIndex + 1, updatedAt: Date.now() };
+      var saved = { page: spreadIndex + 1, spreadIndex: spreadIndex, updatedAt: new Date().toISOString() };
       bookmark = saved;
       window.parent.postMessage({ source: 'universe-books', type: 'save-bookmark', id: bookmarkId, bookmark: saved }, '*');
       bookmarkButton.textContent = '已书签第 ' + saved.page + ' 页';
@@ -356,7 +356,8 @@ function readerBridge(canDelete, canEdit, canManageShareGrants, readerLabel, mod
       pages = Array.isArray(data.pages) && data.pages.length ? data.pages : [{ content: data.emptyMessage || '资料正在准备可翻阅的页面。' }];
       var hint = reader.querySelector('.ur-hint');
       if (hint) hint.textContent = metadata.readingStatus || '轻点左侧书本封面，把它翻开后开始阅读。';
-      spreadIndex = 0;
+      var savedSpread = Number(data.bookmark && data.bookmark.spreadIndex);
+      spreadIndex = Number.isFinite(savedSpread) ? Math.max(0, Math.min(Math.floor(savedSpread / 2) * 2, Math.max(0, pages.length - 1))) : 0;
       renderSpread();
     });
   })();

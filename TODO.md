@@ -16,7 +16,7 @@
 - [x] Add explicit, revocable Study Goal Knowledge grants to active Work Tech Stacks; preserve source ownership and filter Work reads to owned or granted documents only.
 - [x] Design and implement multi-Goal document links with SQLite/PostgreSQL backfill, explicit goal-link APIs, isolated retrieval filtering and Work-grant compatibility; synced reading progress remains a separate pending decision.
 - [x] Design optional user/document reading-progress synchronization while retaining offline browser-local bookmarks and excluding Goal progress or Wordbook review facts.
-- [ ] Implement the approved reading-progress migration, API conflict handling and best-effort 5180 synchronization.
+- [x] Implement the approved reading-progress migration, API conflict handling and best-effort 5180 synchronization.
 
 ## Study Bookshelf Module
 

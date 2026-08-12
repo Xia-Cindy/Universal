@@ -284,10 +284,19 @@ const Experience = React.memo(() => {
         if (detail.document?.provider === 'ragflow' && ['parsing', 'chunking'].includes(detail.document.processingStatus)) {
             const refreshed = await knowledgeResource.refresh(book.id);
             setKnowledgeRevision((revision) => revision + 1);
-            return refreshed;
+            return isWorkKnowledge ? refreshed : { ...refreshed, readingProgress: await roomApi.knowledgeReadingProgress(book.id).catch(() => null) };
         }
-        return detail;
+        return isWorkKnowledge ? detail : { ...detail, readingProgress: await roomApi.knowledgeReadingProgress(book.id).catch(() => null) };
     };
+
+    const saveKnowledgeReadingProgress = async (documentId, bookmark) => roomApi.saveKnowledgeReadingProgress(documentId, {
+        spreadIndex: Number(bookmark.spreadIndex || 0),
+        pageNumber: Number(bookmark.page || 1),
+        bookmarkLabel: bookmark.label || null,
+        clientUpdatedAt: typeof bookmark.updatedAt === 'number'
+            ? new Date(bookmark.updatedAt).toISOString()
+            : bookmark.updatedAt || new Date().toISOString()
+    });
 
     const createWordbookEntry = async (payload) => {
         await roomApi.createWordbookEntry(payload);
@@ -480,6 +489,7 @@ const Experience = React.memo(() => {
                     onMarkAnnotationMastered={isWorkKnowledge || isWordbookBooks ? undefined : markKnowledgeAnnotationMastered}
                     onReviewWord={isWordbookBooks ? reviewWordbookEntry : undefined}
                     onAdjustRecall={isWorkKnowledge ? undefined : adjustRecallSchedule}
+                    onSaveReadingProgress={isWordbookBooks || isWorkKnowledge ? undefined : saveKnowledgeReadingProgress}
                     onOpen={isWordbookBooks ? (book) => wordbookPages(book, recallSchedules) : async (book) => {
                         const detail = await openKnowledgeBook(book);
                         return { ...detail, recallSchedules };

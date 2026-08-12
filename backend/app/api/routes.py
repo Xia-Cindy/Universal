@@ -608,6 +608,14 @@ class ApiFacade:
             "goalIds": document.get("goalIds", []),
         }
 
+    def get_knowledge_reading_progress(self, document_id: str) -> dict[str, object] | None:
+        user = self.users.current_user()
+        return self.knowledge.get_reading_progress(user.id, document_id)
+
+    def save_knowledge_reading_progress(self, document_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.save_reading_progress(user.id, document_id, payload)
+
     def replace_knowledge_document_goal_links(self, document_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         goal_ids = payload.get("goalIds", [])

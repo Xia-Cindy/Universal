@@ -188,6 +188,14 @@ def create_app():
     def replace_knowledge_document_goal_links(document_id: str, payload: dict):
         return api.replace_knowledge_document_goal_links(document_id, payload)
 
+    @app.get("/api/study/knowledge/documents/{document_id}/reading-progress")
+    def get_knowledge_reading_progress(document_id: str):
+        return api.get_knowledge_reading_progress(document_id)
+
+    @app.put("/api/study/knowledge/documents/{document_id}/reading-progress")
+    def save_knowledge_reading_progress(document_id: str, payload: dict):
+        return api.save_knowledge_reading_progress(document_id, payload)
+
     @app.delete("/api/study/knowledge/share-grants/{grant_id}")
     def revoke_knowledge_share_grant(grant_id: str):
         return api.revoke_knowledge_share_grant(grant_id)

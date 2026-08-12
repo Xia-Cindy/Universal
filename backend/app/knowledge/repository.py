@@ -1,4 +1,4 @@
-from backend.app.models import Concept, Document, DocumentChunk, DocumentGoalLink, KnowledgeAnnotation, KnowledgeShareGrant
+from backend.app.models import Concept, Document, DocumentChunk, DocumentGoalLink, KnowledgeAnnotation, KnowledgeShareGrant, ReadingProgress
 
 from backend.app.persistence.knowledge import SQLiteKnowledgeRepository
 
@@ -13,6 +13,7 @@ class KnowledgeRepository:
         self.annotations: dict[str, KnowledgeAnnotation] = {}
         self.share_grants: dict[tuple[str, str, str], KnowledgeShareGrant] = {}
         self.document_goal_links: dict[tuple[str, str, str], DocumentGoalLink] = {}
+        self.reading_progress: dict[tuple[str, str], ReadingProgress] = {}
 
     def save_document(self, document: Document) -> Document:
         self.documents[document.id] = document
@@ -82,7 +83,19 @@ class KnowledgeRepository:
             for key, link in self.document_goal_links.items()
             if link.document_id != document_id
         }
+        self.reading_progress = {
+            key: progress
+            for key, progress in self.reading_progress.items()
+            if progress.document_id != document_id
+        }
         return document
+
+    def get_reading_progress(self, user_id: str, document_id: str) -> ReadingProgress | None:
+        return self.reading_progress.get((user_id, document_id))
+
+    def save_reading_progress(self, progress: ReadingProgress) -> ReadingProgress:
+        self.reading_progress[(progress.user_id, progress.document_id)] = progress
+        return progress
 
     def replace_document_goal_links(
         self, user_id: str, document_id: str, goal_ids: list[str]

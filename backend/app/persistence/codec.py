@@ -16,6 +16,7 @@ from backend.app.models import (
     KnowledgeAnnotation,
     KnowledgeAnnotationType,
     KnowledgeShareGrant,
+    ReadingProgress,
     GoalStatus,
     GoalType,
     LearningEvent,
@@ -270,6 +271,20 @@ def document_goal_link_from_payload(payload: dict[str, Any]) -> DocumentGoalLink
         user_id=payload["userId"],
         document_id=payload["documentId"],
         goal_id=payload["goalId"],
+        id=payload["id"],
+        created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
+def reading_progress_from_payload(payload: dict[str, Any]) -> ReadingProgress:
+    return ReadingProgress(
+        user_id=payload["userId"],
+        document_id=payload["documentId"],
+        spread_index=int(payload.get("spreadIndex", 0)),
+        page_number=int(payload.get("pageNumber", 1)),
+        bookmark_label=payload.get("bookmarkLabel"),
+        client_updated_at=parse_datetime(payload.get("clientUpdatedAt")),
         id=payload["id"],
         created_at=parse_datetime(payload["createdAt"]),
         updated_at=parse_datetime(payload["updatedAt"]),

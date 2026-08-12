@@ -4,6 +4,15 @@ import { readerPages } from './readerModel';
 
 const BOOKMARKS_STORAGE_KEY = 'universe-books:reader-bookmarks';
 
+const syncedBookmark = (bookmark, progress) => ({
+    ...bookmark,
+    page: progress.pageNumber,
+    spreadIndex: progress.spreadIndex,
+    label: progress.bookmarkLabel || bookmark.label || null,
+    updatedAt: progress.clientUpdatedAt || progress.updatedAt || bookmark.updatedAt,
+    syncStatus: progress.conflictResolution === 'server_newer' ? '已采用较新的同步位置' : '已同步'
+});
+
 /**
  * Owns the parent-side iframe protocol. The reference scene remains the
  * source of visual motion; this hook only translates its existing events into
@@ -124,17 +133,41 @@ export function useBookshelfBridge({
                     .catch((error) => state.setStatus(error instanceof Error ? error.message : '无法调整复习日期。'));
                 return;
             }
-            if (message.type === 'save-bookmark') {
+            if (message.type === 'save-bookmark' || message.type === 'save-reading-progress') {
                 const bookmark = message.bookmark;
                 if (!message.id || !bookmark?.page) return;
                 state.setBookmarks((current) => {
-                    const next = { ...current, [String(message.id)]: bookmark };
+                    const next = { ...current, [String(message.id)]: { ...bookmark, syncStatus: '正在同步' } };
                     try { window.localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(next)); } catch {
                         // The current session still retains the bookmark when storage is unavailable.
                     }
                     return next;
                 });
-                state.setReader((current) => String(current?.id) === String(message.id) ? { ...current, bookmark } : current);
+                state.setReader((current) => String(current?.id) === String(message.id) ? {
+                    ...current,
+                    bookmark: { ...bookmark, syncStatus: '正在同步' }
+                } : current);
+                if (!callbacks.onSaveReadingProgress) return;
+                Promise.resolve(callbacks.onSaveReadingProgress(message.id, bookmark))
+                    .then((progress) => {
+                        if (!progress) return;
+                        const nextBookmark = syncedBookmark(bookmark, progress);
+                        state.setBookmarks((current) => {
+                            const next = { ...current, [String(message.id)]: nextBookmark };
+                            try { window.localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(next)); } catch {
+                                // Keep the current React state if browser storage is unavailable.
+                            }
+                            return next;
+                        });
+                        state.setReader((current) => String(current?.id) === String(message.id)
+                            ? { ...current, bookmark: nextBookmark }
+                            : current);
+                    })
+                    .catch(() => {
+                        state.setReader((current) => String(current?.id) === String(message.id)
+                            ? { ...current, bookmark: { ...bookmark, syncStatus: '仅保存在本设备' } }
+                            : current);
+                    });
                 return;
             }
             if (message.type === 'edit-word' || message.type === 'delete-word') {

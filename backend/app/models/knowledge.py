@@ -74,6 +74,34 @@ class DocumentGoalLink:
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
         }
+
+
+@dataclass
+class ReadingProgress:
+    """A user's optional resume position for one source Knowledge document."""
+
+    user_id: str
+    document_id: str
+    spread_index: int = 0
+    page_number: int = 1
+    bookmark_label: str | None = None
+    client_updated_at: datetime = field(default_factory=local_now)
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "documentId": self.document_id,
+            "spreadIndex": self.spread_index,
+            "pageNumber": self.page_number,
+            "bookmarkLabel": self.bookmark_label,
+            "clientUpdatedAt": self.client_updated_at.isoformat(),
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
 @dataclass
 class Document:
     user_id: str

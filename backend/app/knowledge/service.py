@@ -3,6 +3,7 @@ from base64 import b64decode, b64encode
 from copy import copy
 
 from backend.app.core.dates import local_now
+from backend.app.core.dates import parse_datetime
 from backend.app.files import FileService, UnsupportedFileTypeError
 from backend.app.knowledge.providers import KnowledgeProvider
 from backend.app.models import (
@@ -14,6 +15,7 @@ from backend.app.models import (
     KnowledgeAnnotation,
     KnowledgeAnnotationType,
     KnowledgeShareGrant,
+    ReadingProgress,
 )
 from backend.app.knowledge.repository import KnowledgeRepository
 from backend.app.services.evidence import evidence_source
@@ -543,6 +545,32 @@ class KnowledgeService:
             ],
         }
 
+    def get_reading_progress(self, user_id: str, document_id: str) -> dict[str, object] | None:
+        self._repository.get_document(document_id, user_id)
+        progress = self._repository.get_reading_progress(user_id, document_id)
+        return progress.to_dict() if progress else None
+
+    def save_reading_progress(
+        self, user_id: str, document_id: str, payload: dict[str, object]
+    ) -> dict[str, object]:
+        self._repository.get_document(document_id, user_id)
+        spread_index = _required_non_negative_integer(payload.get("spreadIndex"), "spreadIndex")
+        page_number = _required_positive_integer(payload.get("pageNumber"), "pageNumber")
+        bookmark_label = _nullable_short_text(payload.get("bookmarkLabel"), field_name="bookmarkLabel")
+        client_updated_at = parse_datetime(payload.get("clientUpdatedAt"))
+        existing = self._repository.get_reading_progress(user_id, document_id)
+        if existing and client_updated_at <= existing.client_updated_at:
+            return {**existing.to_dict(), "conflictResolution": "server_newer"}
+        progress = existing or ReadingProgress(user_id=user_id, document_id=document_id)
+        progress.spread_index = spread_index
+        progress.page_number = page_number
+        progress.bookmark_label = bookmark_label
+        progress.client_updated_at = client_updated_at
+        progress.updated_at = local_now()
+        saved = self._repository.save_reading_progress(progress)
+        resolution = "accepted" if saved.id == progress.id else "server_newer"
+        return {**saved.to_dict(), "conflictResolution": resolution}
+
     def list_annotations(self, user_id: str, document_id: str) -> list[dict[str, object]]:
         self._repository.get_document(document_id, user_id)
         return [
@@ -721,6 +749,34 @@ def _annotation_text(value: object) -> str:
 def _nullable_annotation_text(value: object) -> str | None:
     value = _annotation_text(value)
     return value or None
+
+
+def _required_non_negative_integer(value: object, field_name: str) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a non-negative integer")
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be a non-negative integer") from exc
+    if parsed < 0:
+        raise ValueError(f"{field_name} must be a non-negative integer")
+    return parsed
+
+
+def _required_positive_integer(value: object, field_name: str) -> int:
+    parsed = _required_non_negative_integer(value, field_name)
+    if parsed < 1:
+        raise ValueError(f"{field_name} must be a positive integer")
+    return parsed
+
+
+def _nullable_short_text(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    if len(normalized) > 120:
+        raise ValueError(f"{field_name} must be 120 characters or fewer")
+    return normalized or None
 
 
 def _annotation_terms(value: object) -> list[str]:
