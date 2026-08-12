@@ -75,7 +75,7 @@
 
 ## 仍需真实运行验收
 
-- RAGFlow 的真实 TXT、Markdown 与大 PDF 必须在有效 embedding provider 配置下到达 `processed`，并验证 chunk、引用位置和阅读页内容；当前代码只保证状态、重试与已返回 chunks 的处理逻辑。
+- 2026-08-13 已以受控 TXT、Markdown 和新 PDF 完成有效 embedding 的 `processed`、chunk、引用来源和阅读页验收。仍需逐份核对既有大 PDF；它们不因该小型样本通过而被视为完成，也不应为验收目的自动重试。
 - PostgreSQL、RAGFlow 与对象存储的生产备份、恢复演练和外部凭据管理仍需由部署环境完成。
 
 ## 本轮验收命令

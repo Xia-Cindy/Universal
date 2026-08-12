@@ -1627,11 +1627,11 @@ Not changed:
 - Provider 删除会先同步删除 RAGFlow document，再删除 Universe metadata 和本地 chunk preview。
 - Provider retrieval 只提交当前 Universe scope 内、已 `processed` 的 provider document id，避免处于索引中、失败或陈旧的 provider 文档成为 Tutor Evidence。
 
-当前未通过的外部验收：
+当前外部验收边界：
 
-- 已确认此前的 embedding provider key 问题在部署配置中修复；Universe 不缓存该配置结论，仍须以新的 TXT、Markdown、PDF runtime sample 确认状态能到达 `processed`。
-- Runtime sample 完成前，不把 RAGFlow-backed Knowledge 描述为已完成生产验收。
-- Citation / source click-through 使用统一 Evidence 合同；跨 provider 的位置语义仍需在真实 runtime sample 中确认。
+- 2026-08-13 已使用新的受控 TXT、Markdown、PDF runtime samples 确认有效 embedding 后均可到达 `processed`；Universe 不缓存或暴露 provider 凭据。
+- 该样本证明 RAGFlow-backed Knowledge 的最小 runtime 闭环，不代表所有历史资料或生产容量验收完成；大 PDF、恢复演练和跨 provider 行为仍需逐项记录。
+- Citation / source click-through 已在该受控验收中回链到 Universe Knowledge source；跨 provider 的位置语义仍需按 provider 单独验证。
 
 ## 30. Current Platform Foundation Status
 
@@ -1644,7 +1644,7 @@ Not changed:
 - Plan Builder 已支持 Goal -> Long Term -> Monthly -> Weekly -> Daily 的父级校验、节点创建和同日任务排序。自动规划仍未实现。
 - Study Knowledge 已从 Markdown-only textarea 升级为正文编辑器，支持标题、加粗、颜色、图片、表格、代码块、对齐、行列操作、合并和拆分单元格。
 - Work Tech Stack 详情默认展示文章/笔记库；Work Home、技术栈目录和详情页提供显式写文章入口，只有用户主动进入后才展开同类正文编辑器。
-- RAGFlow embedding、LLM、rerank 仍由 RAGFlow 管理；Universe health endpoint 只报告 API 可达性和可选标签，不伪造模型运行成功。真实 TXT、Markdown、PDF processed acceptance 仍必须通过 runtime samples。
+- RAGFlow embedding、LLM、rerank 仍由 RAGFlow 管理；Universe health endpoint 只报告 API 可达性和可选标签，不伪造模型运行成功。受控 TXT、Markdown、PDF 已通过 runtime samples；其它历史或大文件仍必须逐份核对。
 - RAGFlow dataset scope implementation status：Study 使用 `Universe OS Knowledge / Study / {goal name} ({goal id prefix})`，Work 使用 `Universe OS Knowledge / Work / {tech stack name} ({tech stack id prefix})`；上传前会按完整名称查找并复用已有 dataset，避免服务重启或重复上传生成重复作用域。
 - RAGFlow 异步失败状态会保留 `providerErrorCode`；包括 `InvalidApiKey` 在内的历史或新错误都会在 UI 显示可执行的 retry / provider 检查提示。该处理不绕过 RAGFlow，也不把外部凭证写入 Universe。
 

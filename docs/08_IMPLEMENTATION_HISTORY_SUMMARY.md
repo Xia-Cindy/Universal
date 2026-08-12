@@ -839,7 +839,7 @@ Goal
 - 将 Knowledge 文档与 Wordbook tag 映射为实体书；阅读器支持封面开启、无滚动双页、翻页、页码跳转和本地书签。
 - 将划线笔记与知识卡片保持为原资料归属对象；黑板只读取这些对象，不创建平行数据存储。
 - 为 Wordbook 增加英语正面/个人释义背面的记忆卡，以及可持久化的背过/记错状态。
-- 明确 RAGFlow 处理中可展示已返回 chunks，但真实 TXT、Markdown、PDF 的 `processed` 验收仍未完成。
+- 明确 RAGFlow 处理中可展示已返回 chunks；截至本段空间交付时，真实 TXT、Markdown、PDF 的 `processed` 验收仍未完成，后续 F1 运行时验收见本文件的 2026-08-13 补充记录。
 
 ## 对应交付依据
 
@@ -962,12 +962,12 @@ Goal
 
 本次执行已补齐 RAGFlow runtime contract：health check、异步 status refresh、Study Knowledge 前端轮询、失败 retry 和删除同步。完整测试及 frontend build 已通过。
 
-本地 RAGFlow health/API 访问正常，但真实文档解析在 embedding provider 阶段因 `InvalidApiKey` 失败。因此 TXT、Markdown、PDF 的 `processed` 验收尚未通过；产品文案继续标记为实验性，待 RAGFlow embedding provider 配置有效后再做真实样本验收。
+这是首次 runtime 的历史失败记录：当时真实文档解析在 embedding provider 阶段因 `InvalidApiKey` 失败。该问题随后由部署配置修复；2026-08-13 的 F1 受控 TXT、Markdown 与新 PDF 均已达到 `processed`、非零 provider chunk、检索/Tutor 来源回链和 5180 阅读器验收。该结果不推定此前两份历史长 PDF 已完成或应被重试。
 
 ## 27.2 四阶段产品闭环
 
 - Shared persistence 阶段补齐 SQLite migration runner、repository adapters、唯一 Study current context，并保持现有 service boundaries。
-- RAGFlow runtime 阶段补齐 health/status polling/retry/delete contract；真实 embedding provider key 仍是外部 blocker。
+- RAGFlow runtime 阶段补齐 health/status polling/retry/delete contract；随后完成受控 TXT、Markdown、PDF 的有效 embedding runtime acceptance。历史长文档仍需按单文档状态单独判断。
 - Citation/Evidence 阶段补齐 Tutor scope、统一 source shape、quote preview、Knowledge click-through 和保存 Learning Event。
 - Review 阶段补齐 Wrong Question、1/3/7/30 review items、幂等完成和 Analytics summary；Review 不依赖 AI。
 - Session execution finish 会在首次结束时同步关联 Task、Learning Event 和 Memory write point，重复 finish 不重复计数。

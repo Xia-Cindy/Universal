@@ -17,6 +17,7 @@
 
 ### Changed
 
+- **2026-08-13 O5 Study Session transaction design:** documented the approved no-schema-change unit-of-work boundary for Session, Task, Learning Event and two Memory writes. This is a design record only; the current implementation still has separate repository transactions and is not represented as an atomic delivery.
 - **2026-08-13 O3 spatial style scoping:** moved the Knowledge bookshelf overlay/composer and Blackboard instrument styles out of the room shell into dedicated CSS modules. Existing visual values, responsive rules and z-index ordering remain unchanged; shared spatial layer tokens are now explicit in the root theme.
 - **2026-08-13 O2 bookshelf responsibility split:** separated the physical shelf catalog, reader-page model and parent-side iframe protocol from `DeployedBooks.jsx`. The deployed reference HTML, visual motion, `postMessage` names and Universe API callbacks remain unchanged; new Node tests cover the pure catalog and page-model behavior.
 - **2026-08-12 code and documentation audit:** centralized the spatial client's Study/Work Knowledge resource selection without changing API behavior; refreshed stale product, runtime, RAGFlow and implementation-history documentation; added a staged code-optimization and feature plan. The active bookshelf is now described accurately as a reference DOM/CSS 3D iframe scene, while the room remains Three.js.

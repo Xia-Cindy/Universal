@@ -1,7 +1,7 @@
 # Universe OS 代码优化与功能新增计划
 
 日期：2026-08-12
-状态：O1、F1、O2、O3 已完成；其余阶段待按顺序实施
+状态：O1、F1、O2、O3 已完成；O5 的实施设计已确认、代码尚未实施；其余阶段待按顺序实施
 依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
 
 ## 0. 审计结论与边界
@@ -63,6 +63,14 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **数据库/API：** 无。CSS 选择器、数值、响应式规则和 iframe 内参考样式均未改变；root 只新增表达既有书架层级的共享 z-index token。
 - **风险与控制：** 导入顺序会影响层叠结果，因此两个模块在原全局字体 import 后加载，保留相同 specificity 和实际 z-index。
 - **验收：** eslint、Vite build、5180 核心路由 smoke 通过；浏览器确认 `/study/knowledge` 的 iframe 与 `/study/cards` 的知识黑板均挂载且无 console error。
+
+### O5 设计记录（2026-08-13）
+
+- **目标：** 明确 Study Session 完成时 Session、Task、Learning Event 与两条 Memory 的 application unit-of-work，消除“各 repository 各自提交”造成的部分写入风险。
+- **受影响文件（实施时）：** `backend/app/planets/study/execution/service.py`、sessions service、Study/Memory persistence adapters、SQLite/PostgreSQL persistence、routes 错误映射与故障注入测试。
+- **数据库/API：** 不需要 migration；保留现有 execution finish API 形状。稳定 session ID、event ID 与 memory ID 已足以作为幂等边界。
+- **设计结论：** 在 shared persistence 的一个 transaction 内，以 Session `in_progress -> finished` 条件更新作为并发线性化点；Task、Event 和两条 Memory 只在同一 transaction 内写入。不得通过嵌套现有 repository transaction 实现。
+- **实施门槛：** SQLite、PostgreSQL 和 in-memory 语义都必须覆盖成功、重复、故障注入和并发；旧半完成数据单独、可审计地修复，不能在普通 finish 请求中静默补写。完整设计见 `docs/13_STUDY_SESSION_UNIT_OF_WORK_DESIGN_2026-08-13.md`。
 
 ## 2. 新增功能计划
 

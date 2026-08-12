@@ -503,7 +503,7 @@ RAGFlow provider 接收 PDF 后，Universe 会记录：
 chunking
 ```
 
-此前 embedding provider key 曾阻止异步处理；该部署配置现已修复。仍须用新的 runtime sample 确认 RAGFlow 的解析、embedding、状态轮询、chunk cache 和 Retrieval 链路完整通过。
+此前 embedding provider key 曾阻止异步处理；该部署配置已修复。2026-08-13 的受控 TXT、Markdown 与新 PDF runtime sample 已确认解析、embedding、状态轮询、chunk cache、Retrieval 与 Tutor 来源链路通过；既有长 PDF 仍按各自状态单独核对。
 
 ## 7.2 Required Diagnosis
 

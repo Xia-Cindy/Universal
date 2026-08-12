@@ -10,7 +10,8 @@
 - [ ] Verify source license and actual implementation before localizing any external bookshelf resources.
 - [x] Run one controlled RAGFlow TXT, Markdown and PDF acceptance set with a valid embedding provider; record `processed`, chunk evidence, reader content and Tutor source links without requeueing existing long PDFs.
 - [x] Complete F1 runtime acceptance with one approved new PDF after restoring a stuck worker; leave existing long PDFs unsubmitted and record the evidence in the dated plan and installation guide.
-- [ ] Design the Study Session unit-of-work before changing Task/Event/Memory write behavior.
+- [x] Design the Study Session unit-of-work before changing Task/Event/Memory write behavior; preserve the execution-finish API and require failure-injection coverage before implementation.
+- [ ] Implement the approved Study Session unit-of-work across SQLite/PostgreSQL adapters, including partial-write rollback, concurrent-finish and legacy-repair evidence.
 - [ ] Design migrations and API contracts for optional synced reading progress, interval review scheduling, Knowledge-share grants and multi-Goal document links before implementation.
 
 ## Study Bookshelf Module
