@@ -234,6 +234,12 @@ class WorkService:
             return False
         if document.get("techStackId") == tech_stack.get("id"):
             return True
+        if any(
+            grant.get("techStackId") == tech_stack.get("id")
+            for grant in document.get("shareGrants", [])
+            if isinstance(grant, dict)
+        ):
+            return True
         haystack = " ".join(
             str(value)
             for value in (

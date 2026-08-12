@@ -14,6 +14,7 @@ from backend.app.models import (
     DocumentType,
     KnowledgeAnnotation,
     KnowledgeAnnotationType,
+    KnowledgeShareGrant,
     GoalStatus,
     GoalType,
     LearningEvent,
@@ -247,6 +248,18 @@ def annotation_from_payload(payload: dict[str, Any]) -> KnowledgeAnnotation:
         mastered=bool(payload.get("mastered", False)),
         mastered_at=parse_datetime(payload["masteredAt"]) if payload.get("masteredAt") else None,
         id=payload["id"], created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
+def knowledge_share_grant_from_payload(payload: dict[str, Any]) -> KnowledgeShareGrant:
+    return KnowledgeShareGrant(
+        user_id=payload["userId"],
+        document_id=payload["documentId"],
+        source_goal_id=payload["sourceGoalId"],
+        tech_stack_id=payload["techStackId"],
+        id=payload["id"],
+        created_at=parse_datetime(payload["createdAt"]),
         updated_at=parse_datetime(payload["updatedAt"]),
     )
 

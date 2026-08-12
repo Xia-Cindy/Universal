@@ -31,6 +31,28 @@ def _id() -> str:
 
 
 @dataclass
+class KnowledgeShareGrant:
+    """A revocable, read-only Study Knowledge reference for one Work Tech Stack."""
+
+    user_id: str
+    document_id: str
+    source_goal_id: str
+    tech_stack_id: str
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "documentId": self.document_id,
+            "sourceGoalId": self.source_goal_id,
+            "techStackId": self.tech_stack_id,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
+@dataclass
 class Document:
     user_id: str
     file_name: str

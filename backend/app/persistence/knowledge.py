@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from backend.app.models import Concept, Document, DocumentChunk, KnowledgeAnnotation
-from backend.app.persistence.codec import annotation_from_payload, chunk_from_payload, concept_from_payload, document_from_payload, dumps, loads
+from backend.app.models import Concept, Document, DocumentChunk, KnowledgeAnnotation, KnowledgeShareGrant
+from backend.app.persistence.codec import annotation_from_payload, chunk_from_payload, concept_from_payload, document_from_payload, dumps, knowledge_share_grant_from_payload, loads
 from backend.app.persistence.sqlite import SQLitePersistence
 
 
@@ -96,9 +96,67 @@ class SQLiteKnowledgeRepository:
         document = self.get_document(document_id, user_id)
         with self._db.transaction() as db:
             db.execute("DELETE FROM knowledge_annotations WHERE document_id = ?", (document_id,))
+            db.execute("DELETE FROM knowledge_share_grants WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM document_chunks WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM documents WHERE id = ?", (document_id,))
         return document
+
+    def save_share_grant(self, grant: KnowledgeShareGrant) -> KnowledgeShareGrant:
+        payload = grant.to_dict()
+        with self._db.transaction() as db:
+            db.execute(
+                """INSERT INTO knowledge_share_grants
+                (id,user_id,document_id,source_goal_id,tech_stack_id,payload,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT(user_id,document_id,tech_stack_id) DO UPDATE SET
+                source_goal_id=excluded.source_goal_id,payload=excluded.payload,updated_at=excluded.updated_at""",
+                (
+                    grant.id, grant.user_id, grant.document_id, grant.source_goal_id,
+                    grant.tech_stack_id, dumps(payload), payload["createdAt"], payload["updatedAt"],
+                ),
+            )
+        return grant
+
+    def list_share_grants(
+        self,
+        user_id: str,
+        *,
+        document_id: str | None = None,
+        tech_stack_id: str | None = None,
+    ) -> list[KnowledgeShareGrant]:
+        clauses = ["user_id = ?"]
+        parameters: list[str] = [user_id]
+        if document_id:
+            clauses.append("document_id = ?")
+            parameters.append(document_id)
+        if tech_stack_id:
+            clauses.append("tech_stack_id = ?")
+            parameters.append(tech_stack_id)
+        rows = self._db.connection.execute(
+            "SELECT payload FROM knowledge_share_grants WHERE " + " AND ".join(clauses) + " ORDER BY created_at",
+            tuple(parameters),
+        ).fetchall()
+        return [knowledge_share_grant_from_payload(loads(row["payload"])) for row in rows]
+
+    def delete_share_grant(self, grant_id: str, user_id: str) -> KnowledgeShareGrant:
+        row = self._db.connection.execute(
+            "SELECT payload FROM knowledge_share_grants WHERE id = ? AND user_id = ?", (grant_id, user_id)
+        ).fetchone()
+        if not row:
+            raise KeyError(grant_id)
+        grant = knowledge_share_grant_from_payload(loads(row["payload"]))
+        with self._db.transaction() as db:
+            db.execute("DELETE FROM knowledge_share_grants WHERE id = ? AND user_id = ?", (grant_id, user_id))
+        return grant
+
+    def delete_share_grants_for_document(self, document_id: str, user_id: str) -> list[KnowledgeShareGrant]:
+        grants = self.list_share_grants(user_id, document_id=document_id)
+        with self._db.transaction() as db:
+            db.execute(
+                "DELETE FROM knowledge_share_grants WHERE document_id = ? AND user_id = ?",
+                (document_id, user_id),
+            )
+        return grants
 
     def list_chunks(self, document_id: str, user_id: str) -> list[DocumentChunk]:
         rows = self._db.connection.execute(

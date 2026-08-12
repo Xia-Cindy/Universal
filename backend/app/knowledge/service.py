@@ -13,6 +13,7 @@ from backend.app.models import (
     DocumentType,
     KnowledgeAnnotation,
     KnowledgeAnnotationType,
+    KnowledgeShareGrant,
 )
 from backend.app.knowledge.repository import KnowledgeRepository
 from backend.app.services.evidence import evidence_source
@@ -71,6 +72,8 @@ class KnowledgeService:
 
     def update_document(self, user_id: str, document_id: str, payload: dict) -> Document:
         document = self._repository.get_document(document_id, user_id)
+        original_goal_id = document.goal_id
+        original_planet_type = document.planet_type
         if "fileName" in payload:
             file_name = str(payload["fileName"]).strip()
             if not file_name:
@@ -95,7 +98,16 @@ class KnowledgeService:
         if "tags" in payload:
             document.tags = tuple(self._normalize_tags(payload["tags"], goal_id=document.goal_id))
         document.updated_at = local_now()
-        return self._repository.save_document(document)
+        saved = self._repository.save_document(document)
+        if (
+            original_planet_type == "study"
+            and (
+                document.planet_type != "study"
+                or document.goal_id != original_goal_id
+            )
+        ):
+            self._repository.delete_share_grants_for_document(document.id, user_id)
+        return saved
 
     def process_document(self, user_id: str, document_id: str) -> dict[str, object]:
         document = self._repository.get_document(document_id, user_id)
@@ -383,6 +395,115 @@ class KnowledgeService:
                 tech_stack_id=tech_stack_id,
             )
         ]
+
+    def list_share_grants(
+        self,
+        user_id: str,
+        *,
+        document_id: str | None = None,
+        tech_stack_id: str | None = None,
+    ) -> list[dict[str, object]]:
+        return [
+            grant.to_dict()
+            for grant in self._repository.list_share_grants(
+                user_id,
+                document_id=document_id,
+                tech_stack_id=tech_stack_id,
+            )
+        ]
+
+    def create_share_grant(
+        self,
+        user_id: str,
+        *,
+        document_id: str,
+        source_goal_id: str,
+        tech_stack_id: str,
+    ) -> dict[str, object]:
+        document = self._repository.get_document(document_id, user_id)
+        if document.planet_type != "study" or document.goal_id != source_goal_id:
+            raise ValueError("Only a Study document linked to its source Goal can be shared with Work")
+        existing = self._repository.list_share_grants(
+            user_id,
+            document_id=document_id,
+            tech_stack_id=tech_stack_id,
+        )
+        if existing:
+            return existing[0].to_dict()
+        return self._repository.save_share_grant(
+            KnowledgeShareGrant(
+                user_id=user_id,
+                document_id=document_id,
+                source_goal_id=source_goal_id,
+                tech_stack_id=tech_stack_id,
+            )
+        ).to_dict()
+
+    def revoke_share_grant(self, user_id: str, grant_id: str) -> dict[str, object]:
+        return self._repository.delete_share_grant(grant_id, user_id).to_dict()
+
+    def list_work_documents(
+        self,
+        user_id: str,
+        *,
+        subject: str | None = None,
+        topic: str | None = None,
+        tech_stack_id: str | None = None,
+    ) -> list[dict[str, object]]:
+        owned = self._repository.list_documents(
+            user_id,
+            subject=subject,
+            topic=topic,
+            planet_type="work",
+            tech_stack_id=tech_stack_id,
+        )
+        grants = self._repository.list_share_grants(user_id, tech_stack_id=tech_stack_id)
+        grant_by_document: dict[str, list[KnowledgeShareGrant]] = {}
+        for grant in grants:
+            grant_by_document.setdefault(grant.document_id, []).append(grant)
+        shared = []
+        for document_id, document_grants in grant_by_document.items():
+            document = self._repository.get_document(document_id, user_id)
+            if (
+                document.planet_type != "study"
+                or document.goal_id is None
+                or any(grant.source_goal_id != document.goal_id for grant in document_grants)
+            ):
+                continue
+            if subject and document.subject != subject:
+                continue
+            if topic and document.topic != topic:
+                continue
+            shared.append((document, document_grants))
+        result = [
+            {**document.to_dict(), "accessMode": "owned", "shareGrants": []}
+            for document in owned
+        ]
+        result.extend(
+            {
+                **document.to_dict(),
+                "accessMode": "granted",
+                "shareGrants": [grant.to_dict() for grant in document_grants],
+            }
+            for document, document_grants in shared
+        )
+        return sorted(result, key=lambda document: str(document["createdAt"]), reverse=True)
+
+    def work_document_detail(self, user_id: str, document_id: str) -> dict[str, object]:
+        document = self._repository.get_document(document_id, user_id)
+        if document.planet_type == "work":
+            access = {"accessMode": "owned", "shareGrants": []}
+        else:
+            grants = self._repository.list_share_grants(user_id, document_id=document_id)
+            if (
+                document.planet_type != "study"
+                or not document.goal_id
+                or not grants
+                or any(grant.source_goal_id != document.goal_id for grant in grants)
+            ):
+                raise PermissionError("Document is not available in Work Knowledge")
+            access = {"accessMode": "granted", "shareGrants": [grant.to_dict() for grant in grants]}
+        return {**self.document_detail(user_id, document_id), **access}
 
     def document_detail(self, user_id: str, document_id: str) -> dict[str, object]:
         document = self._repository.get_document(document_id, user_id)

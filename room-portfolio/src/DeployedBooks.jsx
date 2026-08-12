@@ -15,7 +15,7 @@ const loadReaderBookmarks = () => {
     }
 };
 
-function readerBridge(canDelete, canEdit, readerLabel, mode) {
+function readerBridge(canDelete, canEdit, canManageShareGrants, readerLabel, mode) {
     return `
 <style>
   #universe-reader { display: none; margin-top: 18px; padding: 14px 16px; border: 1px solid rgba(201,208,238,.36); border-radius: 14px; background: rgba(9,13,30,.48); color: #fdfbf4; }
@@ -77,7 +77,7 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     var stage = document.createElement('section');
     stage.id = 'universe-bookstage';
     stage.setAttribute('aria-live', 'polite');
-    stage.innerHTML = '<div class="ub-book"><article class="ub-page ub-left"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><article class="ub-page ub-right"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><i class="ub-spine"></i><button class="ub-front" type="button" aria-label="翻开封面"><span></span><strong></strong><span>点击封面翻开</span></button></div><div class="ub-controls"><button type="button" data-reader-prev>上一页</button><span class="ub-page-count"></span><button type="button" data-reader-next>下一页</button><label class="ub-jump">跳至<input type="number" min="1" inputmode="numeric" aria-label="跳至指定页" data-reader-jump-input><button type="button" data-reader-jump>前往</button></label><button class="ub-fold" type="button" data-reader-bookmark>添加书签</button><button class="ub-fold" type="button" data-reader-open-bookmark hidden></button>${mode === 'wordbook' ? '<button type="button" data-reader-speak>发音</button>' : ''}<button class="ub-fold" type="button" data-reader-cards>${mode === 'wordbook' ? '记忆卡' : '知识卡片'}</button><button class="ub-fold" type="button" data-reader-fold>合上书本</button>${canEdit ? '<button class="ub-fold" type="button" data-reader-edit>编辑</button>' : ''}${canDelete ? `<button class="ub-delete" type="button" data-reader-delete>${mode === 'wordbook' ? '删除单词' : '删除资料'}</button>` : ''}</div><div id="ub-selection"><select data-selection-goal aria-label="关联目标"><option value="">沿用资料目标</option></select><button type="button" data-selection-note>添加到笔记</button><button type="button" data-selection-card>制成知识卡</button></div><section id="ub-card" aria-live="polite"><p class="ub-card-eyebrow"></p><div class="ub-card-content"><p class="ub-card-index"></p><p class="ub-card-prompt"></p><p class="ub-card-answer" hidden></p><p class="ub-card-schedule"></p></div><div class="ub-card-actions"><button type="button" data-card-prev>上一张</button><button type="button" data-card-reveal>翻到背面</button><button type="button" data-card-next>下一张</button><button type="button" data-card-remember>背过了</button><button type="button" data-card-forgot>记错了</button><button type="button" data-card-adjust>调整复习</button><button type="button" data-card-close>回到书页</button></div></section>';
+    stage.innerHTML = '<div class="ub-book"><article class="ub-page ub-left"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><article class="ub-page ub-right"><p class="ub-kicker"></p><h2 class="ub-title"></h2><p class="ub-subtitle"></p><p class="ub-copy"></p><span class="ub-number"></span></article><i class="ub-spine"></i><button class="ub-front" type="button" aria-label="翻开封面"><span></span><strong></strong><span>点击封面翻开</span></button></div><div class="ub-controls"><button type="button" data-reader-prev>上一页</button><span class="ub-page-count"></span><button type="button" data-reader-next>下一页</button><label class="ub-jump">跳至<input type="number" min="1" inputmode="numeric" aria-label="跳至指定页" data-reader-jump-input><button type="button" data-reader-jump>前往</button></label><button class="ub-fold" type="button" data-reader-bookmark>添加书签</button><button class="ub-fold" type="button" data-reader-open-bookmark hidden></button>${mode === 'wordbook' ? '<button type="button" data-reader-speak>发音</button>' : ''}<button class="ub-fold" type="button" data-reader-cards>${mode === 'wordbook' ? '记忆卡' : '知识卡片'}</button>${canManageShareGrants ? '<button class="ub-fold" type="button" data-reader-share>授权 Work</button>' : ''}<button class="ub-fold" type="button" data-reader-fold>合上书本</button>${canEdit ? '<button class="ub-fold" type="button" data-reader-edit>编辑</button>' : ''}${canDelete ? `<button class="ub-delete" type="button" data-reader-delete>${mode === 'wordbook' ? '删除单词' : '删除资料'}</button>` : ''}</div><div id="ub-selection"><select data-selection-goal aria-label="关联目标"><option value="">沿用资料目标</option></select><button type="button" data-selection-note>添加到笔记</button><button type="button" data-selection-card>制成知识卡</button></div><section id="ub-card" aria-live="polite"><p class="ub-card-eyebrow"></p><div class="ub-card-content"><p class="ub-card-index"></p><p class="ub-card-prompt"></p><p class="ub-card-answer" hidden></p><p class="ub-card-schedule"></p></div><div class="ub-card-actions"><button type="button" data-card-prev>上一张</button><button type="button" data-card-reveal>翻到背面</button><button type="button" data-card-next>下一张</button><button type="button" data-card-remember>背过了</button><button type="button" data-card-forgot>记错了</button><button type="button" data-card-adjust>调整复习</button><button type="button" data-card-close>回到书页</button></div></section>';
     document.body.appendChild(stage);
     var pages = [];
     var spreadIndex = 0;
@@ -91,6 +91,7 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
     var previous = stage.querySelector('[data-reader-prev]');
     var next = stage.querySelector('[data-reader-next]');
     var fold = stage.querySelector('[data-reader-fold]');
+    var share = stage.querySelector('[data-reader-share]');
     var remove = stage.querySelector('[data-reader-delete]');
     var edit = stage.querySelector('[data-reader-edit]');
     var speak = stage.querySelector('[data-reader-speak]');
@@ -258,6 +259,9 @@ function readerBridge(canDelete, canEdit, readerLabel, mode) {
       if (saved && saved.page) goToPage(saved.page);
     });
     fold.addEventListener('click', closeReading);
+    if (share) share.addEventListener('click', function () {
+      if (documentId) window.parent.postMessage({ source: 'universe-books', type: 'manage-share-grants', id: documentId }, '*');
+    });
     cardsButton.addEventListener('click', openCards);
     stage.querySelector('[data-card-prev]').addEventListener('click', function () {
       if ('${mode}' === 'wordbook' || !cards.length) return;
@@ -486,6 +490,7 @@ const painter = `
 function buildDocument(source, books, shelfPage, totalPages, subjects, subjectFilter, {
     canDelete,
     canEdit,
+    canManageShareGrants,
     canOpenKnowledge,
     canOpenWordbook,
     filterLabel,
@@ -509,7 +514,7 @@ function buildDocument(source, books, shelfPage, totalPages, subjects, subjectFi
       universeOpenButton.setAttribute("aria-label", "打开当前词汇书阅读");
       universeOpenButton.addEventListener("click", () => open(state.hovered || state.pillLock || books[1] || books[0]));`
         )
-        .replace('</body>', `${shelfFilterBridge(subjects, subjectFilter, filterLabel)}${shelfPagerBridge(shelfPage, totalPages)}${readerBridge(canDelete, canEdit, mode === 'wordbook' ? 'VOCABULARY PAGES' : 'KNOWLEDGE PAGES', mode)}</body>`)} `;
+        .replace('</body>', `${shelfFilterBridge(subjects, subjectFilter, filterLabel)}${shelfPagerBridge(shelfPage, totalPages)}${readerBridge(canDelete, canEdit, canManageShareGrants, mode === 'wordbook' ? 'VOCABULARY PAGES' : 'KNOWLEDGE PAGES', mode)}</body>`)} `;
 }
 
 export default function DeployedBooks({
@@ -520,6 +525,7 @@ export default function DeployedBooks({
     onCreate,
     onDelete,
     onDeleteWord,
+    onManageShareGrants,
     onEditKnowledge,
     onEditWord,
     onSpeakWord,
@@ -561,12 +567,13 @@ export default function DeployedBooks({
         () => source ? buildDocument(source, visibleBooks, shelfPage, totalPages, subjects, subjectFilter, {
             canDelete: Boolean(onDelete || onDeleteWord),
             canEdit: Boolean(onEditKnowledge || onEditWord),
+            canManageShareGrants: Boolean(onManageShareGrants),
             canOpenKnowledge: Boolean(onOpenKnowledge),
             canOpenWordbook: Boolean(onOpenWordbook),
             filterLabel: mode === 'wordbook' ? '全部语言' : '全部学科',
             mode
         }) : '',
-        [mode, onDelete, onDeleteWord, onEditKnowledge, onEditWord, onOpenKnowledge, onOpenWordbook, shelfPage, source, subjectFilter, subjects, totalPages, visibleBooks]
+        [mode, onDelete, onDeleteWord, onEditKnowledge, onEditWord, onManageShareGrants, onOpenKnowledge, onOpenWordbook, shelfPage, source, subjectFilter, subjects, totalPages, visibleBooks]
     );
 
     useEffect(() => {
@@ -597,7 +604,7 @@ export default function DeployedBooks({
         goals,
         bookmarks,
         totalPages,
-        callbacks: { onAdjustRecall, onCreateAnnotation, onDelete, onDeleteWord, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord },
+        callbacks: { onAdjustRecall, onCreateAnnotation, onDelete, onDeleteWord, onManageShareGrants, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord },
         state: { setBookTitle, setComposerOpen, setEditing, setGoalId, setLanguage, setMeaning, setReader, setShelfPage, setStatus, setSubject, setSubjectFilter, setTags, setTopic, setWord, setBookmarks }
     });
 

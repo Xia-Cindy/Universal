@@ -1,7 +1,7 @@
 # Universe OS 代码优化与功能新增计划
 
 日期：2026-08-12
-状态：O1、F1、O2、O3、F3 已完成；O5 的实施设计已确认、代码尚未实施；其余阶段待按顺序实施
+状态：O1、F1、O2、O3、F3、F4 已完成；O5 的实施设计已确认、代码尚未实施；其余阶段待按顺序实施
 依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
 
 ## 0. 审计结论与边界
@@ -112,6 +112,14 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **数据库/API：** 新增 PostgreSQL `020_study_recall_schedules.sql` 和 SQLite `008_study_recall_schedules.sql`；以 `(user_id, source_type, source_id)` 唯一约束保存 source-owned schedule。新增 `GET /api/study/recall/schedules`、`GET /api/study/recall/schedules/{source_type}/{source_id}` 与 `PATCH` 同路径手动调整合同；不改变原卡片、词条或 Goal API 形状。
 - **调度与风险控制：** 背过依序采用 1/3/7/14/30 天，记错立即回到当天且理由明确说明不会把一次记错当作永久能力判断。完全相同的同日结果只保存一次，既不重复增加 Wordbook 错误数，也不重复写 Goal mastery；首次背过的 Goal 事实仍由既有 Learning Event 逻辑处理。笔记可以保留原有背过事实，但不会显示或调整间隔日程。
 - **验收：** 新增 `tests/test_study_recall_v2.py` 覆盖卡片创建、背过、记错、同日幂等、Wordbook 手动调整、SQLite 重启、Goal 过滤与公开合同；完整后端 `unittest discover` 为 183 通过。书架纯模型测试、eslint 与生产构建均通过。实际 8000 API 重启后新 schedule 路由返回 200，项目 `scripts/smoke_spatial_routes.py` 对 5180 的所有核心路径和 API proxy 全部通过。
+
+### F4 交付记录（2026-08-13）
+
+- **目标：** 让用户从已关联 Study Goal 的资料阅读器中，向指定且未归档的 Work Tech Stack 授予可撤销的只读引用；无授权的 Study 资料不能由 Work 列表、详情、首页统计或 Tech Stack 详情读取。
+- **受影响文件：** Knowledge model/repository/service、SQLite/PostgreSQL persistence、`backend/app/api/{contracts,routes}.py`、`backend/app/main.py`、Work service、空间书架 API/iframe bridge/Study 授权对话框与相应测试。
+- **数据库/API：** 新增 PostgreSQL `021_knowledge_share_grants.sql` 与 SQLite `009_knowledge_share_grants.sql`，唯一约束为 `(user_id, document_id, tech_stack_id)`。新增 `GET/POST /api/study/knowledge/documents/{document_id}/share-grants` 与 `DELETE /api/study/knowledge/share-grants/{grant_id}`；Work documents API 改为仅返回 Work-owned 或授权资料，并附 `accessMode` 与授权元数据。
+- **风险与控制：** 授权记录不拥有文件、chunk、provider 数据或注释，只保存原 document ID、源 Goal、目标 Tech Stack。Work 对授权资料不可编辑、删除、重解析或刷新；撤销、Tech Stack 归档、源 Goal 变更和源资料删除均删除/失效授权。Work 自己上传的资料不受此过滤影响。
+- **验收：** `tests/test_knowledge_share_grants.py` 覆盖默认拒绝、授权可见、详情只读、撤销、Tech Stack 归档、源资料删除、源 Goal 变更、Tech Stack 详情与 SQLite 重启；完整后端回归为 190 通过。空间客户端 eslint、书架模型测试、生产构建与重启后 5180 核心路由/API proxy smoke 均通过；浏览器确认 Study 实体书读者出现“授权 Work”入口，Work 书架仍无编辑/授权控制。
 
 ## 3. 优先级与依赖
 

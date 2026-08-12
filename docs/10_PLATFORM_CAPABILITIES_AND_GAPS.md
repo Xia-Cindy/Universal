@@ -31,6 +31,7 @@
 - `/study/cards` 只展示上述资料归属的卡片和笔记；它们不会被复制到另一个数据模型。
 - Wordbook 以标签为词汇书，保留词条的发音、个人释义、短语、例句和笔记，并支持正反面记忆卡、背过/记错结果，以及可解释、可手动调整的下次复习日程。
 - 资料归属的知识卡与 Wordbook 词条共用持久化的间隔复习日程：显示下次复习日期和理由，背过按 1/3/7/14/30 天推进，记错则回到当天；相同的同日结果不重复增加事实记录。首次背过的 Goal 进度仍是独立的事实层，不能被一次记错静默篡改。
+- Study Goal 资料默认不进入 Work Knowledge。用户只能从关联 Goal 的资料阅读器向指定、未归档的 Work Tech Stack 授权；Work 仅获得原 document ID 的只读引用。撤销、Tech Stack 归档、源 Goal 变更或资料删除会立即收回引用，绝不复制 chunk、RAGFlow 数据或注释。
 
 ### Work、Novel 与持久化
 
@@ -54,7 +55,7 @@
 4. **旧 Vue 代码仍是测试依赖。** 它不再是入口，不能在未迁移相应测试与契约前直接删除。
 5. **事务与身份边界仍需生产化。** Session 完成尚无跨 Task、Event、Memory 的数据库级 unit-of-work；已在 `docs/13_STUDY_SESSION_UNIT_OF_WORK_DESIGN_2026-08-13.md` 固化不改 API/schema 的实施设计，但尚未写入生产代码。认证已经有注册/验证/登录 API 边界，但完整的多用户授权、冲突处理与部署运维尚未完成。
 6. **复习和分析仍需深化。** 已有卡片/单词的可解释间隔日程与手动调整；长期趋势解释、跨 Goal 对比和用户验证后的算法参数尚未交付。
-7. **跨 Planet 引用需要明确同意。** Work 通过 shared Knowledge/evidence 边界共享资料，但用户可见的授权与撤销流程仍未产品化。
+7. **跨 Planet 引用仍需继续收敛。** Study-to-Work 已具备显式资料授权与撤销；多 Goal 资料关联、检索 scope 的多关系语义与更细粒度审计仍未完成。
 
 ## 五、建议验收顺序
 
@@ -62,4 +63,4 @@
 2. 建立 5180 的核心路由回归：`/`、`/study`、`/study/knowledge`、`/study/wordbook`、`/study/cards`、`/work`、`/novel`。
 3. 在 PostgreSQL 环境验证 Goal、Knowledge、Wordbook、Review 与 Novel 的重启后读取和用户/Goal scope 隔离。
 4. 先拆分空间客户端的展示层，再考虑任何视觉替换；每一个拆分都必须保持现有 API、路由与资料所有权。
-5. 在数据库迁移和 API 合同明确后，再实施跨 Planet 授权、资料多 Goal 关联或事务性 Session 完成等新增能力；间隔重复的第一版已交付，后续只在用户验证参数后演进。
+5. 在数据库迁移和 API 合同明确后，再实施资料多 Goal 关联或事务性 Session 完成等新增能力；跨 Planet 授权和间隔重复的第一版已交付，后续只在用户验证边界与参数后演进。

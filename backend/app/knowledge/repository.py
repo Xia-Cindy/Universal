@@ -1,4 +1,4 @@
-from backend.app.models import Concept, Document, DocumentChunk, KnowledgeAnnotation
+from backend.app.models import Concept, Document, DocumentChunk, KnowledgeAnnotation, KnowledgeShareGrant
 
 from backend.app.persistence.knowledge import SQLiteKnowledgeRepository
 
@@ -11,6 +11,7 @@ class KnowledgeRepository:
         self.chunks: dict[str, DocumentChunk] = {}
         self.concepts: dict[str, Concept] = {}
         self.annotations: dict[str, KnowledgeAnnotation] = {}
+        self.share_grants: dict[tuple[str, str, str], KnowledgeShareGrant] = {}
 
     def save_document(self, document: Document) -> Document:
         self.documents[document.id] = document
@@ -66,7 +67,50 @@ class KnowledgeRepository:
             for annotation_id, annotation in self.annotations.items()
             if annotation.document_id != document_id
         }
+        self.share_grants = {
+            key: grant
+            for key, grant in self.share_grants.items()
+            if grant.document_id != document_id
+        }
         return document
+
+    def save_share_grant(self, grant: KnowledgeShareGrant) -> KnowledgeShareGrant:
+        self.share_grants[(grant.user_id, grant.document_id, grant.tech_stack_id)] = grant
+        return grant
+
+    def list_share_grants(
+        self,
+        user_id: str,
+        *,
+        document_id: str | None = None,
+        tech_stack_id: str | None = None,
+    ) -> list[KnowledgeShareGrant]:
+        grants = [grant for grant in self.share_grants.values() if grant.user_id == user_id]
+        if document_id:
+            grants = [grant for grant in grants if grant.document_id == document_id]
+        if tech_stack_id:
+            grants = [grant for grant in grants if grant.tech_stack_id == tech_stack_id]
+        return sorted(grants, key=lambda grant: grant.created_at)
+
+    def delete_share_grant(self, grant_id: str, user_id: str) -> KnowledgeShareGrant:
+        for key, grant in list(self.share_grants.items()):
+            if grant.id == grant_id and grant.user_id == user_id:
+                self.share_grants.pop(key)
+                return grant
+        raise KeyError(grant_id)
+
+    def delete_share_grants_for_document(self, document_id: str, user_id: str) -> list[KnowledgeShareGrant]:
+        removed = [
+            grant
+            for grant in self.share_grants.values()
+            if grant.document_id == document_id and grant.user_id == user_id
+        ]
+        self.share_grants = {
+            key: grant
+            for key, grant in self.share_grants.items()
+            if not (grant.document_id == document_id and grant.user_id == user_id)
+        }
+        return removed
 
     def list_chunks(self, document_id: str, user_id: str) -> list[DocumentChunk]:
         return sorted(

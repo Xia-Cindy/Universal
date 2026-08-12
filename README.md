@@ -41,6 +41,10 @@ Novel actions continue to use the existing backend services and migrations.
 - The blackboard route `/study/cards` contains only these cards and notes. It
   keeps their original document ownership and presents them in an expandable
   hanging-card gallery.
+- A Study document linked to a Goal can be explicitly granted to one or more
+  active Work Tech Stacks from its reader. Work receives a read-only reference
+  to the original document; revoke, Goal changes, Tech Stack archival and
+  source-document deletion remove that access without copying Knowledge data.
 
 ### Wordbook, Work and writing
 

@@ -169,6 +169,12 @@ FOCUS_READER_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("DELETE", "/api/study/knowledge/documents/{document_id}/annotations/{annotation_id}", "delete_knowledge_annotation", "focus_reader"),
 )
 
+KNOWLEDGE_SHARE_GRANT_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("GET", "/api/study/knowledge/documents/{document_id}/share-grants", "list_knowledge_share_grants", "knowledge_share_grants"),
+    ApiContract("POST", "/api/study/knowledge/documents/{document_id}/share-grants", "create_knowledge_share_grant", "knowledge_share_grants"),
+    ApiContract("DELETE", "/api/study/knowledge/share-grants/{grant_id}", "revoke_knowledge_share_grant", "knowledge_share_grants"),
+)
+
 STUDY_RECALL_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/study/recall/schedules", "list_recall_schedules", "study_recall_v2"),
     ApiContract("GET", "/api/study/recall/schedules/{source_type}/{source_id}", "get_recall_schedule", "study_recall_v2"),
@@ -250,6 +256,7 @@ def list_contracts() -> list[dict[str, str]]:
             *MILESTONE_8_REVIEW_CONTRACTS,
             *WORD_BOOK_CONTRACTS,
             *FOCUS_READER_CONTRACTS,
+            *KNOWLEDGE_SHARE_GRANT_CONTRACTS,
             *STUDY_RECALL_CONTRACTS,
             *MILESTONE_10_CONTRACTS,
             *SPATIAL_STUDIO_CONTRACTS,

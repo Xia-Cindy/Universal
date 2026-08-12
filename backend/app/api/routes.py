@@ -274,7 +274,7 @@ class ApiFacade:
         self.registry.get_enterable_planet("work")
         return self.work.home(
             user.id,
-            knowledge_summary=self.knowledge.overview(user.id),
+            knowledge_summary={"documents": self.knowledge.list_work_documents(user.id)},
         )
 
     def list_work_tech_stacks(self) -> list[dict[str, object]]:
@@ -291,14 +291,17 @@ class ApiFacade:
 
     def delete_work_tech_stack(self, tech_stack_id: str) -> dict[str, object]:
         user = self.users.current_user()
-        return self.work.archive_tech_stack(user.id, tech_stack_id)
+        archived = self.work.archive_tech_stack(user.id, tech_stack_id)
+        for grant in self.knowledge.list_share_grants(user.id, tech_stack_id=tech_stack_id):
+            self.knowledge.revoke_share_grant(user.id, str(grant["id"]))
+        return archived
 
     def get_work_tech_stack(self, tech_stack_id: str) -> dict[str, object]:
         user = self.users.current_user()
         return self.work.tech_stack_detail(
             user.id,
             tech_stack_id,
-            knowledge_summary=self.knowledge.overview(user.id),
+            knowledge_summary={"documents": self.knowledge.list_work_documents(user.id, tech_stack_id=tech_stack_id)},
         )
 
     def list_work_articles(self, tech_stack_id: str | None = None) -> list[dict[str, object]]:
@@ -589,6 +592,33 @@ class ApiFacade:
                 payload["scopeName"] = tech_stack.name
         return self.knowledge.create_document(user.id, payload).to_dict()
 
+    def list_knowledge_share_grants(self, document_id: str | None = None) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        if document_id:
+            self.knowledge.document_detail(user.id, document_id)
+        return self.knowledge.list_share_grants(user.id, document_id=document_id)
+
+    def create_knowledge_share_grant(self, document_id: str, payload: dict[str, object]) -> dict[str, object]:
+        user = self.users.current_user()
+        source_goal_id = str(payload.get("sourceGoalId") or "")
+        tech_stack_id = str(payload.get("techStackId") or "")
+        if not source_goal_id or not tech_stack_id:
+            raise ValueError("sourceGoalId and techStackId are required")
+        self.study_repository.get_goal(source_goal_id, user.id)
+        tech_stack = self.work_repository.get_tech_stack(tech_stack_id, user.id)
+        if tech_stack.status == "archived":
+            raise ValueError("Cannot grant Knowledge to an archived Tech Stack")
+        return self.knowledge.create_share_grant(
+            user.id,
+            document_id=document_id,
+            source_goal_id=source_goal_id,
+            tech_stack_id=tech_stack_id,
+        )
+
+    def revoke_knowledge_share_grant(self, grant_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.revoke_share_grant(user.id, grant_id)
+
     def list_knowledge_annotations(self, document_id: str) -> list[dict[str, object]]:
         user = self.users.current_user()
         return self.knowledge.list_annotations(user.id, document_id)
@@ -757,6 +787,63 @@ class ApiFacade:
             planet_type=planet_type or "study",
             tech_stack_id=tech_stack_id,
         )
+
+    def list_work_knowledge_documents(
+        self,
+        *,
+        subject: str | None = None,
+        topic: str | None = None,
+        tech_stack_id: str | None = None,
+    ) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        if tech_stack_id:
+            self.work_repository.get_tech_stack(tech_stack_id, user.id)
+        documents = self.knowledge.list_work_documents(
+            user.id,
+            subject=subject,
+            topic=topic,
+            tech_stack_id=tech_stack_id,
+        )
+        active_stack_ids = {stack.id for stack in self.work_repository.list_tech_stacks(user.id)}
+        return [
+            document
+            for document in documents
+            if document["accessMode"] == "owned"
+            or any(grant["techStackId"] in active_stack_ids for grant in document["shareGrants"])
+        ]
+
+    def get_work_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        detail = self.knowledge.work_document_detail(user.id, document_id)
+        if detail["accessMode"] == "granted":
+            active_stack_ids = {stack.id for stack in self.work_repository.list_tech_stacks(user.id)}
+            if not any(grant["techStackId"] in active_stack_ids for grant in detail["shareGrants"]):
+                raise PermissionError("Document is not available in an active Work Tech Stack")
+        return detail
+
+    def process_work_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        detail = self.knowledge.work_document_detail(user.id, document_id)
+        if detail["accessMode"] != "owned":
+            raise PermissionError("Granted Study Knowledge is read-only in Work")
+        return self.knowledge.process_document(user.id, document_id)
+
+    def refresh_work_knowledge_document(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        detail = self.knowledge.work_document_detail(user.id, document_id)
+        if detail["accessMode"] != "owned":
+            return detail
+        return self.knowledge.refresh_document(user.id, document_id)
+
+    def work_knowledge_overview(self) -> dict[str, object]:
+        user = self.users.current_user()
+        documents = self.knowledge.list_work_documents(user.id)
+        return {
+            "documentCount": len(documents),
+            "ownedCount": sum(1 for document in documents if document["accessMode"] == "owned"),
+            "grantedCount": sum(1 for document in documents if document["accessMode"] == "granted"),
+            "documents": documents,
+        }
 
     def get_knowledge_document(self, document_id: str) -> dict[str, object]:
         user = self.users.current_user()

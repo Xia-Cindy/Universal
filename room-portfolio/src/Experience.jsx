@@ -107,6 +107,9 @@ const Experience = React.memo(() => {
     const [wordbookLoadError, setWordbookLoadError] = useState('');
     const [recallSchedules, setRecallSchedules] = useState([]);
     const [studyGoals, setStudyGoals] = useState([]);
+    const [workTechStacks, setWorkTechStacks] = useState([]);
+    const [shareDialog, setShareDialog] = useState(null);
+    const [shareStatus, setShareStatus] = useState('');
     const portalTimer = useRef(null);
     const focusSpace = useCameraStore((state) => state.focusSpace);
     const focusModule = useCameraStore((state) => state.focusModule);
@@ -333,6 +336,52 @@ const Experience = React.memo(() => {
         return schedule;
     };
 
+    const manageKnowledgeShareGrants = async (documentId) => {
+        const document = knowledgeBooks.find((item) => item.id === documentId);
+        if (!document?.goalId) {
+            throw new Error('请先将这份 Study 资料关联到一个学习目标，才能授权给 Work。');
+        }
+        const [grants, stacks] = await Promise.all([
+            roomApi.knowledgeShareGrants(documentId),
+            roomApi.workTechStacks()
+        ]);
+        setWorkTechStacks(stacks.filter((stack) => stack.status !== 'archived'));
+        setShareDialog({ document, grants });
+        setShareStatus('');
+    };
+
+    const grantKnowledgeToWork = async (techStackId) => {
+        if (!shareDialog || !techStackId) return;
+        try {
+            const grant = await roomApi.createKnowledgeShareGrant(shareDialog.document.id, {
+                sourceGoalId: shareDialog.document.goalId,
+                techStackId
+            });
+            setShareDialog((current) => current ? {
+                ...current,
+                grants: [...current.grants.filter((item) => item.id !== grant.id), grant]
+            } : current);
+            setShareStatus('已授权给对应 Work Tech Stack；资料仍只保存于 Study。');
+            setKnowledgeRevision((revision) => revision + 1);
+        } catch (error) {
+            setShareStatus(error instanceof Error ? error.message : '无法创建 Work 授权。');
+        }
+    };
+
+    const revokeKnowledgeShareGrant = async (grantId) => {
+        try {
+            await roomApi.revokeKnowledgeShareGrant(grantId);
+            setShareDialog((current) => current ? {
+                ...current,
+                grants: current.grants.filter((grant) => grant.id !== grantId)
+            } : current);
+            setShareStatus('已撤销 Work 授权。');
+            setKnowledgeRevision((revision) => revision + 1);
+        } catch (error) {
+            setShareStatus(error instanceof Error ? error.message : '无法撤销 Work 授权。');
+        }
+    };
+
     const speakWord = (word) => {
         if (!word || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
         window.speechSynthesis.cancel();
@@ -422,6 +471,7 @@ const Experience = React.memo(() => {
                     onCreate={isWordbookBooks ? createWordbookEntry : createKnowledge}
                     onDelete={isWordbookBooks || isWorkKnowledge ? undefined : deleteKnowledge}
                     onDeleteWord={isWordbookBooks ? deleteWordbookEntry : undefined}
+                    onManageShareGrants={isWordbookBooks || isWorkKnowledge ? undefined : manageKnowledgeShareGrants}
                     onEditKnowledge={isWordbookBooks || isWorkKnowledge ? undefined : editKnowledge}
                     onEditWord={isWordbookBooks ? editWordbookEntry : undefined}
                     onSpeakWord={isWordbookBooks ? speakWord : undefined}
@@ -441,6 +491,31 @@ const Experience = React.memo(() => {
                         : setKnowledgeRevision((revision) => revision + 1)}
                     goals={isWorkKnowledge ? [] : studyGoals}
                 />
+            )}
+            {shareDialog && (
+                <div className="knowledge-composer knowledge-share-dialog" role="dialog" aria-modal="true" aria-label="授权 Work Knowledge">
+                    <section>
+                        <button className="knowledge-composer-close" type="button" aria-label="关闭 Work 授权" onClick={() => setShareDialog(null)}>×</button>
+                        <p>WORK KNOWLEDGE ACCESS</p>
+                        <h2>授权「{shareDialog.document.fileName}」</h2>
+                        <span>这份资料仍属于 Study Goal；授权只提供指定 Tech Stack 的只读引用。</span>
+                        <div className="knowledge-share-options">
+                            {workTechStacks.length ? workTechStacks.map((stack) => {
+                                const grant = shareDialog.grants.find((item) => item.techStackId === stack.id);
+                                return (
+                                    <div key={stack.id}>
+                                        <strong>{stack.name}</strong>
+                                        <small>{grant ? '已授权为只读引用' : '尚未授权'}</small>
+                                        {grant
+                                            ? <button type="button" onClick={() => revokeKnowledgeShareGrant(grant.id)}>撤销</button>
+                                            : <button type="button" onClick={() => grantKnowledgeToWork(stack.id)}>授权</button>}
+                                    </div>
+                                );
+                            }) : <span>请先在 Work 中创建一个未归档的 Tech Stack。</span>}
+                        </div>
+                        {shareStatus && <small className="knowledge-share-status">{shareStatus}</small>}
+                    </section>
+                </div>
             )}
         </>
     );

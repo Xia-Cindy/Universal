@@ -1534,7 +1534,7 @@ Implemented:
   - Tech Stack detail
   - Projects
   - Dynamic Resume
-- Kept Work access to Study Knowledge behind shared Knowledge Service summaries.
+- Work reads Knowledge through the shared Knowledge Service, but Study Goal documents require an explicit, revocable `knowledge_share_grants` record for an active Work Tech Stack; Work-owned documents remain directly visible.
 - Added tests for Work Planet enterability, API contracts, Tech Stack detail, Resume evidence refs and frontend routing.
 
 Not changed:

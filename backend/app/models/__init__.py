@@ -1,5 +1,5 @@
 from backend.app.models.memory import MemoryEntry, MemoryScope, MemoryStatus
-from backend.app.models.knowledge import Concept, Document, DocumentChunk, DocumentStatus, DocumentType, KnowledgeAnnotation, KnowledgeAnnotationType
+from backend.app.models.knowledge import Concept, Document, DocumentChunk, DocumentStatus, DocumentType, KnowledgeAnnotation, KnowledgeAnnotationType, KnowledgeShareGrant
 from backend.app.models.planet import Planet, PlanetModule, PlanetStatus
 from backend.app.models.novel import NovelDraft
 from backend.app.models.study import (
@@ -36,6 +36,7 @@ __all__ = [
     "DocumentType",
     "KnowledgeAnnotation",
     "KnowledgeAnnotationType",
+    "KnowledgeShareGrant",
     "GoalStatus",
     "GoalType",
     "LearningEvent",

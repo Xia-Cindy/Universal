@@ -57,6 +57,11 @@ export function useBookshelfBridge({
                 callbacks.onSpeakWord?.(message.word);
                 return;
             }
+            if (message.type === 'manage-share-grants') {
+                Promise.resolve(callbacks.onManageShareGrants?.(message.id))
+                    .catch((error) => state.setStatus(error instanceof Error ? error.message : '无法更新 Work 授权。'));
+                return;
+            }
             if (message.type === 'create-annotation') {
                 Promise.resolve(callbacks.onCreateAnnotation?.(message.id, {
                     selectedText: message.selectedText,

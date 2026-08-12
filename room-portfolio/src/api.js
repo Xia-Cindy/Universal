@@ -88,6 +88,15 @@ export const roomApi = {
             method: 'POST',
             body: JSON.stringify({ mastered })
         }),
+    knowledgeShareGrants: (documentId) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/share-grants`),
+    createKnowledgeShareGrant: (documentId, payload) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/share-grants`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+    revokeKnowledgeShareGrant: (grantId) =>
+        apiRequest(`/api/study/knowledge/share-grants/${grantId}`, { method: 'DELETE' }),
     wordbook: () => apiRequest('/api/study/wordbook/entries'),
     createWordbookEntry: (payload) =>
         apiRequest('/api/study/wordbook/entries', {
@@ -123,7 +132,8 @@ export const roomApi = {
             body: JSON.stringify(payload)
         }),
     workHome: () => apiRequest('/api/work/home'),
-    workKnowledgeDocuments: () => apiRequest('/api/work/knowledge/documents'),
+    workKnowledgeDocuments: (techStackId = '') =>
+        apiRequest(`/api/work/knowledge/documents${techStackId ? `?techStackId=${encodeURIComponent(techStackId)}` : ''}`),
     workKnowledgeDocument: (documentId) =>
         apiRequest(`/api/work/knowledge/documents/${documentId}`),
     refreshWorkKnowledgeDocument: (documentId) =>

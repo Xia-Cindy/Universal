@@ -154,35 +154,43 @@ def create_app():
 
     @app.get("/api/work/knowledge")
     def work_knowledge_overview():
-        return api.knowledge_overview()
+        return api.work_knowledge_overview()
 
     @app.get("/api/work/knowledge/documents")
     def list_work_knowledge_documents(
         subject: str | None = None,
         topic: str | None = None,
-        goalId: str | None = None,
-        planetType: str | None = None,
         techStackId: str | None = None,
     ):
-        return api.list_knowledge_documents(
+        return api.list_work_knowledge_documents(
             subject=subject,
             topic=topic,
-            goal_id=goalId,
-            planet_type=planetType,
             tech_stack_id=techStackId,
         )
 
     @app.get("/api/work/knowledge/documents/{document_id}")
     def get_work_knowledge_document(document_id: str):
-        return api.get_knowledge_document(document_id)
+        return api.get_work_knowledge_document(document_id)
+
+    @app.get("/api/study/knowledge/documents/{document_id}/share-grants")
+    def list_knowledge_share_grants(document_id: str):
+        return api.list_knowledge_share_grants(document_id)
+
+    @app.post("/api/study/knowledge/documents/{document_id}/share-grants")
+    def create_knowledge_share_grant(document_id: str, payload: dict):
+        return api.create_knowledge_share_grant(document_id, payload)
+
+    @app.delete("/api/study/knowledge/share-grants/{grant_id}")
+    def revoke_knowledge_share_grant(grant_id: str):
+        return api.revoke_knowledge_share_grant(grant_id)
 
     @app.post("/api/work/knowledge/documents/{document_id}/process")
     def process_work_knowledge_document(document_id: str):
-        return api.process_knowledge_document(document_id)
+        return api.process_work_knowledge_document(document_id)
 
     @app.get("/api/work/knowledge/documents/{document_id}/status")
     def refresh_work_knowledge_document(document_id: str):
-        return api.refresh_knowledge_document(document_id)
+        return api.refresh_work_knowledge_document(document_id)
 
     @app.get("/api/study/workspace")
     def get_study_workspace():
