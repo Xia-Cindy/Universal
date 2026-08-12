@@ -17,6 +17,7 @@
 - [x] Design and implement multi-Goal document links with SQLite/PostgreSQL backfill, explicit goal-link APIs, isolated retrieval filtering and Work-grant compatibility; synced reading progress remains a separate pending decision.
 - [x] Design optional user/document reading-progress synchronization while retaining offline browser-local bookmarks and excluding Goal progress or Wordbook review facts.
 - [x] Implement the approved reading-progress migration, API conflict handling and best-effort 5180 synchronization.
+- [x] Add a read-only, evidence-backed Study feedback recommendation API for due reviews, incomplete tasks and synced reading positions; do not automatically mutate a plan.
 
 ## Study Bookshelf Module
 

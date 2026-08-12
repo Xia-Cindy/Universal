@@ -137,6 +137,13 @@ class SQLiteKnowledgeRepository:
             )
         return self.get_reading_progress(progress.user_id, progress.document_id) or progress
 
+    def list_reading_progress(self, user_id: str) -> list[ReadingProgress]:
+        rows = self._db.connection.execute(
+            "SELECT payload FROM reading_progress WHERE user_id = ? ORDER BY updated_at DESC",
+            (user_id,),
+        ).fetchall()
+        return [reading_progress_from_payload(loads(row["payload"])) for row in rows]
+
     def replace_document_goal_links(
         self, user_id: str, document_id: str, goal_ids: list[str]
     ) -> list[DocumentGoalLink]:

@@ -476,6 +476,10 @@ def create_app():
     def create_study_analytics_report():
         return api.create_study_analytics_report()
 
+    @app.get("/api/study/feedback/recommendations")
+    def get_study_feedback_recommendations():
+        return api.get_study_feedback_recommendations()
+
     @app.post("/api/study/review/wrong-questions")
     def create_wrong_question(payload: dict):
         return api.create_wrong_question(payload)

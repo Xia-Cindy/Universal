@@ -847,6 +847,15 @@ function AnalyticsWorld({ payload }) {
         ['学习事件', summary.learningEvents || 0, '', palette.violet]
     ];
     const [selected, setSelected] = useState(0);
+    const [feedback, setFeedback] = useState(null);
+    useEffect(() => {
+        let current = true;
+        roomApi.feedbackRecommendations()
+            .then((result) => { if (current) setFeedback(result); })
+            .catch(() => { if (current) setFeedback(null); });
+        return () => { current = false; };
+    }, []);
+    const recommendation = feedback?.recommendations?.[0];
     return (
         <>
             <group position={[0.38, 0, -0.8]}>
@@ -887,11 +896,20 @@ function AnalyticsWorld({ payload }) {
                     <strong>{metrics[selected][0]}</strong>
                     <span>
                         {payload.learningInsights?.[selected] ||
+                            recommendation?.title ||
                             payload.recommendedActions?.[0] ||
                             '继续积累真实学习数据'}
                     </span>
                 </WorldLabel>
             </group>
+            {recommendation && (
+                <group position={[0, 0.55, -1.2]}>
+                    <WorldLabel scale={0.2}>
+                        <strong>下一步建议 · 需你确认</strong>
+                        <span>{truncate(recommendation.rationale, 84)}</span>
+                    </WorldLabel>
+                </group>
+            )}
         </>
     );
 }

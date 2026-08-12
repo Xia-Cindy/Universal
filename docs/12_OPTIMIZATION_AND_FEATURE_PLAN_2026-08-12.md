@@ -158,6 +158,12 @@ F4 授权 ──> F5 多 Goal 资料关联
 - **阅读器语义：** iframe 的书签仍立即写入 `universe-books:reader-bookmarks`；随后尽力 PUT。打开书本先用本地值，只有远端位置更新时才采用远端。同步失败只显示“仅保存在本设备”，不阻塞翻页或把 API 故障误报为资料失败。
 - **边界：** 位置只包含双页 `spreadIndex`、显示页码和可选短标签；不保存内容、划线、阅读历史、Goal mastery、Wordbook 事实或 RAGFlow 任务。资料删除清理对应进度；Goal 链接与 Work 授权变动不会删除源资料进度。
 - **验收：** 新增 `tests/test_reading_progress.py` 覆盖接受/拒绝过期写入、原子 upsert、字段校验、资料删除、无 Learning Event 与 SQLite 重启；完整后端回归 199 通过。书架模型覆盖本地/远端最新位置选择；eslint、书架测试和 Vite build 通过。重启 API 后，真实 5180 proxy PUT/GET 对现有资料返回 `accepted` 和相同的 page/spread/label，过期 PUT 返回 `server_newer`，未调用 parse/retry。
+
+### F6 2026-08-13 实施记录
+
+- **完成内容：** 新增只读 `GET /api/study/feedback/recommendations`。它只读取当前 Goal 的待完成任务、到期错题复习和 Knowledge 的同步阅读位置，返回 `recommendations`、`evidence`、`generatedFrom` 与数据充分性；不新增数据表。
+- **可解释性与控制：** 每条建议有稳定 id、类型、跳转目标、文字理由和对应事实（task/review/document/page）。所有建议标注 `requiresConfirmation: true`；接口不调用 Analytics 的 AI report，不更新 task、plan、review、Learning Event、Memory、RAGFlow 或阅读进度。Analytics 空间只显示提示，不提供执行按钮。
+- **验收：** 新增 `tests/test_study_feedback_recommendations.py` 覆盖到期复习/未完成任务/阅读位置证据、无 Goal 降级、合同与调用前后数据不变；完整后端回归 202 通过。eslint、书架模型测试、Vite build 通过；重启后 5180 proxy 返回 2 条全部要求确认的推荐，OpenAPI 路由存在，核心空间路由与 API proxy smoke 通过。
 O4 必须在来源许可与实际参考实现确认后再开始，不能以“外观类似”为依据自行重写。
 
 ## 4. 每个阶段的交付要求

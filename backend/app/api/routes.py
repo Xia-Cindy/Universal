@@ -191,6 +191,7 @@ class ApiFacade:
             repository=self.study_repository,
             ai_core=self.ai_core,
             review=self.study_review,
+            knowledge_repository=self.knowledge_repository,
         )
         self.work_repository = work_repository
         self.work = WorkService(self.work_repository)
@@ -1025,6 +1026,10 @@ class ApiFacade:
             user=user,
             memory_context=memory_context,
         )
+
+    def get_study_feedback_recommendations(self) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.study_analytics.recommendations(user=user)
 
     def create_wrong_question(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()

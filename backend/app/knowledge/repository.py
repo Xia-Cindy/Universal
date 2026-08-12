@@ -97,6 +97,13 @@ class KnowledgeRepository:
         self.reading_progress[(progress.user_id, progress.document_id)] = progress
         return progress
 
+    def list_reading_progress(self, user_id: str) -> list[ReadingProgress]:
+        return sorted(
+            [progress for progress in self.reading_progress.values() if progress.user_id == user_id],
+            key=lambda progress: progress.updated_at,
+            reverse=True,
+        )
+
     def replace_document_goal_links(
         self, user_id: str, document_id: str, goal_ids: list[str]
     ) -> list[DocumentGoalLink]:

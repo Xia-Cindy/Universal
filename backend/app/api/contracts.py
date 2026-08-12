@@ -115,6 +115,7 @@ MILESTONE_5_CONTRACTS: tuple[ApiContract, ...] = (
 MILESTONE_6_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/study/analytics", "study_analytics", "milestone_6"),
     ApiContract("POST", "/api/study/analytics/report", "study_analytics_report", "milestone_6"),
+    ApiContract("GET", "/api/study/feedback/recommendations", "study_feedback_recommendations", "study_feedback"),
 )
 
 MILESTONE_7_CONTRACTS: tuple[ApiContract, ...] = (

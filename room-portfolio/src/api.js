@@ -57,6 +57,7 @@ export const roomApi = {
             body: JSON.stringify({ result: 'remembered' })
         }),
     analytics: () => apiRequest('/api/study/analytics'),
+    feedbackRecommendations: () => apiRequest('/api/study/feedback/recommendations'),
     knowledgeDocuments: () => apiRequest('/api/study/knowledge/documents'),
     knowledgeDocument: (documentId) =>
         apiRequest(`/api/study/knowledge/documents/${documentId}`),

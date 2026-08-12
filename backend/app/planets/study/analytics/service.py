@@ -1,6 +1,7 @@
 from collections import Counter, defaultdict
 
 from backend.app.ai import AICoreService, AIRequest
+from backend.app.knowledge.repository import KnowledgeRepository
 from backend.app.models import TaskStatus
 from backend.app.planets.study.repository import StudyRepository
 from backend.app.planets.study.review import ReviewService
@@ -16,10 +17,12 @@ class StudyAnalyticsService:
         repository: StudyRepository,
         ai_core: AICoreService,
         review: ReviewService | None = None,
+        knowledge_repository: KnowledgeRepository | None = None,
     ) -> None:
         self._repository = repository
         self._ai_core = ai_core
         self._review = review
+        self._knowledge_repository = knowledge_repository
 
     def analytics(
         self,
@@ -65,6 +68,99 @@ class StudyAnalyticsService:
             "recommendedActions": response.get("recommendedActions", payload["recommendedActions"]),
             "report": response.get("report", payload["report"]),
             "dataQuality": response.get("dataQuality", payload["dataQuality"]),
+        }
+
+    def recommendations(self, *, user: UserProfile) -> dict[str, object]:
+        """Return factual, read-only next steps; never apply a plan mutation."""
+
+        goal = self._repository.get_active_goal(user.id)
+        if not goal:
+            return {
+                "recommendations": [],
+                "dataQuality": {
+                    "state": "insufficient",
+                    "limitations": ["当前还没有学习目标，无法生成目标内的学习建议。"],
+                },
+                "generatedFrom": {"tasks": 0, "dueReviews": 0, "readingPositions": 0},
+            }
+
+        tasks = self._repository.list_tasks_for_goal(user.id, goal.id)
+        due_reviews = self._review.queue(user.id) if self._review else []
+        positions = self._knowledge_repository.list_reading_progress(user.id) if self._knowledge_repository else []
+        documents = {
+            document.id: document
+            for document in (self._knowledge_repository.list_documents(user.id) if self._knowledge_repository else [])
+        }
+        recommendations: list[dict[str, object]] = []
+
+        if due_reviews:
+            recommendations.append({
+                "id": "complete-due-reviews",
+                "kind": "review",
+                "title": f"先完成 {len(due_reviews)} 个到期复习项",
+                "suggestedRoute": "/study/review",
+                "requiresConfirmation": True,
+                "rationale": "到期复习来自已保存的错题复习队列，建议优先处理但不会自动完成。",
+                "evidence": [
+                    {
+                        "type": "due_review",
+                        "reviewId": item["review"]["id"],
+                        "subject": item["wrongQuestion"].get("subject", ""),
+                        "dueDate": item["review"]["dueDate"],
+                    }
+                    for item in due_reviews[:3]
+                ],
+            })
+
+        next_task = next((task for task in tasks if task.status != TaskStatus.COMPLETED), None)
+        if next_task:
+            recommendations.append({
+                "id": f"continue-task:{next_task.id}",
+                "kind": "task",
+                "title": f"继续 {next_task.subject} / {next_task.topic}",
+                "suggestedRoute": "/study/plan",
+                "requiresConfirmation": True,
+                "rationale": "这是当前 Goal 中按既有任务顺序找到的首个未完成任务；不会自动变更状态。",
+                "evidence": [{
+                    "type": "incomplete_task",
+                    "taskId": next_task.id,
+                    "subject": next_task.subject,
+                    "topic": next_task.topic,
+                    "status": next_task.status.value,
+                }],
+            })
+
+        for position in positions[:2]:
+            document = documents.get(position.document_id)
+            if not document:
+                continue
+            recommendations.append({
+                "id": f"resume-reading:{document.id}",
+                "kind": "reading",
+                "title": f"继续阅读《{document.file_name}》第 {position.page_number} 页",
+                "suggestedRoute": "/study/knowledge",
+                "requiresConfirmation": True,
+                "rationale": "这是你主动保存的阅读位置；打开资料后仍可自行选择其它页面。",
+                "evidence": [{
+                    "type": "reading_progress",
+                    "documentId": document.id,
+                    "pageNumber": position.page_number,
+                    "spreadIndex": position.spread_index,
+                    "updatedAt": position.updated_at.isoformat(),
+                }],
+            })
+
+        return {
+            "recommendations": recommendations,
+            "dataQuality": {
+                "state": "ready" if recommendations else "insufficient",
+                "limitations": [] if recommendations else ["当前 Goal 没有未完成任务、到期复习或已同步的阅读位置。"],
+            },
+            "generatedFrom": {
+                "tasks": len(tasks),
+                "dueReviews": len(due_reviews),
+                "readingPositions": len(positions),
+            },
         }
 
     def _build_payload(
