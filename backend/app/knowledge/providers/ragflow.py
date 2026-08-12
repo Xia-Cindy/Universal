@@ -10,6 +10,19 @@ class RAGFlowAPIError(RuntimeError):
     pass
 
 
+DEFAULT_DATASET_PARSER_CONFIG: dict[str, object] = {
+    # Keep the default Goal/stack datasets on the dependable text path.  A
+    # learner can opt into visual enrichment in RAGFlow later, but advanced
+    # graph/summary work must not turn an ordinary source upload into a long
+    # background queue by default.
+    "layout_recognize": "Plain Text",
+    "auto_keywords": 0,
+    "auto_questions": 0,
+    "raptor": {"use_raptor": False},
+    "graphrag": {"use_graphrag": False},
+}
+
+
 class RAGFlowClient:
     def __init__(self, *, base_url: str, api_key: str, timeout_seconds: int = 30) -> None:
         self._base_url = base_url.rstrip("/")
@@ -94,6 +107,13 @@ class RAGFlowClient:
             raise RAGFlowAPIError(f"RAGFlow HTTP {exc.code}: {detail}") from exc
         except error.URLError as exc:
             raise RAGFlowAPIError(f"RAGFlow connection failed: {exc.reason}") from exc
+        except OSError as exc:
+            # ``urlopen`` may surface a socket timeout directly as
+            # ``TimeoutError`` instead of wrapping it in ``URLError``.  Keep
+            # the provider boundary total so KnowledgeService can persist a
+            # truthful failed status rather than leaving the document in
+            # ``parsing`` forever.
+            raise RAGFlowAPIError(f"RAGFlow connection failed: {exc}") from exc
         if not payload:
             return {}
         data = json.loads(payload)
@@ -337,7 +357,7 @@ class RAGFlowKnowledgeProvider:
         response = self._client.request_json(
             "POST",
             "/api/v1/datasets",
-            {"name": dataset_name},
+            {"name": dataset_name, "parser_config": DEFAULT_DATASET_PARSER_CONFIG},
         )
         data = response.get("data", {})
         if not isinstance(data, dict) or not data.get("id"):

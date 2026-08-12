@@ -12,6 +12,10 @@ class Settings:
     ragflow_api_key: str = getenv("RAGFLOW_API_KEY", "")
     ragflow_dataset_id: str = getenv("RAGFLOW_DATASET_ID", "")
     ragflow_dataset_name: str = getenv("RAGFLOW_DATASET_NAME", "Universe OS Knowledge")
+    # RAGFlow runs through amd64 emulation on the supported local macOS setup.
+    # Give a cold provider enough time to return a real API error/status rather
+    # than misclassifying a slow upload as an indefinite local parsing state.
+    ragflow_timeout_seconds: int = int(getenv("RAGFLOW_TIMEOUT_SECONDS", "120"))
     ragflow_embedding_model: str = getenv("RAGFLOW_EMBEDDING_MODEL", "")
     ragflow_llm_model: str = getenv("RAGFLOW_LLM_MODEL", "")
     ragflow_rerank_model: str = getenv("RAGFLOW_RERANK_MODEL", "")

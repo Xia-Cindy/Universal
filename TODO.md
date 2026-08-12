@@ -7,8 +7,8 @@
 - [x] Add a 5180 core-route smoke suite for the normal entry, Study, Plan, Knowledge, Wordbook, Cards, Work, Novel and the Vite API proxy before splitting any large spatial client module.
 - [ ] Split bookshelf bridge, reader and annotation presentation responsibilities after the regression baseline passes.
 - [ ] Verify source license and actual implementation before localizing any external bookshelf resources.
-- [ ] Run one controlled RAGFlow TXT, Markdown and PDF acceptance set with a valid embedding provider; record `processed`, chunk evidence, reader content and Tutor source links without requeueing existing long PDFs.
-- [ ] F1 preflight found API reachability and readable DAMA chunks during `chunking`, but no verified embedding execution or `processed` document; wait for an approved provider-ready sample instead of reprocessing the existing long PDFs.
+- [x] Run one controlled RAGFlow TXT, Markdown and PDF acceptance set with a valid embedding provider; record `processed`, chunk evidence, reader content and Tutor source links without requeueing existing long PDFs.
+- [x] Complete F1 runtime acceptance with one approved new PDF after restoring a stuck worker; leave existing long PDFs unsubmitted and record the evidence in the dated plan and installation guide.
 - [ ] Design the Study Session unit-of-work before changing Task/Event/Memory write behavior.
 - [ ] Design migrations and API contracts for optional synced reading progress, interval review scheduling, Knowledge-share grants and multi-Goal document links before implementation.
 
@@ -230,7 +230,7 @@
 - [x] Connect Knowledge services to PostgreSQL adapters and local/S3 object storage boundaries.
 - [x] Add SQLite/PostgreSQL backup and guarded PostgreSQL restore scripts.
 - [x] Add email verification registration with SMTP production boundary and console development sender.
-- [ ] Run RAGFlow runtime acceptance with fresh TXT, Markdown and PDF samples now that the embedding-provider key issue is resolved; record processed status, chunk preview and Tutor retrieval evidence.
+- [x] Run RAGFlow runtime acceptance with fresh TXT, Markdown and PDF samples now that the embedding-provider key issue is resolved; record processed status, chunk preview and Tutor retrieval evidence.
 - [x] Keep Study Goal and Work Tech Stack dataset scopes readable, isolated and reusable across provider restarts; surface the provider error code when embedding binding fails.
 - [x] Add provider status polling and retry handling.
 - [x] Keep Work Knowledge provider status polling separate from parse initiation so an in-flight RAGFlow document is not parsed twice.
@@ -258,7 +258,7 @@
 - [ ] Add richer Dynamic Resume editor, version comparison and user confirmation flow.
 - [ ] Implement autonomous Memory extraction after explicit design approval.
 - [x] Implement Wrong Questions, 1/3/7/30 Review queue, idempotent completion and Analytics summary integration.
-- [ ] Complete real RAGFlow TXT/Markdown/PDF processed acceptance and cross-provider source-position verification.
+- [ ] Complete cross-provider source-position verification beyond the locally validated RAGFlow provider.
 - [ ] Add production PostgreSQL unit-of-work transaction for atomic Session finish across Task, Event and Memory.
 
 ## Spatial Universe Workspace

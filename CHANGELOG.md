@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- **2026-08-13 RAGFlow F1 runtime recovery:** normalized socket timeouts at the provider boundary so failed Universe-to-RAGFlow calls persist a truthful failed document state instead of remaining in parsing. New Goal/Tech Stack RAGFlow datasets now default to Plain Text with RAPTOR and GraphRAG disabled; this does not reparse existing data. A controlled local TXT/Markdown/PDF set completed with provider chunks, retrieval, Tutor source links and a 5180 reader check after recovery from one stuck new-PDF worker.
 - **5180 blank room recovery:** diagnosed and restarted a stale Vite development process that had not reloaded the GLSL plugin configuration, causing shader source to be parsed as JavaScript. The 5180 room now mounts normally after the restart; the retired 5173 process remains stopped.
 
 ### Changed

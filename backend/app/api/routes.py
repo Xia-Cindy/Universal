@@ -203,6 +203,7 @@ class ApiFacade:
             client=RAGFlowClient(
                 base_url=settings.ragflow_base_url,
                 api_key=settings.ragflow_api_key,
+                timeout_seconds=settings.ragflow_timeout_seconds,
             ),
                 dataset_id=settings.ragflow_dataset_id or None,
                 dataset_name=settings.ragflow_dataset_name,

@@ -4,7 +4,7 @@ Version: 0.2
 
 Document Type: Runtime Installation Guide
 
-Status: Local Docker Compose and provider lifecycle available; real-document acceptance pending
+Status: Local Docker Compose and provider lifecycle available; controlled TXT, Markdown and PDF acceptance recorded on 2026-08-13
 
 Scope: Run RAGFlow as the Knowledge infrastructure for Universe OS.
 
@@ -155,6 +155,13 @@ After the RAGFlow UI is available:
 
 RAGFlow v0.22+ images do not include embedding models by default, so retrieval quality depends on the model/provider configured in RAGFlow.
 
+For ordinary long-text sources, keep the dataset parser on the conservative
+path: `Plain Text`, `RAPTOR: off`, `GraphRAG: off`, and no figure/visual
+enhancement. Universe now sends this parser configuration when it creates a
+new Goal- or Tech Stack-scoped RAGFlow dataset. It does not change existing
+datasets or reparse their documents automatically. Use visual or graph
+features only after separately validating their resource cost and output.
+
 ---
 
 # 6. Connect Universe Backend
@@ -174,7 +181,13 @@ RAGFLOW_BASE_URL=http://127.0.0.1:9380
 RAGFLOW_API_KEY=<your-ragflow-api-key>
 RAGFLOW_DATASET_ID=
 RAGFLOW_DATASET_NAME=Universe OS Knowledge
+RAGFLOW_TIMEOUT_SECONDS=120
 ```
+
+On Apple Silicon, the supported local RAGFlow image runs through amd64
+emulation and can cold-start slowly. `RAGFLOW_TIMEOUT_SECONDS` only bounds one
+Universe-to-RAGFlow request; it neither resubmits an existing document nor
+changes RAGFlow's parser queue.
 
 Start Universe backend:
 
@@ -243,9 +256,30 @@ Expected result:
 
 - document shows `provider: ragflow`
 - processing status moves through `parsing` / `chunking`
-- provider-backed PDF、TXT 和 Markdown upload will automatically enter processing; only a local-provider PDF remains metadata-only
+- provider-backed PDF, TXT and Markdown uploads enter processing; only a
+  local-provider PDF remains metadata-only
 - after RAGFlow chunks are available, Universe stores a local chunk preview cache
 - Tutor retrieval still goes through AI Core ToolRouter and Universe RetrievalService, constrained to processed documents in the current Universe scope
+
+## 8.1 Controlled local acceptance (2026-08-13)
+
+The local provider was verified with three small new sources in an isolated
+Study Goal dataset: TXT, Markdown and a one-page text-layer PDF. Each reached
+RAGFlow `DONE` and Universe `processed` with one nonzero chunk. The PDF ran
+with `Plain Text`, RAPTOR disabled and GraphRAG disabled; the executor log
+recorded embedding and Elasticsearch indexing before completion.
+
+Universe RetrievalService returned the PDF's mapped Universe document and
+chunk identifiers. A Study Tutor request using the `all_study` scope returned
+source links for all three acceptance files, including the PDF reader URL.
+The 5180 Knowledge reader opened the processed PDF, rendered its real chunk
+text on page `1 / 1`, and exposed correctly disabled previous/next controls.
+
+This verification deliberately did not resubmit the existing long PDFs. On
+Apple Silicon the supported amd64 image can take several minutes to cold-start;
+if a worker is stuck with no task progress, cancel only the affected new task,
+restore worker health, then resume that one approved sample after confirming
+its parser configuration.
 
 ---
 

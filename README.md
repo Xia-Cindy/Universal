@@ -56,9 +56,11 @@ Novel actions continue to use the existing backend services and migrations.
   explicit local/test compatibility option.
 - The RAGFlow provider adapter can upload, poll, retry, delete and retrieve
   provider-backed Knowledge documents. Processing documents keep a truthful
-  status, and any returned chunks remain readable. Production acceptance of
-  real TXT/Markdown/PDF samples still depends on a valid RAGFlow embedding
-  provider and is not claimed as complete.
+  status, and any returned chunks remain readable. A controlled local F1
+  acceptance set (TXT, Markdown and one-page PDF) completed with nonzero
+  chunks, provider retrieval and Tutor source links on 2026-08-13. This is
+  local runtime evidence, not a guarantee that every existing long document
+  or another provider will complete without its own validation.
 
 ## Start locally
 

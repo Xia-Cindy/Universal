@@ -1,7 +1,9 @@
 import unittest
+from unittest.mock import patch
 
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.knowledge.providers import RAGFlowKnowledgeProvider
+from backend.app.knowledge.providers.ragflow import RAGFlowAPIError, RAGFlowClient
 from backend.app.models import Document, DocumentStatus, DocumentType
 from backend.app.retrieval import RetrievalQuery, RetrievalService
 
@@ -128,6 +130,36 @@ class StubRAGFlowClient:
 
 
 class RAGFlowProviderTests(unittest.TestCase):
+    def test_ragflow_client_normalizes_socket_timeout(self):
+        client = RAGFlowClient(base_url="http://ragflow.test", api_key="test", timeout_seconds=1)
+
+        with patch("backend.app.knowledge.providers.ragflow.request.urlopen", side_effect=TimeoutError("timed out")):
+            with self.assertRaisesRegex(RAGFlowAPIError, "RAGFlow connection failed: timed out"):
+                client.request_json("GET", "/api/v1/datasets")
+
+    def test_upload_timeout_marks_document_failed_with_actionable_message(self):
+        class TimeoutProvider(FakeKnowledgeProvider):
+            def upload_document(self, *, user_id, document):
+                raise RAGFlowAPIError("RAGFlow connection failed: timed out")
+
+        service = KnowledgeService(repository=KnowledgeRepository(), provider=TimeoutProvider())
+        document = service.create_document(
+            "local-user",
+            {
+                "fileName": "timed-out.txt",
+                "fileType": "txt",
+                "subject": "runtime",
+                "topic": "timeout",
+                "content": "F1 timeout acceptance sample",
+            },
+        )
+
+        detail = service.process_document("local-user", document.id)
+
+        self.assertEqual(detail["document"]["processingStatus"], "failed")
+        self.assertEqual(detail["document"]["providerStatus"], "failed")
+        self.assertIn("RAGFlow connection failed: timed out", detail["document"]["errorMessage"])
+
     def test_knowledge_service_processes_document_through_provider(self):
         provider = FakeKnowledgeProvider()
         service = KnowledgeService(repository=KnowledgeRepository(), provider=provider)
@@ -297,6 +329,10 @@ class RAGFlowProviderTests(unittest.TestCase):
         self.assertIn("goal-a", create_names[0])
         dataset_creates = [request for request in client.requests if request[0] == "POST" and request[1] == "/api/v1/datasets"]
         self.assertEqual(len(dataset_creates), 2)
+        parser_config = dataset_creates[0][2]["parser_config"]
+        self.assertEqual(parser_config["layout_recognize"], "Plain Text")
+        self.assertFalse(parser_config["raptor"]["use_raptor"])
+        self.assertFalse(parser_config["graphrag"]["use_graphrag"])
 
     def test_dataset_scope_uses_goal_and_tech_stack_names(self):
         client = StubRAGFlowClient()

@@ -1,7 +1,7 @@
 # Universe OS 代码优化与功能新增计划
 
 日期：2026-08-12
-状态：待按阶段实施
+状态：O1、F1 已完成；其余阶段待按顺序实施
 依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
 
 ## 0. 审计结论与边界
@@ -18,7 +18,7 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 
 - `frontend/` Vue 源码：它仍被迁移/契约测试读取。
 - `SpatialModuleScene.jsx`：它仍承载非书架模块世界，不是可直接删除的“旧 3D 书架”。
-- RAGFlow 的 local fallback 与兼容表：真实 provider 文档尚未完成最终验收。
+- RAGFlow 的 local fallback 与兼容表：F1 只验证了受控本地样本，仍不能删除兼容路径或推定所有历史资料已完成。
 
 所有实施阶段都必须保持：一个 AI Core、资料的原始所有权、前端仅经 Universe API
 访问、以及 5180 是唯一正常用户入口。
@@ -68,6 +68,18 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **阅读器证据：** 在 `/study/knowledge` 按“数据治理”筛选并打开 DAMA 资料后，书页显示 635 页；翻页从第 1–2 页实际进入第 3–4 页，页面文本来自返回 chunks。这个结果证明“持续解析中先阅读已完成内容”的同步逻辑有效。
 - **未满足的验收：** provider-backed retrieval 有意只过滤 `processing_status == processed` 的资料，因此上述 chunking 文档不能作为 Tutor 来源验收。API 可达、处于队列或已有 chunks 都不等于 F1 的 `processed` 成功。
 - **继续条件：** 需要 RAGFlow 管理面确认一个可执行的 embedding provider，并由用户提供一个可控的新样本或明确授权使用哪一份非长文档样本。满足后才可各执行一次 TXT、Markdown、PDF 的端到端验收；不得拿现有长 PDF 重试凑结果。
+
+### F1 交付记录（2026-08-13）
+
+- **目标：** 使用用户授权的新建小型 TXT、Markdown、PDF 验证真实 RAGFlow embedding、索引、Universe chunk 同步、检索、Tutor 来源链接和 5180 阅读器；不重新提交既有长 PDF。
+- **受影响文件：** `backend/app/knowledge/providers/ragflow.py`、`backend/app/core/settings.py`、`backend/app/api/routes.py`、`tests/test_ragflow_provider.py`、`docker/ragflow/universe.env.example`、`docs/06_RAGFLOW_INSTALLATION.md`、`README.md`、`TODO.md`、`CHANGELOG.md`。
+- **数据库/API：** 无 migration 或公开 API 合同变更。RAGFlow client 将直接 socket timeout 归一为 provider 错误，Universe 因而写入 `failed` 而不是永久 `parsing`。新建 scoped dataset 默认 `Plain Text`、RAPTOR 关闭、GraphRAG 关闭；不覆盖既有 dataset 或自动重解析。
+- **运行恢复：** 初次新 PDF 任务曾继承旧数据集的 DeepDOC/高级处理并使 amd64 仿真 worker 无进度。仅取消该新任务，重启本地 RAGFlow worker，确认同一 PDF 的单文档基础配置后恢复一次。既有两份历史 PDF 和其它长资料均未重新提交。
+- **处理证据：** TXT、Markdown、PDF 分别成为 Universe `processed`，各有一个 provider-backed nonzero chunk。PDF 的 executor 记录了解析、embedding 与 Elasticsearch indexing，完成时为 65 tokens/1 chunk；未在文档中保留 API key、数据集 ID 或 provider document ID。
+- **检索与 Tutor：** Universe RetrievalService 对 PDF 的精确查询返回其 Universe document/chunk 映射。`all_study` Tutor 调用返回了 TXT、Markdown 和 PDF 三条稳定 Knowledge source URL；当前 Study Tutor 回答仍是既有规则式学习建议，F1 只以真实检索和来源回链为验收，不把它表述为自由生成问答质量。
+- **5180 验收：** `/study/knowledge?documentId=…` 载入书架 iframe，展开 PDF 后显示真实 chunk 文本和 `第 1 / 1 页`，上一页/下一页均正确禁用，浏览器无 error。
+- **测试：** `python3 -m unittest tests.test_ragflow_provider tests.test_knowledge_upload_flow`：16 通过；`python3 -m unittest discover -s tests`：178 通过；`room-portfolio npm run build` 通过；`scripts/smoke_spatial_routes.py` 覆盖的 5180 核心路由和 API proxy 全部通过。
+- **风险与限制：** Apple Silicon 上的 amd64 RAGFlow 冷启动约五分钟；这不是对任意大型 PDF、历史队列或其他 embedding provider 的完成承诺。后续只在单独授权下处理遗留长资料。
 
 ## 3. 优先级与依赖
 
