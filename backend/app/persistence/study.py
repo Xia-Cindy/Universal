@@ -131,22 +131,27 @@ class SQLiteStudyRepository:
     def save_daily_task(self, task: DailyTask) -> DailyTask:
         payload = task.to_dict()
         with self._db.transaction() as db:
-            self._ensure_postgres_task_parent_anchors(db, task)
-            db.execute(
-                """INSERT INTO daily_tasks
-                (id,user_id,goal_id,week_plan_id,subject,topic,task_date,estimated_minutes,priority,sort_order,status,
-                 completed_at,created_at,updated_at)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(id) DO UPDATE SET subject=excluded.subject,topic=excluded.topic,
-                task_date=excluded.task_date,estimated_minutes=excluded.estimated_minutes,priority=excluded.priority,
-                sort_order=excluded.sort_order,
-                status=excluded.status,completed_at=excluded.completed_at,updated_at=excluded.updated_at""",
-                (
-                    task.id, task.user_id, task.goal_id, task.week_plan_id, task.subject, task.topic,
-                    payload["taskDate"], task.estimated_minutes, task.priority, task.sort_order, task.status.value,
-                    payload["completedAt"], payload["createdAt"], payload["updatedAt"],
-                ),
-            )
+            self.save_daily_task_in_transaction(db, task)
+        return task
+
+    def save_daily_task_in_transaction(self, db, task: DailyTask) -> DailyTask:
+        payload = task.to_dict()
+        self._ensure_postgres_task_parent_anchors(db, task)
+        db.execute(
+            """INSERT INTO daily_tasks
+            (id,user_id,goal_id,week_plan_id,subject,topic,task_date,estimated_minutes,priority,sort_order,status,
+             completed_at,created_at,updated_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET subject=excluded.subject,topic=excluded.topic,
+            task_date=excluded.task_date,estimated_minutes=excluded.estimated_minutes,priority=excluded.priority,
+            sort_order=excluded.sort_order,
+            status=excluded.status,completed_at=excluded.completed_at,updated_at=excluded.updated_at""",
+            (
+                task.id, task.user_id, task.goal_id, task.week_plan_id, task.subject, task.topic,
+                payload["taskDate"], task.estimated_minutes, task.priority, task.sort_order, task.status.value,
+                payload["completedAt"], payload["createdAt"], payload["updatedAt"],
+            ),
+        )
         return task
 
     def _ensure_postgres_task_parent_anchors(self, db, task: DailyTask) -> None:
@@ -222,21 +227,35 @@ class SQLiteStudyRepository:
         return [self._task_row(row) for row in self._task_rows(user_id, goal_id)]
 
     def save_session(self, session: StudySession) -> StudySession:
-        payload = session.to_dict()
         with self._db.transaction() as db:
-            db.execute(
-                """INSERT INTO study_sessions
-                (id,user_id,task_id,subject,topic,start_time,end_time,duration_minutes,notes,feeling,status,created_at,updated_at)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(id) DO UPDATE SET end_time=excluded.end_time,duration_minutes=excluded.duration_minutes,
-                notes=excluded.notes,feeling=excluded.feeling,status=excluded.status,updated_at=excluded.updated_at""",
+            self.save_session_in_transaction(db, session)
+        return session
+
+    def save_session_in_transaction(self, db, session: StudySession, *, require_in_progress: bool = False) -> bool:
+        payload = session.to_dict()
+        if require_in_progress:
+            result = db.execute(
+                """UPDATE study_sessions SET end_time=?,duration_minutes=?,notes=?,feeling=?,status=?,updated_at=?
+                   WHERE id=? AND user_id=? AND status='in_progress'""",
                 (
-                    session.id, session.user_id, session.task_id, session.subject, session.topic,
-                    payload["startTime"], payload["endTime"], session.duration_minutes, session.notes,
-                    session.feeling, session.status.value, payload["createdAt"], payload["updatedAt"],
+                    payload["endTime"], session.duration_minutes, session.notes, session.feeling,
+                    session.status.value, payload["updatedAt"], session.id, session.user_id,
                 ),
             )
-        return session
+            return bool(getattr(result, "rowcount", 0))
+        db.execute(
+            """INSERT INTO study_sessions
+            (id,user_id,task_id,subject,topic,start_time,end_time,duration_minutes,notes,feeling,status,created_at,updated_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET end_time=excluded.end_time,duration_minutes=excluded.duration_minutes,
+            notes=excluded.notes,feeling=excluded.feeling,status=excluded.status,updated_at=excluded.updated_at""",
+            (
+                session.id, session.user_id, session.task_id, session.subject, session.topic,
+                payload["startTime"], payload["endTime"], session.duration_minutes, session.notes,
+                session.feeling, session.status.value, payload["createdAt"], payload["updatedAt"],
+            ),
+        )
+        return True
 
     def get_session(self, session_id: str, user_id: str) -> StudySession:
         row = self._db.connection.execute("SELECT * FROM study_sessions WHERE id = ?", (session_id,)).fetchone()
@@ -252,13 +271,17 @@ class SQLiteStudyRepository:
         return [self._session_row(row) for row in rows]
 
     def save_learning_event(self, event: LearningEvent) -> LearningEvent:
-        payload = event.to_dict()
         with self._db.transaction() as db:
-            db.execute(
-                """INSERT INTO learning_events(id,user_id,event_type,summary,metadata,created_at)
-                   VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING""",
-                (event.id, event.user_id, event.event_type, event.summary, dumps(event.metadata), payload["createdAt"]),
-            )
+            self.save_learning_event_in_transaction(db, event)
+        return event
+
+    def save_learning_event_in_transaction(self, db, event: LearningEvent) -> LearningEvent:
+        payload = event.to_dict()
+        db.execute(
+            """INSERT INTO learning_events(id,user_id,event_type,summary,metadata,created_at)
+               VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING""",
+            (event.id, event.user_id, event.event_type, event.summary, dumps(event.metadata), payload["createdAt"]),
+        )
         return event
 
     def list_learning_events(self, user_id: str) -> list[LearningEvent]:

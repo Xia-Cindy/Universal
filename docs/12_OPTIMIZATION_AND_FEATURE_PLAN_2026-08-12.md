@@ -1,7 +1,7 @@
 # Universe OS 代码优化与功能新增计划
 
 日期：2026-08-12
-状态：O1、F1、O2、O3、F3、F4 已完成；O5 的实施设计已确认、代码尚未实施；其余阶段待按顺序实施
+状态：O1、F1、O2、O3、O5、F3、F4、F5、F2、F6 已完成；O4 因来源许可与实际实现核验要求保持未开始。
 依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
 
 ## 0. 审计结论与边界
@@ -64,13 +64,13 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **风险与控制：** 导入顺序会影响层叠结果，因此两个模块在原全局字体 import 后加载，保留相同 specificity 和实际 z-index。
 - **验收：** eslint、Vite build、5180 核心路由 smoke 通过；浏览器确认 `/study/knowledge` 的 iframe 与 `/study/cards` 的知识黑板均挂载且无 console error。
 
-### O5 设计记录（2026-08-13）
+### O5 实施记录（2026-08-13）
 
 - **目标：** 明确 Study Session 完成时 Session、Task、Learning Event 与两条 Memory 的 application unit-of-work，消除“各 repository 各自提交”造成的部分写入风险。
-- **受影响文件（实施时）：** `backend/app/planets/study/execution/service.py`、sessions service、Study/Memory persistence adapters、SQLite/PostgreSQL persistence、routes 错误映射与故障注入测试。
+- **受影响文件：** `backend/app/planets/study/execution/{service,unit_of_work}.py`、sessions service、Study/Memory persistence adapters 与故障注入测试。
 - **数据库/API：** 不需要 migration；保留现有 execution finish API 形状。稳定 session ID、event ID 与 memory ID 已足以作为幂等边界。
 - **设计结论：** 在 shared persistence 的一个 transaction 内，以 Session `in_progress -> finished` 条件更新作为并发线性化点；Task、Event 和两条 Memory 只在同一 transaction 内写入。不得通过嵌套现有 repository transaction 实现。
-- **实施门槛：** SQLite、PostgreSQL 和 in-memory 语义都必须覆盖成功、重复、故障注入和并发；旧半完成数据单独、可审计地修复，不能在普通 finish 请求中静默补写。完整设计见 `docs/13_STUDY_SESSION_UNIT_OF_WORK_DESIGN_2026-08-13.md`。
+- **实施结果：** SQLite 与 in-memory 覆盖成功、重复、五个写入点故障注入、failure 后 retry 与并发 finish；全量后端 205 通过，5180 路由/API proxy 回归通过。PostgreSQL 在一次性独立 schema 中实际覆盖故障回滚与 retry，测试后 schema 已删除且未触碰用户数据。旧半完成数据仍必须单独、可审计地修复，普通 finish 不会静默补写。完整设计与边界见 `docs/13_STUDY_SESSION_UNIT_OF_WORK_DESIGN_2026-08-13.md`。
 
 ## 2. 新增功能计划
 
@@ -118,8 +118,8 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **目标：** 让用户从已关联 Study Goal 的资料阅读器中，向指定且未归档的 Work Tech Stack 授予可撤销的只读引用；无授权的 Study 资料不能由 Work 列表、详情、首页统计或 Tech Stack 详情读取。
 - **受影响文件：** Knowledge model/repository/service、SQLite/PostgreSQL persistence、`backend/app/api/{contracts,routes}.py`、`backend/app/main.py`、Work service、空间书架 API/iframe bridge/Study 授权对话框与相应测试。
 - **数据库/API：** 新增 PostgreSQL `021_knowledge_share_grants.sql` 与 SQLite `009_knowledge_share_grants.sql`，唯一约束为 `(user_id, document_id, tech_stack_id)`。新增 `GET/POST /api/study/knowledge/documents/{document_id}/share-grants` 与 `DELETE /api/study/knowledge/share-grants/{grant_id}`；Work documents API 改为仅返回 Work-owned 或授权资料，并附 `accessMode` 与授权元数据。
-- **风险与控制：** 授权记录不拥有文件、chunk、provider 数据或注释，只保存原 document ID、源 Goal、目标 Tech Stack。Work 对授权资料不可编辑、删除、重解析或刷新；撤销、Tech Stack 归档、源 Goal 变更和源资料删除均删除/失效授权。Work 自己上传的资料不受此过滤影响。
-- **验收：** `tests/test_knowledge_share_grants.py` 覆盖默认拒绝、授权可见、详情只读、撤销、Tech Stack 归档、源资料删除、源 Goal 变更、Tech Stack 详情与 SQLite 重启；完整后端回归为 190 通过。空间客户端 eslint、书架模型测试、生产构建与重启后 5180 核心路由/API proxy smoke 均通过；浏览器确认 Study 实体书读者出现“授权 Work”入口，Work 书架仍无编辑/授权控制。
+- **风险与控制：** 授权记录不拥有文件、chunk、provider 数据或注释，只保存原 document ID、源 Goal、目标 Tech Stack。Work 对授权资料不可编辑、删除、重解析或刷新；撤销、Tech Stack 归档、删除授权所指的源 Goal 链接和源资料删除均删除/失效授权。Work 自己上传的资料不受此过滤影响。
+- **验收：** `tests/test_knowledge_share_grants.py` 覆盖默认拒绝、授权可见、详情只读、撤销、Tech Stack 归档、源资料删除、源 Goal 链接移除、Tech Stack 详情与 SQLite 重启；完整后端回归为 190 通过。空间客户端 eslint、书架模型测试、生产构建与重启后 5180 核心路由/API proxy smoke 均通过；浏览器确认 Study 实体书读者出现“授权 Work”入口，Work 书架仍无编辑/授权控制。
 
 ## 3. 优先级与依赖
 

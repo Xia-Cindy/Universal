@@ -10,37 +10,41 @@ class SQLiteMemoryRepository:
         self._db = persistence
 
     def save(self, entry: MemoryEntry) -> MemoryEntry:
-        payload = entry.to_dict()
         with self._db.transaction() as db:
-            if getattr(self._db, "backend", "sqlite") == "postgres":
-                db.execute(
-                    """INSERT INTO memory_entries
-                    (id,user_id,scope,planet_type,session_id,key,value,status,importance,payload,created_at,updated_at,last_accessed_at,expires_at)
-                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
-                    scope=excluded.scope,planet_type=excluded.planet_type,session_id=excluded.session_id,
-                    key=excluded.key,value=excluded.value,status=excluded.status,importance=excluded.importance,
-                    payload=excluded.payload,updated_at=excluded.updated_at,
-                    last_accessed_at=excluded.last_accessed_at,expires_at=excluded.expires_at""",
-                    (
-                        entry.id, entry.user_id, entry.scope.value, entry.planet_type, entry.session_id,
-                        entry.key, dumps(entry.value), entry.status.value, entry.importance, dumps(payload),
-                        payload["createdAt"], payload["updatedAt"], payload["lastAccessedAt"], payload["expiresAt"],
-                    ),
-                )
-            else:
-                db.execute(
-                    """INSERT INTO memory_entries
-                    (id,user_id,scope,planet_type,session_id,status,importance,payload,created_at,updated_at,last_accessed_at,expires_at)
-                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
-                    scope=excluded.scope,planet_type=excluded.planet_type,session_id=excluded.session_id,
-                    status=excluded.status,importance=excluded.importance,payload=excluded.payload,
-                    updated_at=excluded.updated_at,last_accessed_at=excluded.last_accessed_at,expires_at=excluded.expires_at""",
-                    (
-                        entry.id, entry.user_id, entry.scope.value, entry.planet_type, entry.session_id,
-                        entry.status.value, entry.importance, dumps(payload), payload["createdAt"], payload["updatedAt"],
-                        payload["lastAccessedAt"], payload["expiresAt"],
-                    ),
-                )
+            self.save_in_transaction(db, entry)
+        return entry
+
+    def save_in_transaction(self, db, entry: MemoryEntry) -> MemoryEntry:
+        payload = entry.to_dict()
+        if getattr(self._db, "backend", "sqlite") == "postgres":
+            db.execute(
+                """INSERT INTO memory_entries
+                (id,user_id,scope,planet_type,session_id,key,value,status,importance,payload,created_at,updated_at,last_accessed_at,expires_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                scope=excluded.scope,planet_type=excluded.planet_type,session_id=excluded.session_id,
+                key=excluded.key,value=excluded.value,status=excluded.status,importance=excluded.importance,
+                payload=excluded.payload,updated_at=excluded.updated_at,
+                last_accessed_at=excluded.last_accessed_at,expires_at=excluded.expires_at""",
+                (
+                    entry.id, entry.user_id, entry.scope.value, entry.planet_type, entry.session_id,
+                    entry.key, dumps(entry.value), entry.status.value, entry.importance, dumps(payload),
+                    payload["createdAt"], payload["updatedAt"], payload["lastAccessedAt"], payload["expiresAt"],
+                ),
+            )
+        else:
+            db.execute(
+                """INSERT INTO memory_entries
+                (id,user_id,scope,planet_type,session_id,status,importance,payload,created_at,updated_at,last_accessed_at,expires_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                scope=excluded.scope,planet_type=excluded.planet_type,session_id=excluded.session_id,
+                status=excluded.status,importance=excluded.importance,payload=excluded.payload,
+                updated_at=excluded.updated_at,last_accessed_at=excluded.last_accessed_at,expires_at=excluded.expires_at""",
+                (
+                    entry.id, entry.user_id, entry.scope.value, entry.planet_type, entry.session_id,
+                    entry.status.value, entry.importance, dumps(payload), payload["createdAt"], payload["updatedAt"],
+                    payload["lastAccessedAt"], payload["expiresAt"],
+                ),
+            )
         return entry
 
     def get(self, memory_id: str, user_id: str) -> MemoryEntry:

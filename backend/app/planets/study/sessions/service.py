@@ -1,4 +1,5 @@
 from backend.app.core.dates import local_now, parse_datetime
+from copy import copy
 from backend.app.models import SessionStatus, StudySession
 from backend.app.planets.study.repository import StudyRepository
 
@@ -27,23 +28,29 @@ class SessionService:
         return self._repository.save_session(session)
 
     def finish_session(self, user_id: str, session_id: str, payload: dict | None = None) -> StudySession:
-        payload = payload or {}
         session = self._repository.get_session(session_id, user_id)
         if session.status == SessionStatus.FINISHED:
             return session
+        finished = self.build_finished_session(session, payload)
+        return self._repository.save_session(finished)
+
+    def build_finished_session(self, session: StudySession, payload: dict | None = None) -> StudySession:
+        """Validate and construct a finished copy without writing repository state."""
+        payload = payload or {}
 
         end_time = parse_datetime(payload.get("endTime")) if payload.get("endTime") else local_now()
         duration = int((end_time - session.start_time).total_seconds() // 60)
         if duration < 1:
             raise ValueError("duration_minutes must be at least 1")
 
-        session.end_time = end_time
-        session.duration_minutes = duration
-        session.notes = payload.get("notes", session.notes)
-        session.feeling = payload.get("feeling", session.feeling)
-        session.status = SessionStatus.FINISHED
-        session.updated_at = end_time
-        return self._repository.save_session(session)
+        finished = copy(session)
+        finished.end_time = end_time
+        finished.duration_minutes = duration
+        finished.notes = payload.get("notes", session.notes)
+        finished.feeling = payload.get("feeling", session.feeling)
+        finished.status = SessionStatus.FINISHED
+        finished.updated_at = end_time
+        return finished
 
     def list_records(self, user_id: str) -> list[StudySession]:
         return sorted(
@@ -51,4 +58,3 @@ class SessionService:
             key=lambda session: session.start_time,
             reverse=True,
         )
-

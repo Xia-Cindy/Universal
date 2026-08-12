@@ -28,6 +28,9 @@ Novel actions continue to use the existing backend services and migrations.
 
 - Study supports Goals, plans, tasks, sessions, learning events, review items
   and current-Goal progress aggregation through the existing API.
+- Completing a Study Session atomically records the session, its linked task,
+  one learning event and two scoped memory facts. Repeated or concurrent finish
+  requests retain the first completed result instead of duplicating progress.
 - Each uploaded Knowledge document appears as one physical book. The shelf shows
   three books at a time, supports additional shelf pages, subject filtering,
   Goal association, editing and confirmed deletion.

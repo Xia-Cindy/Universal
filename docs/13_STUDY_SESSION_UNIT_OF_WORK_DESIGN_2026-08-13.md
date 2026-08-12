@@ -1,7 +1,7 @@
 # Study Session 完成事务设计
 
 日期：2026-08-13
-状态：O5 设计已确认；尚未实施
+状态：O5 已实施；SQLite 与隔离 PostgreSQL 持久化验收完成
 范围：仅覆盖 `PATCH /api/study/execution/sessions/{session_id}/finish` 的本地持久化写入边界。
 
 ## 1. 目标与非目标
@@ -66,16 +66,18 @@ StudySession + DailyTask + LearningEvent + MemoryEntry
 
 ## 7. 实施文件与验收
 
-预计修改：
+实际修改：
 
 - `backend/app/planets/study/execution/service.py`
 - `backend/app/planets/study/sessions/service.py`
 - `backend/app/persistence/study.py`
 - `backend/app/persistence/memory.py`
-- `backend/app/persistence/sqlite.py`
-- `backend/app/persistence/postgres.py`
-- `backend/app/api/routes.py` 与 FastAPI 错误映射（仅去重现有校验/错误处理）
-- `tests/test_study_execution_idempotency.py`，以及 SQLite、PostgreSQL adapter 的故障注入测试。
+- `backend/app/planets/study/execution/unit_of_work.py`
+- `tests/test_study_execution_idempotency.py`。
+
+没有 schema、公开 API 或路由错误合同变更。`PostgresStudyRepository` 与
+`PostgresMemoryRepository` 继承同一组显式 `*_in_transaction` adapter 方法，且
+`PostgresPersistence.transaction()` 提供与 SQLite 相同的 shared-connection 边界。
 
 验收矩阵：
 
@@ -88,4 +90,23 @@ StudySession + DailyTask + LearningEvent + MemoryEntry
 | PostgreSQL 与 SQLite | 各自运行真实 persistence integration；不能只用 in-memory repository 声称事务成功。 |
 | API 回归 | 完成路径、Study Home、Analytics、Tutor 上下文和现有 178+ 后端测试通过。 |
 
-实施提交必须先加入这些测试，再修改生产代码；没有故障注入和 PostgreSQL adapter 证据时，不得将 O5 标记为已实现。
+### 8. 实施与验收记录（2026-08-13）
+
+- 新增 `StudySessionFinishUnitOfWork`：先构造 validated finish result，再在同一
+  persistence connection 的一个 transaction 中条件更新 Session、完成关联 Task、写
+  stable-ID Event 和两条 stable-ID Memory。已经 finished 的 Session 直接返回首次事实。
+- `save_session_in_transaction(..., require_in_progress=True)` 使用
+  `id + user_id + status='in_progress'` 条件更新作为并发线性化点；共享连接时，从读取
+  到条件更新都持有 adapter lock，避免第二个请求观察到中间连接状态。
+- 新增 in-memory 快照恢复、SQLite 每个写入点故障注入、SQLite failure 后 retry 与两次
+  并发 finish 测试。结果：任一 `session/task/event/session_memory/planet_memory` 写入点
+  抛错均不留下本次部分事实；retry 后恰有 1 Event 和 2 Memory；并发请求返回同一首次
+  completed Session。
+- 验证：`python3 -m unittest tests.test_study_execution_idempotency` 为 4 通过；
+  `python3 -m unittest discover -s tests` 为 205 通过；空间 eslint、bookshelf tests、
+  production build 与 `scripts/smoke_spatial_routes.py` 通过。
+- PostgreSQL：以一次性独立 schema 注入应用 DSN，实际运行
+  `StudyExecutionPostgresIntegrationTests.test_postgres_rollback_is_atomic_and_retry_commits_all_facts`。
+  它验证 `session_memory` 写入点失败时 Session、Task、Event 与两条 Memory 均回滚；移除
+  故障后 retry 只提交完整单份事实。测试后 schema 与其中 36 个迁移对象已立即删除，未访问
+  或修改产品 schema / 用户数据。
