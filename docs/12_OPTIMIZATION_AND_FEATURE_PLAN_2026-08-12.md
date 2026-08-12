@@ -143,6 +143,14 @@ F4 授权 ──> F5 多 Goal 资料关联
 - **边界：** 主关联继续用于既有 RAGFlow dataset scope；新增目标关联不复制 document、chunk、annotation 或 provider document，也不重复提交/解析。检索先从链接表限定允许的 Universe document ID，再进入本地向量或 provider 查询。
 - **F4 兼容：** Work 授权仍显式记录 `sourceGoalId`，可来自主或次关联；只有移除该具体链接才撤销对应授权。
 - **验收：** `tests/test_document_goal_links.py` 覆盖创建/列表/API、检索隔离、替换不重解析与 SQLite 重启；`tests/test_knowledge_share_grants.py` 覆盖次关联授权；与检索基础共 20 项通过。
+
+### F2 2026-08-13 设计记录
+
+- **目标：** 将浏览器本地书签扩展为可选的 user/document 阅读位置同步，同时保证 API 不可用、未登录或离线时仍立即使用现有 localStorage。
+- **受影响文件（实施时）：** Knowledge model/repository/persistence、SQLite/PostgreSQL migrations、API contracts/routes/main 与空间书架 bridge、reader model、API client。
+- **数据库/API：** 拟新增 `reading_progress`，唯一键 `(user_id, document_id)`；拟新增 `GET/PUT /api/study/knowledge/documents/{id}/reading-progress`。`spreadIndex` 是可恢复的权威位置，`pageNumber` 仅为读者提示；不回填浏览器私有 localStorage。
+- **风险与控制：** 不把页码当作 PDF/provider 页码、学习时长、Goal 完成或 Wordbook 复习事实。客户端先落 localStorage，再 best-effort 同步；跨设备用 `clientUpdatedAt` 与服务端时间解决 last-write-wins 冲突。资料删除清理进度，Goal link/Work grant 变化不影响源资料进度。
+- **实施门槛与验收：** SQLite/PostgreSQL 重启、离线回退、双设备新旧冲突、页码 clamp、资料删除和 5180 断网/恢复均需覆盖；不得新增 RAGFlow 任务或 Goal mastery。完整设计见 `docs/14_READING_PROGRESS_SYNC_DESIGN_2026-08-13.md`。
 O4 必须在来源许可与实际参考实现确认后再开始，不能以“外观类似”为依据自行重写。
 
 ## 4. 每个阶段的交付要求
