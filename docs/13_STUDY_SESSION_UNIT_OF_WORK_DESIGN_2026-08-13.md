@@ -1,7 +1,7 @@
 # Study Session 完成事务设计
 
-日期：2026-08-13  
-状态：O5 设计已确认；尚未实施  
+日期：2026-08-13
+状态：O5 设计已确认；尚未实施
 范围：仅覆盖 `PATCH /api/study/execution/sessions/{session_id}/finish` 的本地持久化写入边界。
 
 ## 1. 目标与非目标
