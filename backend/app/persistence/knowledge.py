@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from backend.app.models import Concept, Document, DocumentChunk, KnowledgeAnnotation, KnowledgeShareGrant
-from backend.app.persistence.codec import annotation_from_payload, chunk_from_payload, concept_from_payload, document_from_payload, dumps, knowledge_share_grant_from_payload, loads
+from backend.app.models import Concept, Document, DocumentChunk, DocumentGoalLink, KnowledgeAnnotation, KnowledgeShareGrant
+from backend.app.persistence.codec import annotation_from_payload, chunk_from_payload, concept_from_payload, document_from_payload, document_goal_link_from_payload, dumps, knowledge_share_grant_from_payload, loads
 from backend.app.persistence.sqlite import SQLitePersistence
 
 
@@ -64,7 +64,14 @@ class SQLiteKnowledgeRepository:
         if topic:
             documents = [item for item in documents if item.topic == topic]
         if goal_id:
-            documents = [item for item in documents if item.goal_id == goal_id]
+            document_ids = {
+                row["document_id"]
+                for row in self._db.connection.execute(
+                    "SELECT document_id FROM document_goal_links WHERE user_id = ? AND goal_id = ?",
+                    (user_id, goal_id),
+                ).fetchall()
+            }
+            documents = [item for item in documents if item.id in document_ids]
         if planet_type:
             documents = [item for item in documents if item.planet_type == planet_type]
         if tech_stack_id:
@@ -97,9 +104,53 @@ class SQLiteKnowledgeRepository:
         with self._db.transaction() as db:
             db.execute("DELETE FROM knowledge_annotations WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM knowledge_share_grants WHERE document_id = ?", (document_id,))
+            db.execute("DELETE FROM document_goal_links WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM document_chunks WHERE document_id = ?", (document_id,))
             db.execute("DELETE FROM documents WHERE id = ?", (document_id,))
         return document
+
+    def replace_document_goal_links(
+        self, user_id: str, document_id: str, goal_ids: list[str]
+    ) -> list[DocumentGoalLink]:
+        with self._db.transaction() as db:
+            db.execute(
+                "DELETE FROM document_goal_links WHERE user_id = ? AND document_id = ?",
+                (user_id, document_id),
+            )
+            for goal_id in dict.fromkeys(goal_ids):
+                link = DocumentGoalLink(user_id=user_id, document_id=document_id, goal_id=goal_id)
+                payload = link.to_dict()
+                db.execute(
+                    """INSERT INTO document_goal_links
+                    (id,user_id,document_id,goal_id,payload,created_at,updated_at)
+                    VALUES(?,?,?,?,?,?,?)""",
+                    (
+                        link.id, link.user_id, link.document_id, link.goal_id,
+                        dumps(payload), payload["createdAt"], payload["updatedAt"],
+                    ),
+                )
+        return self.list_document_goal_links(user_id, document_id=document_id)
+
+    def list_document_goal_links(
+        self, user_id: str, *, document_id: str | None = None
+    ) -> list[DocumentGoalLink]:
+        statement = "SELECT payload FROM document_goal_links WHERE user_id = ?"
+        parameters: list[str] = [user_id]
+        if document_id:
+            statement += " AND document_id = ?"
+            parameters.append(document_id)
+        statement += " ORDER BY created_at"
+        rows = self._db.connection.execute(statement, tuple(parameters)).fetchall()
+        return [document_goal_link_from_payload(loads(row["payload"])) for row in rows]
+
+    def document_has_goal(self, user_id: str, document_id: str, goal_id: str) -> bool:
+        return bool(
+            self._db.connection.execute(
+                """SELECT 1 FROM document_goal_links
+                   WHERE user_id = ? AND document_id = ? AND goal_id = ?""",
+                (user_id, document_id, goal_id),
+            ).fetchone()
+        )
 
     def save_share_grant(self, grant: KnowledgeShareGrant) -> KnowledgeShareGrant:
         payload = grant.to_dict()

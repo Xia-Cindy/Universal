@@ -10,6 +10,7 @@ from backend.app.models import (
     DailyTask,
     Document,
     DocumentChunk,
+    DocumentGoalLink,
     DocumentStatus,
     DocumentType,
     KnowledgeAnnotation,
@@ -258,6 +259,17 @@ def knowledge_share_grant_from_payload(payload: dict[str, Any]) -> KnowledgeShar
         document_id=payload["documentId"],
         source_goal_id=payload["sourceGoalId"],
         tech_stack_id=payload["techStackId"],
+        id=payload["id"],
+        created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
+def document_goal_link_from_payload(payload: dict[str, Any]) -> DocumentGoalLink:
+    return DocumentGoalLink(
+        user_id=payload["userId"],
+        document_id=payload["documentId"],
+        goal_id=payload["goalId"],
         id=payload["id"],
         created_at=parse_datetime(payload["createdAt"]),
         updated_at=parse_datetime(payload["updatedAt"]),

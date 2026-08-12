@@ -245,7 +245,7 @@ const Experience = React.memo(() => {
         return () => { current = false; };
     }, [isReferenceBooks, isWorkKnowledge, knowledgeRevision, wordbookRevision]);
 
-    const createKnowledge = async ({ file, goalId, subject, topic }) => {
+    const createKnowledge = async ({ file, goalId, goalIds = [], subject, topic }) => {
         const extension = file.name.split('.').pop()?.toLowerCase();
         const fileType = extension === 'pdf' ? 'pdf' : ['md', 'markdown'].includes(extension) ? 'markdown' : extension === 'txt' ? 'txt' : null;
         if (!fileType) throw new Error('仅支持 TXT、Markdown 与 PDF。');
@@ -263,6 +263,7 @@ const Experience = React.memo(() => {
             subject,
             topic,
             goalId: isWorkKnowledge ? null : goalId,
+            goalIds: isWorkKnowledge ? [] : goalIds,
             content,
             contentEncoding: fileType === 'pdf' ? 'base64' : 'text',
             storagePath: file.name,
@@ -338,7 +339,7 @@ const Experience = React.memo(() => {
 
     const manageKnowledgeShareGrants = async (documentId) => {
         const document = knowledgeBooks.find((item) => item.id === documentId);
-        if (!document?.goalId) {
+        if (!(document?.goalIds || (document?.goalId ? [document.goalId] : [])).length) {
             throw new Error('请先将这份 Study 资料关联到一个学习目标，才能授权给 Work。');
         }
         const [grants, stacks] = await Promise.all([
@@ -350,11 +351,11 @@ const Experience = React.memo(() => {
         setShareStatus('');
     };
 
-    const grantKnowledgeToWork = async (techStackId) => {
+    const grantKnowledgeToWork = async (techStackId, sourceGoalId) => {
         if (!shareDialog || !techStackId) return;
         try {
             const grant = await roomApi.createKnowledgeShareGrant(shareDialog.document.id, {
-                sourceGoalId: shareDialog.document.goalId,
+                sourceGoalId,
                 techStackId
             });
             setShareDialog((current) => current ? {
@@ -502,13 +503,18 @@ const Experience = React.memo(() => {
                         <div className="knowledge-share-options">
                             {workTechStacks.length ? workTechStacks.map((stack) => {
                                 const grant = shareDialog.grants.find((item) => item.techStackId === stack.id);
+                                const sourceGoals = shareDialog.document.goalIds || (shareDialog.document.goalId ? [shareDialog.document.goalId] : []);
                                 return (
                                     <div key={stack.id}>
                                         <strong>{stack.name}</strong>
                                         <small>{grant ? '已授权为只读引用' : '尚未授权'}</small>
                                         {grant
                                             ? <button type="button" onClick={() => revokeKnowledgeShareGrant(grant.id)}>撤销</button>
-                                            : <button type="button" onClick={() => grantKnowledgeToWork(stack.id)}>授权</button>}
+                                            : sourceGoals.map((sourceGoalId) => (
+                                                <button key={sourceGoalId} type="button" onClick={() => grantKnowledgeToWork(stack.id, sourceGoalId)}>
+                                                    以 {studyGoals.find((goal) => goal.id === sourceGoalId)?.goalName || '关联目标'} 授权
+                                                </button>
+                                            ))}
                                     </div>
                                 );
                             }) : <span>请先在 Work 中创建一个未归档的 Tech Stack。</span>}

@@ -180,6 +180,14 @@ def create_app():
     def create_knowledge_share_grant(document_id: str, payload: dict):
         return api.create_knowledge_share_grant(document_id, payload)
 
+    @app.get("/api/study/knowledge/documents/{document_id}/goal-links")
+    def get_knowledge_document_goal_links(document_id: str):
+        return api.get_knowledge_document_goal_links(document_id)
+
+    @app.put("/api/study/knowledge/documents/{document_id}/goal-links")
+    def replace_knowledge_document_goal_links(document_id: str, payload: dict):
+        return api.replace_knowledge_document_goal_links(document_id, payload)
+
     @app.delete("/api/study/knowledge/share-grants/{grant_id}")
     def revoke_knowledge_share_grant(grant_id: str):
         return api.revoke_knowledge_share_grant(grant_id)

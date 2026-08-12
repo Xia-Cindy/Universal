@@ -1,4 +1,4 @@
-from backend.app.models import Concept, Document, DocumentChunk, KnowledgeAnnotation, KnowledgeShareGrant
+from backend.app.models import Concept, Document, DocumentChunk, DocumentGoalLink, KnowledgeAnnotation, KnowledgeShareGrant
 
 from backend.app.persistence.knowledge import SQLiteKnowledgeRepository
 
@@ -12,6 +12,7 @@ class KnowledgeRepository:
         self.concepts: dict[str, Concept] = {}
         self.annotations: dict[str, KnowledgeAnnotation] = {}
         self.share_grants: dict[tuple[str, str, str], KnowledgeShareGrant] = {}
+        self.document_goal_links: dict[tuple[str, str, str], DocumentGoalLink] = {}
 
     def save_document(self, document: Document) -> Document:
         self.documents[document.id] = document
@@ -39,7 +40,11 @@ class KnowledgeRepository:
         if topic:
             documents = [document for document in documents if document.topic == topic]
         if goal_id:
-            documents = [document for document in documents if document.goal_id == goal_id]
+            documents = [
+                document
+                for document in documents
+                if (user_id, document.id, goal_id) in self.document_goal_links
+            ]
         if planet_type:
             documents = [document for document in documents if document.planet_type == planet_type]
         if tech_stack_id:
@@ -72,7 +77,36 @@ class KnowledgeRepository:
             for key, grant in self.share_grants.items()
             if grant.document_id != document_id
         }
+        self.document_goal_links = {
+            key: link
+            for key, link in self.document_goal_links.items()
+            if link.document_id != document_id
+        }
         return document
+
+    def replace_document_goal_links(
+        self, user_id: str, document_id: str, goal_ids: list[str]
+    ) -> list[DocumentGoalLink]:
+        self.document_goal_links = {
+            key: link
+            for key, link in self.document_goal_links.items()
+            if not (link.user_id == user_id and link.document_id == document_id)
+        }
+        for goal_id in dict.fromkeys(goal_ids):
+            link = DocumentGoalLink(user_id=user_id, document_id=document_id, goal_id=goal_id)
+            self.document_goal_links[(user_id, document_id, goal_id)] = link
+        return self.list_document_goal_links(user_id, document_id=document_id)
+
+    def list_document_goal_links(
+        self, user_id: str, *, document_id: str | None = None
+    ) -> list[DocumentGoalLink]:
+        links = [link for link in self.document_goal_links.values() if link.user_id == user_id]
+        if document_id:
+            links = [link for link in links if link.document_id == document_id]
+        return sorted(links, key=lambda link: link.created_at)
+
+    def document_has_goal(self, user_id: str, document_id: str, goal_id: str) -> bool:
+        return (user_id, document_id, goal_id) in self.document_goal_links
 
     def save_share_grant(self, grant: KnowledgeShareGrant) -> KnowledgeShareGrant:
         self.share_grants[(grant.user_id, grant.document_id, grant.tech_stack_id)] = grant

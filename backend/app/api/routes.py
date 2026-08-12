@@ -580,8 +580,14 @@ class ApiFacade:
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         payload = dict(payload)
+        goal_ids = payload.get("goalIds") if isinstance(payload.get("goalIds"), list) else []
         if payload.get("goalId"):
-            goal = self.study_repository.get_goal(payload["goalId"], user.id)
+            goal_ids = [payload["goalId"], *goal_ids]
+        goal_ids = list(dict.fromkeys(str(goal_id) for goal_id in goal_ids if goal_id))
+        for goal_id in goal_ids:
+            self.study_repository.get_goal(goal_id, user.id)
+        if payload.get("goalId"):
+            goal = self.study_repository.get_goal(str(payload["goalId"]), user.id)
             payload["scopeName"] = goal.goal_name
         if payload.get("planetType") == "work" and payload.get("techStackId"):
             try:
@@ -590,7 +596,39 @@ class ApiFacade:
                 tech_stack = None
             if tech_stack:
                 payload["scopeName"] = tech_stack.name
-        return self.knowledge.create_document(user.id, payload).to_dict()
+        document = self.knowledge.create_document(user.id, payload)
+        return self.knowledge.document_detail(user.id, document.id)["document"]
+
+    def get_knowledge_document_goal_links(self, document_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        document = self.knowledge.document_detail(user.id, document_id)["document"]
+        return {
+            "documentId": document_id,
+            "primaryGoalId": document.get("goalId"),
+            "goalIds": document.get("goalIds", []),
+        }
+
+    def replace_knowledge_document_goal_links(self, document_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        goal_ids = payload.get("goalIds", [])
+        if not isinstance(goal_ids, list):
+            raise ValueError("goalIds must be a list")
+        for goal_id in goal_ids:
+            self.study_repository.get_goal(str(goal_id), user.id)
+        primary_goal_id = payload.get("primaryGoalId")
+        if primary_goal_id:
+            self.study_repository.get_goal(str(primary_goal_id), user.id)
+        elif goal_ids:
+            primary_goal_id = goal_ids[0]
+        scope_name = None
+        if primary_goal_id:
+            scope_name = self.study_repository.get_goal(str(primary_goal_id), user.id).goal_name
+        document = self.knowledge.update_document(
+            user.id,
+            document_id,
+            {"goalIds": goal_ids, "goalId": primary_goal_id, "scopeName": scope_name},
+        )
+        return self.knowledge.document_detail(user.id, document.id)["document"]
 
     def list_knowledge_share_grants(self, document_id: str | None = None) -> list[dict[str, object]]:
         user = self.users.current_user()
@@ -873,11 +911,17 @@ class ApiFacade:
     def update_knowledge_document(self, document_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         payload = dict(payload)
-        if "goalId" in payload:
-            if payload["goalId"]:
-                goal = self.study_repository.get_goal(payload["goalId"], user.id)
+        if "goalId" in payload or "goalIds" in payload:
+            goal_ids = payload.get("goalIds") if isinstance(payload.get("goalIds"), list) else []
+            if payload.get("goalId"):
+                goal_ids = [payload["goalId"], *goal_ids]
+            goal_ids = list(dict.fromkeys(str(goal_id) for goal_id in goal_ids if goal_id))
+            for goal_id in goal_ids:
+                self.study_repository.get_goal(goal_id, user.id)
+            if payload.get("goalId"):
+                goal = self.study_repository.get_goal(str(payload["goalId"]), user.id)
                 payload["scopeName"] = goal.goal_name
-            else:
+            elif "goalIds" in payload and not goal_ids:
                 payload["scopeName"] = None
         if payload.get("planetType") == "work" and "techStackId" in payload:
             if payload["techStackId"]:
@@ -907,6 +951,8 @@ class ApiFacade:
                 query=payload["query"],
                 limit=payload.get("limit", 5),
                 document_id=payload.get("documentId"),
+                goal_id=payload.get("goalId"),
+                planet_type=payload.get("planetType"),
             )
         )
 

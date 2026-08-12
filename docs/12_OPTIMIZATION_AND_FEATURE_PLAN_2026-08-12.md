@@ -136,6 +136,13 @@ F4 授权 ──> F5 多 Goal 资料关联
 ```
 
 建议执行顺序：**O1 → F1 → O2 → O3 → O5 → F3 → F4 → F5 → F2 → F6**。
+
+### F5 2026-08-13 实施记录
+
+- **完成内容：** 新增 PostgreSQL `022_document_goal_links.sql` 与 SQLite `010_document_goal_links.sql`，回填历史 Study `documents.goal_id`。资料响应同时保留兼容主关联 `goalId` 与完整 `goalIds`；新增 `GET/PUT /api/study/knowledge/documents/{id}/goal-links`。书架编辑器改为可多选学习目标。
+- **边界：** 主关联继续用于既有 RAGFlow dataset scope；新增目标关联不复制 document、chunk、annotation 或 provider document，也不重复提交/解析。检索先从链接表限定允许的 Universe document ID，再进入本地向量或 provider 查询。
+- **F4 兼容：** Work 授权仍显式记录 `sourceGoalId`，可来自主或次关联；只有移除该具体链接才撤销对应授权。
+- **验收：** `tests/test_document_goal_links.py` 覆盖创建/列表/API、检索隔离、替换不重解析与 SQLite 重启；`tests/test_knowledge_share_grants.py` 覆盖次关联授权；与检索基础共 20 项通过。
 O4 必须在来源许可与实际参考实现确认后再开始，不能以“外观类似”为依据自行重写。
 
 ## 4. 每个阶段的交付要求

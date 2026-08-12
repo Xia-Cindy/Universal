@@ -52,6 +52,28 @@ class KnowledgeShareGrant:
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
         }
+
+
+@dataclass
+class DocumentGoalLink:
+    """One Study Goal association for a source-owned Knowledge document."""
+
+    user_id: str
+    document_id: str
+    goal_id: str
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "documentId": self.document_id,
+            "goalId": self.goal_id,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
 @dataclass
 class Document:
     user_id: str

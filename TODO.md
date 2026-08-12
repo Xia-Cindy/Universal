@@ -14,7 +14,7 @@
 - [ ] Implement the approved Study Session unit-of-work across SQLite/PostgreSQL adapters, including partial-write rollback, concurrent-finish and legacy-repair evidence.
 - [x] Add an explainable, user-adjustable interval-review schedule for source-owned knowledge cards and Wordbook entries; keep repeated same-day results idempotent and preserve first-time Goal mastery accounting.
 - [x] Add explicit, revocable Study Goal Knowledge grants to active Work Tech Stacks; preserve source ownership and filter Work reads to owned or granted documents only.
-- [ ] Design migrations and API contracts for optional synced reading progress and multi-Goal document links before implementation.
+- [x] Design and implement multi-Goal document links with SQLite/PostgreSQL backfill, explicit goal-link APIs, isolated retrieval filtering and Work-grant compatibility; synced reading progress remains a separate pending decision.
 
 ## Study Bookshelf Module
 

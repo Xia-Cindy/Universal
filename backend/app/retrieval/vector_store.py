@@ -19,7 +19,7 @@ class VectorStore(Protocol):
         *,
         query_vector: list[float],
         limit: int,
-        filters: dict[str, str] | None = None,
+        filters: dict[str, Any] | None = None,
     ) -> list[VectorMatch]:
         """Return ranked vector matches."""
 
@@ -37,11 +37,18 @@ class InMemoryVectorStore:
         *,
         query_vector: list[float],
         limit: int,
-        filters: dict[str, str] | None = None,
+        filters: dict[str, Any] | None = None,
     ) -> list[VectorMatch]:
         matches: list[VectorMatch] = []
         for vector_ref, (vector, payload) in self._vectors.items():
-            if filters and any(payload.get(key) != value for key, value in filters.items()):
+            if filters and any(
+                (
+                    payload.get("documentId") not in value
+                    if key == "documentIds"
+                    else payload.get(key) != value
+                )
+                for key, value in filters.items()
+            ):
                 continue
             matches.append(
                 VectorMatch(
@@ -62,4 +69,3 @@ def _cosine_similarity(left: list[float], right: list[float]) -> float:
     if left_norm == 0.0 or right_norm == 0.0:
         return 0.0
     return round(dot / (left_norm * right_norm), 6)
-

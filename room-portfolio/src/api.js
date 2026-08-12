@@ -90,6 +90,13 @@ export const roomApi = {
         }),
     knowledgeShareGrants: (documentId) =>
         apiRequest(`/api/study/knowledge/documents/${documentId}/share-grants`),
+    knowledgeGoalLinks: (documentId) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/goal-links`),
+    updateKnowledgeGoalLinks: (documentId, payload) =>
+        apiRequest(`/api/study/knowledge/documents/${documentId}/goal-links`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        }),
     createKnowledgeShareGrant: (documentId, payload) =>
         apiRequest(`/api/study/knowledge/documents/${documentId}/share-grants`, {
             method: 'POST',

@@ -96,7 +96,7 @@ class KnowledgeShareGrantTests(unittest.TestCase):
                 {"sourceGoalId": self.goal["id"], "techStackId": self.stack["id"]},
             )
 
-    def test_changing_the_source_goal_revokes_existing_work_access(self):
+    def test_replacing_all_goal_links_revokes_existing_work_access(self):
         other_goal = self.api.create_goal(
             {
                 "goalName": "Other systems study",
@@ -109,10 +109,29 @@ class KnowledgeShareGrantTests(unittest.TestCase):
             self.document["id"],
             {"sourceGoalId": self.goal["id"], "techStackId": self.stack["id"]},
         )
-        self.api.update_knowledge_document(self.document["id"], {"goalId": other_goal["id"]})
+        self.api.update_knowledge_document(
+            self.document["id"], {"goalId": other_goal["id"], "goalIds": [other_goal["id"]]}
+        )
 
         self.assertEqual(self.api.list_work_knowledge_documents(), [])
         self.assertEqual(self.api.list_knowledge_share_grants(self.document["id"]), [])
+
+    def test_secondary_goal_can_be_used_as_an_explicit_work_grant_source(self):
+        secondary_goal = self.api.create_goal(
+            {"goalName": "Secondary systems study", "goalType": "learning", "subjects": ["计算机科学"], "dailyAvailableMinutes": 30}
+        )
+        self.api.replace_knowledge_document_goal_links(
+            self.document["id"],
+            {"primaryGoalId": self.goal["id"], "goalIds": [self.goal["id"], secondary_goal["id"]]},
+        )
+        self.api.create_knowledge_share_grant(
+            self.document["id"],
+            {"sourceGoalId": secondary_goal["id"], "techStackId": self.stack["id"]},
+        )
+        self.assertEqual(
+            [item["id"] for item in self.api.list_work_knowledge_documents(tech_stack_id=self.stack["id"])],
+            [self.document["id"]],
+        )
 
     def test_tech_stack_detail_uses_explicit_grants_not_keyword_matching(self):
         self.api.create_knowledge_share_grant(
@@ -169,6 +188,8 @@ class KnowledgeShareGrantTests(unittest.TestCase):
                 ("GET", "/api/study/knowledge/documents/{document_id}/share-grants"),
                 ("POST", "/api/study/knowledge/documents/{document_id}/share-grants"),
                 ("DELETE", "/api/study/knowledge/share-grants/{grant_id}"),
+                ("GET", "/api/study/knowledge/documents/{document_id}/goal-links"),
+                ("PUT", "/api/study/knowledge/documents/{document_id}/goal-links"),
             }
             <= contracts
         )

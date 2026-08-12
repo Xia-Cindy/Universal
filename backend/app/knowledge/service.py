@@ -37,7 +37,8 @@ class KnowledgeService:
     def create_document(self, user_id: str, payload: dict) -> Document:
         file_type = payload["fileType"]
         self._file_service.validate(file_type)
-        goal_id = payload.get("goalId")
+        goal_ids = self._normalize_goal_ids(payload.get("goalIds"), primary_goal_id=payload.get("goalId"))
+        goal_id = self._primary_goal_id(payload.get("goalId"), goal_ids)
         tags = self._normalize_tags(payload.get("tags", []), goal_id=goal_id)
         document = Document(
             user_id=user_id,
@@ -68,12 +69,30 @@ class KnowledgeService:
                 content_type=_content_type(document.file_type.value),
             )
             document.content = ""
-        return self._repository.save_document(document)
+        saved = self._repository.save_document(document)
+        if saved.planet_type == "study":
+            self._repository.replace_document_goal_links(user_id, saved.id, goal_ids)
+        return saved
 
     def update_document(self, user_id: str, document_id: str, payload: dict) -> Document:
         document = self._repository.get_document(document_id, user_id)
-        original_goal_id = document.goal_id
         original_planet_type = document.planet_type
+        goal_links_updated = "goalIds" in payload or "goalId" in payload
+        if "goalIds" in payload:
+            next_goal_ids = self._normalize_goal_ids(
+                payload.get("goalIds"), primary_goal_id=payload.get("goalId", document.goal_id)
+            )
+            next_primary_goal_id = self._primary_goal_id(
+                payload.get("goalId", document.goal_id), next_goal_ids
+            )
+        elif "goalId" in payload:
+            # Preserve the legacy single-select PATCH meaning for callers that have
+            # not adopted goalIds yet. The multi-select client sends goalIds.
+            next_goal_ids = self._normalize_goal_ids(None, primary_goal_id=payload.get("goalId"))
+            next_primary_goal_id = self._primary_goal_id(payload.get("goalId"), next_goal_ids)
+        else:
+            next_goal_ids = self._document_goal_ids(user_id, document.id)
+            next_primary_goal_id = document.goal_id
         if "fileName" in payload:
             file_name = str(payload["fileName"]).strip()
             if not file_name:
@@ -83,9 +102,10 @@ class KnowledgeService:
             document.subject = payload["subject"]
         if "topic" in payload:
             document.topic = payload["topic"]
-        if "goalId" in payload:
-            document.goal_id = payload["goalId"]
-            document.scope_name = payload.get("scopeName")
+        if goal_links_updated:
+            document.goal_id = next_primary_goal_id
+            if "scopeName" in payload:
+                document.scope_name = payload.get("scopeName")
             document.tags = tuple(self._normalize_tags(document.tags, goal_id=document.goal_id))
         if "planetType" in payload:
             document.planet_type = payload["planetType"]
@@ -99,14 +119,12 @@ class KnowledgeService:
             document.tags = tuple(self._normalize_tags(payload["tags"], goal_id=document.goal_id))
         document.updated_at = local_now()
         saved = self._repository.save_document(document)
-        if (
-            original_planet_type == "study"
-            and (
-                document.planet_type != "study"
-                or document.goal_id != original_goal_id
-            )
-        ):
+        if document.planet_type == "study":
+            self._repository.replace_document_goal_links(user_id, document.id, next_goal_ids)
+        if original_planet_type == "study" and document.planet_type != "study":
             self._repository.delete_share_grants_for_document(document.id, user_id)
+        elif document.planet_type == "study":
+            self._revoke_invalid_share_grants(user_id, document.id)
         return saved
 
     def process_document(self, user_id: str, document_id: str) -> dict[str, object]:
@@ -143,6 +161,7 @@ class KnowledgeService:
                     metadata={
                         "fileName": document.file_name,
                         "goalId": document.goal_id,
+                        "goalIds": self._document_goal_ids(user_id, document.id),
                         "planetType": document.planet_type,
                         "techStackId": document.tech_stack_id,
                         "tags": list(document.tags),
@@ -365,6 +384,7 @@ class KnowledgeService:
             **(metadata if isinstance(metadata, dict) else {}),
             "fileName": document.file_name,
             "goalId": document.goal_id,
+            "goalIds": self._document_goal_ids(document.user_id, document.id),
             "planetType": document.planet_type,
             "techStackId": document.tech_stack_id,
             "tags": list(document.tags),
@@ -385,7 +405,7 @@ class KnowledgeService:
         tech_stack_id: str | None = None,
     ) -> list[dict[str, object]]:
         return [
-            document.to_dict()
+            self._document_payload(user_id, document)
             for document in self._repository.list_documents(
                 user_id,
                 subject=subject,
@@ -421,7 +441,9 @@ class KnowledgeService:
         tech_stack_id: str,
     ) -> dict[str, object]:
         document = self._repository.get_document(document_id, user_id)
-        if document.planet_type != "study" or document.goal_id != source_goal_id:
+        if document.planet_type != "study" or not self._repository.document_has_goal(
+            user_id, document.id, source_goal_id
+        ):
             raise ValueError("Only a Study document linked to its source Goal can be shared with Work")
         existing = self._repository.list_share_grants(
             user_id,
@@ -466,8 +488,10 @@ class KnowledgeService:
             document = self._repository.get_document(document_id, user_id)
             if (
                 document.planet_type != "study"
-                or document.goal_id is None
-                or any(grant.source_goal_id != document.goal_id for grant in document_grants)
+                or any(
+                    not self._repository.document_has_goal(user_id, document.id, grant.source_goal_id)
+                    for grant in document_grants
+                )
             ):
                 continue
             if subject and document.subject != subject:
@@ -476,12 +500,12 @@ class KnowledgeService:
                 continue
             shared.append((document, document_grants))
         result = [
-            {**document.to_dict(), "accessMode": "owned", "shareGrants": []}
+            {**self._document_payload(user_id, document), "accessMode": "owned", "shareGrants": []}
             for document in owned
         ]
         result.extend(
             {
-                **document.to_dict(),
+                **self._document_payload(user_id, document),
                 "accessMode": "granted",
                 "shareGrants": [grant.to_dict() for grant in document_grants],
             }
@@ -497,9 +521,11 @@ class KnowledgeService:
             grants = self._repository.list_share_grants(user_id, document_id=document_id)
             if (
                 document.planet_type != "study"
-                or not document.goal_id
                 or not grants
-                or any(grant.source_goal_id != document.goal_id for grant in grants)
+                or any(
+                    not self._repository.document_has_goal(user_id, document.id, grant.source_goal_id)
+                    for grant in grants
+                )
             ):
                 raise PermissionError("Document is not available in Work Knowledge")
             access = {"accessMode": "granted", "shareGrants": [grant.to_dict() for grant in grants]}
@@ -509,7 +535,7 @@ class KnowledgeService:
         document = self._repository.get_document(document_id, user_id)
         chunks = self._repository.list_chunks(document.id, user_id)
         return {
-            "document": document.to_dict(),
+            "document": self._document_payload(user_id, document),
             "chunks": [chunk.to_dict() for chunk in chunks],
             "annotations": [
                 annotation.to_dict()
@@ -629,7 +655,7 @@ class KnowledgeService:
         for document in documents:
             subject_map[document.subject].add(document.topic)
         return {
-            "documents": [document.to_dict() for document in documents],
+            "documents": [self._document_payload(user_id, document) for document in documents],
             "statusCounts": dict(statuses),
             "subjects": [
                 {
@@ -649,6 +675,35 @@ class KnowledgeService:
         if goal_id:
             normalized.append(f"goal:{goal_id}")
         return list(dict.fromkeys(normalized))
+
+    def _document_goal_ids(self, user_id: str, document_id: str) -> list[str]:
+        return [
+            link.goal_id
+            for link in self._repository.list_document_goal_links(user_id, document_id=document_id)
+        ]
+
+    def _document_payload(self, user_id: str, document: Document) -> dict[str, object]:
+        return {**document.to_dict(), "goalIds": self._document_goal_ids(user_id, document.id)}
+
+    @staticmethod
+    def _normalize_goal_ids(goal_ids: object, *, primary_goal_id: object = None) -> list[str]:
+        values = goal_ids if isinstance(goal_ids, (list, tuple, set)) else []
+        normalized = [str(goal_id).strip() for goal_id in values if str(goal_id).strip()]
+        if primary_goal_id:
+            normalized.insert(0, str(primary_goal_id).strip())
+        return list(dict.fromkeys(normalized))
+
+    @staticmethod
+    def _primary_goal_id(preferred_goal_id: object, goal_ids: list[str]) -> str | None:
+        preferred = str(preferred_goal_id).strip() if preferred_goal_id else None
+        if preferred and preferred in goal_ids:
+            return preferred
+        return goal_ids[0] if goal_ids else None
+
+    def _revoke_invalid_share_grants(self, user_id: str, document_id: str) -> None:
+        for grant in self._repository.list_share_grants(user_id, document_id=document_id):
+            if not self._repository.document_has_goal(user_id, document_id, grant.source_goal_id):
+                self._repository.delete_share_grant(grant.id, user_id)
 
 
 def _content_type(file_type: str) -> str:

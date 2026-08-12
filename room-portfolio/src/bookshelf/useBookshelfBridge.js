@@ -152,6 +152,7 @@ export function useBookshelfBridge({
                 state.setLanguage(entry.language || 'English');
                 state.setTags((entry.tags || []).join(', '));
                 state.setGoalId(entry.goalId || '');
+                state.setGoalIds?.([]);
                 state.setStatus('');
                 state.setComposerOpen(true);
                 return;
@@ -164,6 +165,7 @@ export function useBookshelfBridge({
                 state.setSubject(book.subject || '');
                 state.setTopic(book.topic || '');
                 state.setGoalId(book.goalId || '');
+                state.setGoalIds?.(book.goalIds || (book.goalId ? [book.goalId] : []));
                 state.setStatus('');
                 state.setComposerOpen(true);
                 return;

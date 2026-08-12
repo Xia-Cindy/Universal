@@ -556,6 +556,7 @@ export default function DeployedBooks({
     const [shelfPage, setShelfPage] = useState(0);
     const [subjectFilter, setSubjectFilter] = useState('');
     const [goalId, setGoalId] = useState('');
+    const [goalIds, setGoalIds] = useState([]);
     const [editing, setEditing] = useState(null);
     const frame = useRef(null);
     const catalog = useMemo(
@@ -605,7 +606,7 @@ export default function DeployedBooks({
         bookmarks,
         totalPages,
         callbacks: { onAdjustRecall, onCreateAnnotation, onDelete, onDeleteWord, onManageShareGrants, onMarkAnnotationMastered, onOpen, onOpenKnowledge, onOpenWordbook, onReturn, onReviewWord, onSpeakWord },
-        state: { setBookTitle, setComposerOpen, setEditing, setGoalId, setLanguage, setMeaning, setReader, setShelfPage, setStatus, setSubject, setSubjectFilter, setTags, setTopic, setWord, setBookmarks }
+        state: { setBookTitle, setComposerOpen, setEditing, setGoalId, setGoalIds, setLanguage, setMeaning, setReader, setShelfPage, setStatus, setSubject, setSubjectFilter, setTags, setTopic, setWord, setBookmarks }
     });
 
     useEffect(() => {
@@ -661,9 +662,9 @@ export default function DeployedBooks({
         setStatus(editing ? '正在保存资料…' : '正在加入知识库…');
         try {
             if (editing) {
-                await onEditKnowledge?.(editing.item, { fileName: bookTitle.trim(), goalId: goalId || null, subject: subject.trim(), topic: topic.trim() });
+                await onEditKnowledge?.(editing.item, { fileName: bookTitle.trim(), goalId: goalId || null, goalIds, subject: subject.trim(), topic: topic.trim() });
             } else {
-                await onCreate?.({ file, goalId: goalId || null, subject: subject.trim(), topic: topic.trim() });
+                await onCreate?.({ file, goalId: goalId || null, goalIds, subject: subject.trim(), topic: topic.trim() });
             }
             setComposerOpen(false);
             setEditing(null);
@@ -671,6 +672,7 @@ export default function DeployedBooks({
             setSubject('');
             setTopic('');
             setGoalId('');
+            setGoalIds([]);
         } catch (error) {
             setStatus(error instanceof Error ? error.message : '新建知识失败。');
         } finally {
@@ -744,13 +746,26 @@ export default function DeployedBooks({
                                 </label>
                             </>
                         )}
-                        {goals.length > 0 && (
+                        {mode === 'wordbook' && goals.length > 0 && (
                             <label>
                                 关联学习目标
                                 <select value={goalId} onChange={(event) => setGoalId(event.target.value)}>
                                     <option value="">独立知识（不关联目标）</option>
                                     {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.goalName}</option>)}
                                 </select>
+                            </label>
+                        )}
+                        {mode !== 'wordbook' && goals.length > 0 && (
+                            <label>
+                                关联学习目标（可多选）
+                                <select multiple value={goalIds} onChange={(event) => {
+                                    const selected = Array.from(event.target.selectedOptions, (option) => option.value);
+                                    setGoalIds(selected);
+                                    setGoalId((current) => selected.includes(current) ? current : (selected[0] || ''));
+                                }}>
+                                    {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.goalName}</option>)}
+                                </select>
+                                <span>第一项会作为主关联，用于现有 RAGFlow 数据集边界；额外关联不会复制或重新解析资料。</span>
                             </label>
                         )}
                         <button className="knowledge-composer-submit" disabled={submitting} type="submit">
