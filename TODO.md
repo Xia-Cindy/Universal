@@ -8,6 +8,7 @@
 - [ ] Split bookshelf bridge, reader and annotation presentation responsibilities after the regression baseline passes.
 - [ ] Verify source license and actual implementation before localizing any external bookshelf resources.
 - [ ] Run one controlled RAGFlow TXT, Markdown and PDF acceptance set with a valid embedding provider; record `processed`, chunk evidence, reader content and Tutor source links without requeueing existing long PDFs.
+- [ ] F1 preflight found API reachability and readable DAMA chunks during `chunking`, but no verified embedding execution or `processed` document; wait for an approved provider-ready sample instead of reprocessing the existing long PDFs.
 - [ ] Design the Study Session unit-of-work before changing Task/Event/Memory write behavior.
 - [ ] Design migrations and API contracts for optional synced reading progress, interval review scheduling, Knowledge-share grants and multi-Goal document links before implementation.
 

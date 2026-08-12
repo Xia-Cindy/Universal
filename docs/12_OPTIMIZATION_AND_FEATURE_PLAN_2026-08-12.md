@@ -59,6 +59,16 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 | F5：Goal 多对多资料关联 | 支持同一资料服务多个 Goal，同时不破坏现有可空 `documents.goal_id` 的单 Goal/独立资料。 | 新 link table、迁移和查询合同；先设计回填规则。 | 高风险：检索 scope、书架筛选、删除语义与 Goal 进度都受影响。 | 单资料可关联多个 Goal；默认 scope 与全局查看明确；删除和检索不会串 Goal。 |
 | F6：计划与学习反馈闭环 | 在用户确认下由 Analytics 把任务完成、Review 和资料阅读转化为可解释的计划建议。 | 先只增加 read-only recommendation API；不自动改计划。 | 不得产生虚假学习记录或擅自调整任务。 | 建议可追溯到用户事实，用户明确确认后才变更计划；无 AI 时基础计划仍可用。 |
 
+### F1 只读预检记录（2026-08-12）
+
+- **目标：** 在不上传、重试或重新解析既有长 PDF 的前提下，确认 provider 是否已经具备一次真实资料验收的条件。
+- **受影响文件：** 无产品代码或数据库变更；仅读取 Universe provider health、既有文档详情和 5180 阅读器。
+- **API/数据库：** 只读 `GET /api/knowledge/provider/health`、`GET /api/study/knowledge/documents` 及单份资料详情；未调用 process、retry、upload、delete 或 Tutor 写入接口。
+- **观察结果：** provider health 返回 `ragflow / ok`，这只证明 Universe 到 RAGFlow API 可达，且 Universe 未提供可验证的 embedding 模型标签。两份《张培基：英汉翻译教程》仍为 `chunking`（一份 provider 为 `running`、一份为 `cancel`）且无 chunks。DAMA PDF 也仍为 `chunking / running`，但详情已返回 527 个非空 chunks。
+- **阅读器证据：** 在 `/study/knowledge` 按“数据治理”筛选并打开 DAMA 资料后，书页显示 635 页；翻页从第 1–2 页实际进入第 3–4 页，页面文本来自返回 chunks。这个结果证明“持续解析中先阅读已完成内容”的同步逻辑有效。
+- **未满足的验收：** provider-backed retrieval 有意只过滤 `processing_status == processed` 的资料，因此上述 chunking 文档不能作为 Tutor 来源验收。API 可达、处于队列或已有 chunks 都不等于 F1 的 `processed` 成功。
+- **继续条件：** 需要 RAGFlow 管理面确认一个可执行的 embedding provider，并由用户提供一个可控的新样本或明确授权使用哪一份非长文档样本。满足后才可各执行一次 TXT、Markdown、PDF 的端到端验收；不得拿现有长 PDF 重试凑结果。
+
 ## 3. 优先级与依赖
 
 ```text
