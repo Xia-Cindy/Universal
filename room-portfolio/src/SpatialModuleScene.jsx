@@ -2340,7 +2340,7 @@ function KnowledgeBoardWorld({ payload, reload }) {
         } else if (matching !== selected) {
             setSelected(matching);
         }
-    }, [cards, mode, notes, selected?.id]);
+    }, [cards, mode, notes, selected]);
 
     const choose = (item) => {
         setSelected(item);

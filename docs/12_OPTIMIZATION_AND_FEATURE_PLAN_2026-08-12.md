@@ -1,0 +1,83 @@
+# Universe OS 代码优化与功能新增计划
+
+日期：2026-08-12
+状态：待按阶段实施
+依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
+
+## 0. 审计结论与边界
+
+当前产品的正常入口是 5180 空间房间。房间使用 React Three Fiber/Three.js；当前
+Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，而不是 WebGL
+书架。两种技术不应混称，也不能在优化时误删任一层。
+
+本轮已完成一项低风险收敛：`room-portfolio/src/Experience.jsx` 以
+`KNOWLEDGE_RESOURCES` 统一 Study/Work Knowledge 的列表、详情、刷新、创建、处理与
+缓存选择，保留原 API、路由和 Work 不可编辑/删除的限制。
+
+暂不删除的内容：
+
+- `frontend/` Vue 源码：它仍被迁移/契约测试读取。
+- `SpatialModuleScene.jsx`：它仍承载非书架模块世界，不是可直接删除的“旧 3D 书架”。
+- RAGFlow 的 local fallback 与兼容表：真实 provider 文档尚未完成最终验收。
+
+所有实施阶段都必须保持：一个 AI Core、资料的原始所有权、前端仅经 Universe API
+访问、以及 5180 是唯一正常用户入口。
+
+## 1. 功能优化计划
+
+| 阶段 | 目标与主要文件 | 数据库/API | 风险 | 验收标准 |
+| --- | --- | --- | --- | --- |
+| O1：运行时与回归基线 | 建立 5180 核心路由 smoke suite；涉及 `room-portfolio/src/Experience.jsx`、`api.js`、路由测试与运行文档。 | 无 schema 变更；不得改变现有 API 合同。 | Three 场景加载慢会导致脆弱测试。 | `/`、Study、Plan、Knowledge、Wordbook、Cards、Work、Novel 可加载；API health 与现有后端测试通过。 |
+| O2：空间客户端职责拆分 | 将 `DeployedBooks.jsx` 拆为参考场景桥接、书架目录、阅读器、注释桥接；将 `SpatialModuleScene.jsx` 按模块展示拆分。 | 无 schema 变更；维持 `postMessage` 事件名与 API 形状。 | 拆分可能损坏封面开启、翻页、书签或深链接。 | 书架分页/筛选/编辑/删除、阅读器翻页/跳页/书签、卡片和 Wordbook 记忆卡逐项回归。 |
+| O3：样式与资产治理 | 把 `style.css` 中书架、黑板、房间 shell 的样式域分离；为共享色彩、间距和 z-index 建立变量。 | 无。 | CSS 层叠、移动端和 iframe 样式回归。 | 无重复全局选择器；桌面与窄屏截图基线通过；`prefers-reduced-motion` 不被破坏。 |
+| O4：参考书架可靠性 | 先核验 `thebuggeddev/books` 的实际源码、许可和部署差异；仅在可复用条件满足时，将必要资源本地化并保留 attribution。 | 无；保持现有书架数据映射。 | 未经许可复制、外部依赖替换造成视觉/动作偏差。 | 离线或参考站点不可达时有可读降级；视觉/封面/翻页与已确认参考一致；来源说明完整。 |
+| O5：后端边界与事务 | 评估 Study Session 完成的 unit-of-work，整理路由中重复的请求校验/错误映射。主要涉及 `backend/app/api/`、Study repository/service、persistence adapters。 | 可能新增迁移或 transaction adapter；实施前先提交 schema/API 设计。 | 原子性改动影响任务、Learning Event、Memory 计数。 | 成功与故障注入测试证明不出现部分写入；既有 174+ 测试与 API 回归通过。 |
+
+### O1 的实施顺序
+
+1. 固定开发环境、入口和 API health 检查，不重启或重新解析已有 RAGFlow 长文档。
+2. 增加路由和关键交互 smoke 测试；测试只使用夹具或现有测试数据。
+3. 在这条基线通过后，才分别提交 O2、O3、O4、O5；每阶段一个逻辑提交。
+
+### O1 交付记录（2026-08-12）
+
+- **目标：** 为 5180 的正常入口和核心空间路由建立可重复回归基线。
+- **受影响文件：** `scripts/smoke_spatial_routes.py`、`tests/test_spatial_route_smoke_contract.py`、`README.md`、`TODO.md`、`CHANGELOG.md`。
+- **数据库/API：** 无 schema 或 API 合同变更；脚本只读取 SPA 路由和经 Vite 代理的 `GET /api/health`。
+- **风险：** HTTP 成功只能证明 SPA fallback 与代理可达，不能单独证明 Three.js 场景已经挂载或视觉正确。
+- **验收结果：** 脚本覆盖 `/`、`/study`、`/study/plan`、`/study/knowledge`、`/study/wordbook`、`/study/cards`、`/work`、`/novel` 及 `/api/health`；真实本地服务全部通过。浏览器级抽查确认每条路由的 React 根节点已挂载，Knowledge/Wordbook 包含书架 iframe，且未捕获运行时 error。
+- **后续门槛：** O2/O3 拆分前必须先运行此脚本、路由合同测试、完整后端测试和浏览器级核心路径抽查。
+
+## 2. 新增功能计划
+
+| 阶段 | 用户价值与范围 | 数据库/API | 前置条件与风险 | 验收标准 |
+| --- | --- | --- | --- | --- |
+| F1：RAGFlow 真实资料验收 | 让用户能够判断一份 TXT、Markdown、PDF 是否真正可问答、可阅读。只补验收与可观测性，不重复提交已有大文件。 | 必要时扩展 provider 诊断字段；不暴露 RAGFlow 原始响应。 | 有效 embedding provider、可控样本与运行资源。 | 三类文件各有一次 `processed` 记录、非零 chunks、书架页面可读、Tutor 来源可回链；失败显示明确原因。 |
+| F2：阅读来源与书签同步 | 将“本地书签”升级为可选的用户级、资料归属阅读进度，同时保持离线本地书签。 | 新 migration：reading_progress；`GET/PUT` 文档进度 API。 | 需要用户身份与多设备语义，不能覆盖本地未同步状态。 | 同一用户重启后保持页码/书签；无登录或 API 不可用时安全退回本地。 |
+| F3：间隔重复 V2 | 在现有背过/记错事实之上提供可解释、可手动覆盖的复习调度。 | 新 review schedule 字段或表；Review queue 合同扩展。 | 算法不应把一次“记错”误当永久能力判断。 | 卡片和单词都有下次复习日期、理由和手动调整；幂等完成和 Goal 统计保持正确。 |
+| F4：知识空间授权 | 让用户显式决定某个 Goal 的资料是否可被 Work 引用，并可撤销。 | 可能新增 `knowledge_share_grants`；Work Knowledge 查询加入 grant 过滤。 | 关系与权限变更需要迁移、审计与删除策略。 | 未授权资料不出现在 Work；授权/撤销即时生效且不复制原资料。 |
+| F5：Goal 多对多资料关联 | 支持同一资料服务多个 Goal，同时不破坏现有可空 `documents.goal_id` 的单 Goal/独立资料。 | 新 link table、迁移和查询合同；先设计回填规则。 | 高风险：检索 scope、书架筛选、删除语义与 Goal 进度都受影响。 | 单资料可关联多个 Goal；默认 scope 与全局查看明确；删除和检索不会串 Goal。 |
+| F6：计划与学习反馈闭环 | 在用户确认下由 Analytics 把任务完成、Review 和资料阅读转化为可解释的计划建议。 | 先只增加 read-only recommendation API；不自动改计划。 | 不得产生虚假学习记录或擅自调整任务。 | 建议可追溯到用户事实，用户明确确认后才变更计划；无 AI 时基础计划仍可用。 |
+
+## 3. 优先级与依赖
+
+```text
+O1 回归基线
+ ├── O2/O3 代码与样式拆分
+ ├── F1 RAGFlow 真实验收
+ │    └── F2 阅读进度同步
+ └── O5 事务设计
+      ├── F3 间隔重复 V2
+      └── F6 反馈建议
+
+F4 授权 ──> F5 多 Goal 资料关联
+```
+
+建议执行顺序：**O1 → F1 → O2 → O3 → O5 → F3 → F4 → F5 → F2 → F6**。
+O4 必须在来源许可与实际参考实现确认后再开始，不能以“外观类似”为依据自行重写。
+
+## 4. 每个阶段的交付要求
+
+每个阶段开始前必须记录：目标、受影响文件、数据库变更、API 变更、风险、验收样例。
+完成后必须提供：迁移（如需要）、单元/集成测试、5180 回归结果、文档同步、`TODO.md`、
+`CHANGELOG.md` 和独立逻辑提交。外部服务不可用时，报告阻塞证据，不以健康检查或表单成功替代端到端验收。

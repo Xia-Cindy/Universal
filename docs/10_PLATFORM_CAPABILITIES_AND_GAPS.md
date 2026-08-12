@@ -1,98 +1,64 @@
 # Universe OS 当前能力与短板
 
-版本：0.1  
-状态：Implementation Review  
-更新时间：2026-07-24
+版本：0.2
+状态：Current Capability Review
+更新时间：2026-08-12
 
-本文记录四阶段执行后的真实平台边界。已实现代码、测试和本地 runtime 结果优先于产品宣传文案。
+本文是当前交付基线的能力说明，不替代早期 PRD 和设计提案中的历史决策。代码、数据库迁移、自动化测试和已验证的本地运行结果优先于宣传文案；任何尚未完成真实运行验收的外部服务能力均不得视为已交付。
 
-## 一、四阶段完成情况
+## 一、当前运行基线
 
-### 阶段 1：共享持久化与 Study 上下文
+- 唯一正常用户入口是 `http://127.0.0.1:5180/`。
+- 入口客户端为 `room-portfolio/`：React、Vite、React Three Fiber 与 Three.js 渲染个人房间、家具热点和模块世界。
+- Knowledge 与 Wordbook 的当前书架阅读器是参考书架 HTML 注入后的 DOM/CSS 3D 动效（iframe `srcDoc`），不是 Three.js/WebGL 书架；房间本身仍是 Three.js。
+- `frontend/` 中的 Vue 源码保留给迁移与契约测试，不由 `startup.sh` 启动，也不是产品入口。
+- Universe API 保持 Study、Knowledge、Wordbook、Work 与 Novel 的既有服务边界；空间客户端不创建第二套持久化或 AI 系统。
 
-- 通过既有 repository interface 接入 shared SQLite persistence 和 migration runner。
-- User、Study Goal、Plan、Task、Session、Learning Event、Knowledge Document/Chunk、Memory、Work records 可跨 API 重启读取。
-- `user_planet_context(user_id, planet_type, current_goal_id)` 是 Study Current Goal 的唯一来源。
-- Goal switch 只切换 Study Planet context，不删除其他 Goals。
-- Session finish 首次完成时同步关联 Task、Learning Event 和 Memory write point，重复 finish 不重复计数。
+## 二、已可使用的能力
 
-当前边界：SQLite 是本地开发实现，PostgreSQL adapter 和跨 repository 的真正数据库事务仍未完成。
+### Universe、Study 与复习
 
-### 阶段 2：RAGFlow Knowledge runtime
+- Study 支持 exam、learning、reading、growth Goal 的创建、切换、归档和当前 Goal 聚合。
+- 支持 Goal 下的长期、月、周计划和每日任务，以及学习 Session、Learning Event、Review 与 Analytics 汇总。
+- Wrong Question 可生成 1/3/7/30 天 Review 项；完成操作具备幂等语义。
+- Tutor 通过 AI Core、ToolRouter 与 Retrieval 边界获取可用 Knowledge 上下文；无来源时不得伪造 citation。
 
-- 已完成 KnowledgeProvider health check、异步 status refresh、前端轮询、retry 和 provider delete synchronization。
-- Study Goal 使用隔离的 RAGFlow dataset scope；Work Tech Stack 也使用独立 scope。
-- RAGFlow API key 不经过前端，也不写入仓库。
+### Knowledge、书架与卡片
 
-真实验收结果：RAGFlow health/API 可访问，但当前 embedding model provider 返回 `InvalidApiKey`，所以 TXT、Markdown、PDF 尚未真实达到 `processed`。在 embedding provider key/model 修复前，RAGFlow 能力必须标记为实验性。
+- Knowledge 文档可以独立存在或关联 Study Goal；资料以实体书形式显示，支持每页三本、更多书架页、学科筛选、编辑、确认删除和处理状态提示。
+- 读者在点击实体封面后打开无内滚动的双页纸张，支持双页翻动、页码跳转和浏览器本地书签。
+- 划线内容可保存为原资料归属的笔记或知识卡片；卡片可隐藏关键词、揭示答案并在首次“背过了”时一次性计入关联 Goal 进度。
+- `/study/cards` 只展示上述资料归属的卡片和笔记；它们不会被复制到另一个数据模型。
+- Wordbook 以标签为词汇书，保留词条的发音、个人释义、短语、例句和笔记，并支持正反面记忆卡、背过/记错结果及复习时间记录。
 
-### 阶段 3：Citation / Evidence 与 Tutor 合同
+### Work、Novel 与持久化
 
-- Tutor 支持 `current_goal` / `all_study` Knowledge scope。
-- 检索结果统一为 `sourceId`、`documentId`、`chunkId`、`title`、`quote`、`score`、`metadata`、`sourceUrl`。
-- 无匹配 Knowledge 时明确显示无来源状态，不生成 fake citation。
-- Tutor UI 支持来源 quote preview、回到 Knowledge 文档和保存为 Learning Event。
-- Knowledge 文档可通过 Evidence API 返回同形状来源对象。
+- Work 提供 Tech Stack、关联 Knowledge、项目证据、文章、学习记录和简历草稿 API；社区内容仅作发现和站内阅读，不自动写入个人 Knowledge。
+- Novel 提供持久化草稿的新建与编辑，不新增 Novel Agent。
+- PostgreSQL 是正常运行时的持久化适配器；SQLite 是显式选择的本地/测试兼容方案。两者均经过 repository 边界访问。
+- 本地对象存储与 S3 兼容对象存储均有边界；备份与受保护恢复脚本见 `docs/11_OPERATIONS_AND_RECOVERY.md`。
 
-当前边界：来源回源依赖 Universe 文档详情和 RAGFlow chunk preview；RAGFlow 尚未完成真实 processed 验收，因此不能宣称生产级 grounding。
+## 三、RAGFlow 的真实边界
 
-### 阶段 4：Wrong Question → Review → Analytics
+- Provider adapter 支持上传、状态刷新、重试、删除同步与 provider-backed retrieval；Study Goal 和 Work Tech Stack 可保持隔离作用域。
+- 处理中资料会显示真实状态，并在 provider 已返回 chunk 时先显示可读页面；这不表示完整解析已经结束。
+- 当前仓库**不宣称**真实 TXT、Markdown 和大 PDF 已在有效 embedding 配置下全部到达 `processed`。完成该验收仍需记录 provider 状态、chunk 数量、页面内容和 Tutor 来源回链。
+- RAGFlow API key 与其他凭据仅存在本地运行时配置中，前端、Tutor、AI Core 都不能直接调用 RAGFlow。
 
-- Wrong Question 作为 Study 业务事实保存，并自动生成 1、3、7、30 天四个 Review item。
-- Review completion 幂等，重复完成不重复计数。
-- Review summary 进入 Analytics progress summary 和推荐来源。
-- Study Review 页面支持记录错题、查看节奏和完成复习。
-- 没有新增 AI Agent；Review 不依赖 AI。
+## 四、已识别的短板与风险
 
-## 二、当前平台可实现功能
+1. **外部书架依赖。** 当前参考书架在运行时读取外部部署 HTML；网络不可用、参考站点变更或跨域策略变化会影响视觉层。应先确认源代码许可和实际实现后，再决定是否本地化可复用资源。
+2. **真实 RAGFlow 验收缺失。** Provider 连通、表单成功或进入队列都不等于文档被处理完成；大 PDF 仍需在有效 embedding provider 下单独验证。
+3. **空间客户端文件过大。** `SpatialModuleScene.jsx`、`DeployedBooks.jsx` 与全局样式文件职责过多，后续拆分必须覆盖分享路由、交互热点和阅读器回归。
+4. **旧 Vue 代码仍是测试依赖。** 它不再是入口，不能在未迁移相应测试与契约前直接删除。
+5. **事务与身份边界仍需生产化。** Session 完成尚无跨 Task、Event、Memory 的数据库级 unit-of-work；认证已经有注册/验证/登录 API 边界，但完整的多用户授权、冲突处理与部署运维尚未完成。
+6. **复习和分析仍是第一版。** 当前状态记录可靠，但尚未引入经用户验证的间隔重复模型、长期趋势解释或跨 Goal 对比。
+7. **跨 Planet 引用需要明确同意。** Work 通过 shared Knowledge/evidence 边界共享资料，但用户可见的授权与撤销流程仍未产品化。
 
-### Universe 与 Planet
+## 五、建议验收顺序
 
-- Universe Portal 展示 Study Planet、Work Planet 和未来 Planet 占位入口。
-- 用户可以进入 Study Workspace 或 Work Workspace，并从 Planet 返回 Universe Home。
-
-### Study Planet
-
-- 创建 exam、learning、reading、growth Goal，deadline 可为空。
-- 多 Goal 管理、切换 Current Goal、归档 Goal。
-- 按 Goal 建立 Long Term、Monthly、Weekly Plan 和 Daily Tasks。
-- 查看今日任务、编辑任务优先级、完成任务、执行 Study Session、记录时长、笔记和感受。
-- Study Home 汇总当前 Goal、Today Mission、progress、Knowledge overview、Analytics insight。
-- Tutor 可基于 Study context、Memory context 和可用 Knowledge chunks 返回结构化回答。
-- 保存 Wrong Question，并按 1/3/7/30 节奏复习。
-- Analytics 可展示任务完成、学习时长、学习事件、Review summary、weak areas 和 next actions。
-- Study Knowledge 可写 Markdown 文章或登记 txt/markdown；PDF 当前支持 metadata-only 或 provider-backed 实验路径。
-
-### Knowledge、Retrieval、Memory
-
-- Knowledge 是共享服务，可按 user、Planet、Goal、Work Tech Stack 和 tags 组织资料。
-- 文档、chunk、concept、provider metadata 均有 repository/API 边界。
-- Retrieval 可使用本地 deterministic embedding/in-memory vector store 测试路径，也可通过 RAGFlow provider 访问外部检索基础设施。
-- Memory 支持 global、planet、session scope 以及 active、archived、expired lifecycle，并向 AI Core 提供 prepared context。
-
-### Work Planet
-
-- Tech Stack 目录、详情、文章/学习记录、项目 evidence、Dynamic Resume draft。
-- Work Knowledge 独立归属 Work，并可通过 shared Knowledge Service 引用 Study Knowledge 摘要或 evidence refs。
-- CSDN 社区内容用于发现和 inline 阅读，不自动写入用户 Knowledge。
-
-## 三、当前短板与风险
-
-1. **RAGFlow 还没有通过真实文件验收。** 当前问题是 RAGFlow 配置的 embedding provider key 无效；需要用 TXT、Markdown、PDF 各一份完成 upload、异步 polling、processed、失败重试和删除同步。
-2. **SQLite 仍是本地开发持久化。** 尚无 PostgreSQL adapter、对象存储和生产备份策略。
-3. **Citation 目前是 Evidence contract，不是完整出版级引用系统。** 已有来源 id、quote 和回源 URL，但还缺跨 provider 的稳定页码/段落定位、版本化和失效来源处理。
-4. **Session finish 是幂等 application workflow，但还不是覆盖 Task、Event、Memory、Analytics input 的单一数据库事务。** 跨 repository 事务需要 shared unit-of-work 或 PostgreSQL transaction adapter。
-5. **本地用户模型仍是默认 local user。** 尚未形成多用户认证、权限、租户隔离和并发冲突处理。
-6. **Plan 仍偏 scaffold + task editing。** 还不是完整的可重排 Plan Builder，也没有自动规划能力。
-7. **Study 文章编辑器仍是 Markdown 入口。** Work 文章编辑器更丰富，Study 侧尚未统一到同等的正文编辑体验。
-8. **Review 是可靠事实闭环的第一版。** 目前复习结果是手工标记，没有间隔算法、遗忘曲线、错题相似度或 AI 辅助解释。
-9. **Analytics 目前是规则指标 + 可选 deterministic Analyst。** 缺少长期趋势、可解释的时间序列、用户确认后的建议反馈和跨 Goal 比较。
-10. **Work 与 Study 的共享仍需要明确 consent。** 目前通过 shared Knowledge/evidence refs 共享，后续需要让用户明确选择哪些 Goal Knowledge 可以被 Work 引用。
-
-## 四、短期验收顺序
-
-1. 修复 RAGFlow embedding provider 配置，完成三种真实文件 processed 验收。
-2. 验证重启不丢数据、不同 user/Goal/Planet scope 不串数据。
-3. 让一个 Tutor answer 从 `sources[0]` 回到具体 document/chunk，并在 UI 保存 Learning Event。
-4. 创建一道 Wrong Question，按 1/3/7/30 四个 item 完成，确认 Analytics summary 更新。
-5. 验证 Work 只能通过 shared Knowledge API 和 evidence refs 引用 Study，不得直接依赖 Study repository。
+1. 在有效 RAGFlow embedding provider 下，以 TXT、Markdown、PDF 各一份完成 `processed`、chunk 预览、重启后状态、Tutor 来源回链和删除同步验证。
+2. 建立 5180 的核心路由回归：`/`、`/study`、`/study/knowledge`、`/study/wordbook`、`/study/cards`、`/work`、`/novel`。
+3. 在 PostgreSQL 环境验证 Goal、Knowledge、Wordbook、Review 与 Novel 的重启后读取和用户/Goal scope 隔离。
+4. 先拆分空间客户端的展示层，再考虑任何视觉替换；每一个拆分都必须保持现有 API、路由与资料所有权。
+5. 在数据库迁移和 API 合同明确后，再实施间隔重复、跨 Planet 授权或事务性 Session 完成等新增能力。

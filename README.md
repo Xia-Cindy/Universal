@@ -84,6 +84,7 @@ To stop the local services:
 
 ```bash
 python3 -m unittest discover -s tests
+python3 scripts/smoke_spatial_routes.py
 cd room-portfolio && npm install && npm run build
 ```
 
@@ -94,3 +95,5 @@ cd room-portfolio && npm install && npm run build
 - [RAGFlow installation](docs/06_RAGFLOW_INSTALLATION.md)
 - [Implementation history](docs/08_IMPLEMENTATION_HISTORY_SUMMARY.md)
 - [Dated delivery roadmap](docs/10_DELIVERY_ROADMAP_2026-08-09.md)
+- [Current capability review and gaps](docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md)
+- [Code optimization and feature plan](docs/12_OPTIMIZATION_AND_FEATURE_PLAN_2026-08-12.md)

@@ -1,8 +1,13 @@
 # Universe OS 阶段实施总览
 
-版本：0.1  
+版本：0.2
 文档类型：实施历史总结  
-状态：Current Workspace Summary  
+状态：Historical Record with 2026-08 Current Baseline
+
+> 本文前半部分保留各阶段当时的实施事实，不能把其中的旧运行命令当作当前操作说明。
+> 当前唯一正常入口为 `http://127.0.0.1:5180/`；运行说明以 README、
+> `docs/10_DELIVERY_ROADMAP_2026-08-09.md` 和
+> `docs/11_OPERATIONS_AND_RECOVERY.md` 为准。
 
 ---
 
@@ -442,9 +447,9 @@ Universe OS 的当前实现目标是构建一个以 Planet 为组织方式的个
 ## 已完成操作
 
 - 配置 Vite dev server 代理 `/api` 到 FastAPI backend。
-- README 增加本地启动说明：
+- 当时 README 增加本地启动说明：
   - backend: `uvicorn backend.app.main:app --host 127.0.0.1 --port 8000`
-  - frontend: `npm run dev -- --host 127.0.0.1 --port 5173`
+  - frontend: `npm run dev -- --host 127.0.0.1 --port 5173`（历史入口，现已退役）
 - 确认浏览器可访问：
   - Universe Portal
   - Study onboarding
@@ -825,7 +830,24 @@ Goal
 
 ---
 
-# 23. 当前系统能力总览
+# 23. 2026-08 空间交付增量
+
+## 已完成操作
+
+- 将正常本地入口收敛到 5180 的 React/Three.js 空间房间；旧 Vue 启动路径退役，但源码保留给迁移和契约测试。
+- 用显示器、计划桌、书架、黑板和作品展墙承载模块入口，并提供可分享的空间路由和底部快捷导航。
+- 将 Knowledge 文档与 Wordbook tag 映射为实体书；阅读器支持封面开启、无滚动双页、翻页、页码跳转和本地书签。
+- 将划线笔记与知识卡片保持为原资料归属对象；黑板只读取这些对象，不创建平行数据存储。
+- 为 Wordbook 增加英语正面/个人释义背面的记忆卡，以及可持久化的背过/记错状态。
+- 明确 RAGFlow 处理中可展示已返回 chunks，但真实 TXT、Markdown、PDF 的 `processed` 验收仍未完成。
+
+## 对应交付依据
+
+- `3241ada`：交互式 Knowledge/Wordbook 书架与阅读器。
+- `f41c815`、`1dd1079`：空间、黑板、卡片/笔记与书架整合。
+- `f83c6c1`、`1d98abb`：5180 唯一入口收敛与 main 集成。
+
+# 24. 当前系统能力总览
 
 ## 已具备能力
 
@@ -870,7 +892,7 @@ Goal
 
 ---
 
-# 24. 当前技术边界
+# 25. 当前技术边界
 
 ## 保持不变
 
@@ -893,7 +915,7 @@ Goal
 
 ---
 
-# 25. Milestone 8.1 RAGFlow Knowledge Provider Adapter
+# 26. Milestone 8.1 RAGFlow Knowledge Provider Adapter
 
 ## 状态
 

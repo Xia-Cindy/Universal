@@ -18,7 +18,6 @@ const DispFrame = React.memo(({ nodes, onOpen }) => {
     const smartphoneState = useCameraStore((state) => state.smartphone);
 
     const [hovered, setHover] = useState(false);
-    const [hoveredMonitor, setHoveredMonitor] = useState(null);
     const [hoveredLaptop, setHoveredLaptop] = useState(null);
     const [hoveredTv, setHoveredTv] = useState(null);
     const [hoveredSmartphone, setHoveredSmartphone] = useState(null);
@@ -55,16 +54,13 @@ const DispFrame = React.memo(({ nodes, onOpen }) => {
                 onClick={(event) => {
                     event.stopPropagation();
                     onOpen?.('study');
-                    setHoveredMonitor(false);
                     onPointerOut();
                 }}
                 onPointerOver={() => {
                     onPointerOver();
-                    setHoveredMonitor(true);
                 }}
                 onPointerOut={() => {
                     onPointerOut();
-                    setHoveredMonitor(false);
                 }}
             >
                 <meshBasicMaterial

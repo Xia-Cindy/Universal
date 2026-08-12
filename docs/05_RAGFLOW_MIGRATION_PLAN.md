@@ -1,11 +1,11 @@
 # Universe OS
 # 05_RAGFLOW_MIGRATION_PLAN.md
 
-Version: 0.2
+Version: 0.3
 
 Document Type: Architecture Review and Migration Plan
 
-Status: Provider Adapter Implemented
+Status: Provider lifecycle implemented; real-document acceptance pending
 
 Scope: RAGFlow Knowledge Infrastructure Migration
 
@@ -32,7 +32,10 @@ Installation steps are documented in:
 docs/06_RAGFLOW_INSTALLATION.md
 ```
 
-This stack is for local development and integration validation. Production hardening still requires real credentials, runtime monitoring, backup strategy, status polling, and retry handling.
+This stack is for local development and integration validation. Provider status refresh,
+retry and deletion synchronization are implemented in Universe OS; production hardening
+still requires real credentials, monitoring, backup strategy and successful real-document
+acceptance.
 
 # 1. Current Architecture Analysis
 
@@ -506,7 +509,8 @@ Acceptance criteria:
 
 ## Milestone 8.2: Knowledge Service Migration
 
-Status: completed for backend provider orchestration; production status polling remains open.
+Status: completed for backend provider orchestration, status refresh and retry behavior;
+real TXT/Markdown/PDF `processed` acceptance remains open.
 
 Objective:
 
@@ -689,7 +693,7 @@ Mitigation:
 
 5. Status mapping:
    - current choice: Universe uses canonical `processing_status`; raw provider lifecycle is stored as `provider_status`.
-   - open: background polling and richer RAGFlow status mapping.
+   - open: richer RAGFlow status mapping and verified production polling cadence.
 
 ---
 

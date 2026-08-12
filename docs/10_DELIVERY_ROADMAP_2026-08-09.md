@@ -59,6 +59,13 @@
 - 清理 README、RAGFlow 安装说明和空间客户端说明中的旧页面入口，保留 Vue 源码仅作迁移与契约测试资料。
 - 依据：本轮入口收敛提交。
 
+### 2026-08-12 · 代码与文档审计
+
+- 核验当前渲染边界：5180 房间为 React/Three.js；活跃的 Knowledge/Wordbook 书架为参考 HTML 注入后的 DOM/CSS 3D 阅读器，不再将其误记为 Three.js 书架。
+- 收敛空间客户端中 Study/Work Knowledge 资源选择的重复分支，保持既有 API 合同和 Work 管理限制。
+- 更新早期 PRD、IA、UI、技术架构、RAGFlow、实施历史和能力短板文档中的旧入口、已交付范围与验收状态；新增分阶段优化/功能计划。
+- 依据：`docs/12_OPTIMIZATION_AND_FEATURE_PLAN_2026-08-12.md` 与本轮代码审计。
+
 ## 当前可验收范围
 
 - 5180 空间入口、房间导航和所有分享路由可加载。

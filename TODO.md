@@ -1,5 +1,16 @@
 # TODO
 
+## 2026-08-12 Optimization and Feature Plan
+
+- [x] Audit the active runtime, renderer boundary, Git history and stale documentation; document that the room is Three.js while the active bookshelf is DOM/CSS 3D.
+- [x] Consolidate the spatial client's duplicate Study/Work Knowledge resource selection without changing the API contract.
+- [x] Add a 5180 core-route smoke suite for the normal entry, Study, Plan, Knowledge, Wordbook, Cards, Work, Novel and the Vite API proxy before splitting any large spatial client module.
+- [ ] Split bookshelf bridge, reader and annotation presentation responsibilities after the regression baseline passes.
+- [ ] Verify source license and actual implementation before localizing any external bookshelf resources.
+- [ ] Run one controlled RAGFlow TXT, Markdown and PDF acceptance set with a valid embedding provider; record `processed`, chunk evidence, reader content and Tutor source links without requeueing existing long PDFs.
+- [ ] Design the Study Session unit-of-work before changing Task/Event/Memory write behavior.
+- [ ] Design migrations and API contracts for optional synced reading progress, interval review scheduling, Knowledge-share grants and multi-Goal document links before implementation.
+
 ## Study Bookshelf Module
 
 - [x] Retire the old local Vue page from the normal startup/shutdown path and make the 5180 spatial room the sole product entry.

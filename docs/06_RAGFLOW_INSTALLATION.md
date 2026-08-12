@@ -1,10 +1,10 @@
 # Universe OS RAGFlow Installation
 
-Version: 0.1
+Version: 0.2
 
 Document Type: Runtime Installation Guide
 
-Status: Local Docker Compose Stack Added
+Status: Local Docker Compose and provider lifecycle available; real-document acceptance pending
 
 Scope: Run RAGFlow as the Knowledge infrastructure for Universe OS.
 
@@ -310,7 +310,11 @@ but `RAGFLOW_API_KEY` was empty. Create a RAGFlow API key and set it in `docker/
 
 ## Documents remain chunking
 
-RAGFlow parsing and indexing can be asynchronous. Re-run `Process` on the same Universe document to reuse the existing RAGFlow document id and refresh chunk previews. Production background polling remains future work.
+RAGFlow parsing and indexing can be asynchronous. Universe refreshes the provider status
+and exposes returned chunk previews while processing continues. Do not repeatedly submit
+or reparse a long PDF merely because its final state has not arrived: first inspect the
+provider status and available chunks. Real TXT, Markdown and PDF `processed` acceptance
+with a valid embedding provider remains a required separate verification.
 
 ---
 

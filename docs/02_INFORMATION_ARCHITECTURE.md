@@ -1,7 +1,7 @@
 # Universe OS
 # 02_INFORMATION_ARCHITECTURE.md
 
-Version: 1.1
+Version: 1.2
 
 Document Type: Information Architecture Specification
 
@@ -192,15 +192,15 @@ Study Workspace Navigation
 | User-facing Module | Route | Technical Module ID |
 | --- | --- | --- |
 | Study Home | /study | dashboard |
-| Goal | /study/plan/goal | goal |
+| Goal | /study/goals | goal |
 | Learning Plan | /study/plan | plan |
-| Study Record | /study/session/:id | study_record |
-| File Upload | /study/knowledge/upload | file_upload |
-| AI Summary | /study/knowledge/summary/:id | ai_summary |
+| Study Record | Study Home / Plan execution flow | study_record |
+| File Upload | /study/knowledge | file_upload |
+| AI Summary | Knowledge document flow | ai_summary |
 | Knowledge | /study/knowledge | knowledge |
 | RAG Q&A | /study/tutor | rag_qa |
 | Tutor | /study/tutor | tutor |
-| Wrong Questions | /study/review/wrong-questions | wrong_questions |
+| Wrong Questions | /study/review | wrong_questions |
 | Review | /study/review | review |
 | Analytics | /study/analytics | analytics |
 
@@ -459,10 +459,10 @@ New Planet
 - Memory Service 的三层结构。
 - Knowledge Service 的通用对象模型。
 
-Future Planet 列表：
+当前/未来 Planet 边界：
 
-- Work Planet。
-- Novel Planet。
+- Work Planet：已有受限工作区，必须经过 shared Knowledge、Memory 与 API 边界。
+- Novel Planet：已有持久化草稿空间，不新增 Novel Agent。
 - Life Planet。
 - Creator Planet。
 
@@ -472,7 +472,7 @@ Health Planet、Finance Planet 等可以作为更远期想法，但不进入当�
 
 # 15. IA Acceptance Criteria
 
-- Given 用户打开 Universe Portal，When Study Planet 可用，Then Study Planet 显示 active 状态，其他 Future Planet 显示 coming later。
+- Given 用户打开 Universe Portal，When Study Planet 可用，Then Study Planet 显示 active 状态；Work 与 Novel 只展示其已交付的受限入口，Life 与 Creator 显示 coming later。
 - Given 用户点击 Future Planet，When Planet 未实现，Then 系统展示 coming later，不进入空 Workspace。
 - Given 用户进入 Study Planet，When Workspace 加载完成，Then 主导航只展示 Home、Plan、Knowledge、Tutor、Review、Analytics。
 - Given 用户需要上传资料，When 进入 Knowledge，Then File Upload 作为 Knowledge 内主行动出现。

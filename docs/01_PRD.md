@@ -1,11 +1,11 @@
 # Universe OS
 # 01_PRD.md
 
-Version: 1.1
+Version: 1.2
 
 Document Type: Product Requirement Document
 
-Status: Draft
+Status: Historical MVP PRD with current-baseline addendum
 
 Product: Universe OS
 
@@ -21,7 +21,7 @@ Universe OS 是一个个人 AI 操作系统。它不是普通工具集合，也�
 
 每个 Planet 是一个独立智能 Workspace，拥有自己的视觉、导航、Agent、Memory、Knowledge 和业务数据。
 
-第一阶段只实现：
+第一阶段以 Study Planet 闭环为核心：
 
 - Universe Portal
 - Study Planet
@@ -53,14 +53,17 @@ Study Planet MVP 聚焦单个学习者的个人学习闭环：
 
 以下能力不进入 MVP：
 
-- Work Planet、Novel Planet、Life Planet、Creator Planet 的完整功能。
+- Work Planet、Novel Planet、Life Planet、Creator Planet 的完整业务与 Agent 功能；当前 Work/Novel 仅限本文件注明的受限已交付范围。
 - 多用户协作、班级、教师后台、组织管理。
 - 社交、商城、内容分发、公开课程市场。
 - 复杂考试题库交易系统。
 - 移动端原生 App。
 - 视频转写、音频转写、大规模 OCR 处理，除非底层 File Processing 已经具备稳定能力。
 
-Work Planet、Novel Planet、Life Planet、Creator Planet 可以在 Universe Portal 中作为未来 Planet 占位展示，但不能在 MVP 中实现实际业务模块。
+当前代码已额外交付受限的 Work 工作区和 Novel 草稿工作区；它们不改变
+Study Planet 作为产品主线的优先级，也不引入第二套 AI Core 或 Knowledge
+服务。Life 与 Creator 仍是未来占位。当前可用范围以
+`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 为准。
 
 ---
 
@@ -167,16 +170,18 @@ Universe Portal
         └── Analytics
 ```
 
-## 4.2 Future Planet 占位
+## 4.2 当前与 Future Planet
 
-Universe Portal 可以展示以下未来 Planet：
+Universe Portal 当前展示：
 
-- Work Planet
-- Novel Planet
+- Work Planet：受限工作区，包含既有 Tech Stack、Knowledge、项目证据、文章与简历草稿能力。
+- Novel Planet：仅限持久化草稿，不新增 Novel Agent。
 - Life Planet
 - Creator Planet
 
-MVP 中这些 Planet 只允许展示名称、视觉占位、状态文案和“coming later”提示，不允许进入真实 Workspace。
+Life 与 Creator 仅允许展示名称、视觉占位、状态文案和“coming later”提示，
+不得进入空 Workspace。Work 与 Novel 的扩展仍须先完成其独立的产品、数据和
+权限设计，不能绕过共享服务边界。
 
 ---
 
@@ -608,7 +613,7 @@ Agent 输出要求：
 Universe Portal：
 
 - 展示 Study Planet。
-- 展示 Work/Novel/Life/Creator Planet 的 future placeholders。
+- 展示 Study 主入口、Work/Novel 的受限入口与 Life/Creator 的 future placeholders。
 - 点击 Study Planet 进入 Study Workspace。
 
 Study Planet：

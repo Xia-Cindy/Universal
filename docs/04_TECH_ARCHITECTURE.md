@@ -1,13 +1,19 @@
 # Universe OS
 # 04_TECH_ARCHITECTURE.md
 
-Version: 1.1
+Version: 1.2
 
 Document Type: Technical Architecture Specification
 
 Product: Universe OS
 
 Purpose: Define the technical architecture, service boundaries, data model, API direction and implementation principles.
+
+Current runtime baseline: `room-portfolio/` on port 5180 is the only normal
+user entry. It is a React/Three.js room client; its active Knowledge/Wordbook
+bookshelf uses a DOM/CSS 3D reference scene injected into an iframe, rather
+than a Three.js bookshelf. The Vue `frontend/` source is retained for
+migration/contract tests and is not started by `startup.sh`.
 
 ---
 
@@ -79,7 +85,8 @@ Frontend 和 Backend 只能通过 API 通信。
 
 ## Principle 004: MVP Boundary First
 
-实现时必须先完成 Study Planet MVP 闭环。Future Planet 不得扩展为真实业务功能。
+实现时必须先完成 Study Planet MVP 闭环。Work 与 Novel 的已交付受限能力必须复用
+共享服务边界；Life 与 Creator 不得扩展为真实业务功能。
 
 ---
 
@@ -133,24 +140,30 @@ room-portfolio/
 
 ## 4.2 Routing Architecture
 
-MVP routes：
+Current spatial routes:
 
 ```text
 /                         Universe Portal
 /study                    Study Home
-/study/plan               Learning Plan
-/study/plan/goal          Goal
-/study/session/:id        Study Session / Study Record
-/study/knowledge          Knowledge
-/study/knowledge/upload   File Upload
-/study/knowledge/summary/:id AI Summary
+/study/goals              Goals
 /study/tutor              Tutor / RAG Q&A
+/study/plan               Learning Plan
 /study/review             Review
-/study/review/wrong-questions Wrong Questions
 /study/analytics          Analytics
+/study/knowledge          Knowledge bookshelf
+/study/wordbook           Wordbook bookshelf
+/study/cards              Knowledge cards and notes
+/work                     Work Home
+/work/tech-stack          Work Tech Stack
+/work/knowledge           Work Knowledge
+/work/projects            Work Projects
+/work/resume              Work Resume
+/novel                    Novel drafts
 ```
 
-Future placeholder routes such as `/work`、`/novel`、`/life`、`/creator` can show coming later only if needed. They must not contain real Workspace implementation in MVP.
+`/work` 提供已交付的受限 Work Workspace，`/novel` 提供持久化草稿空间；两者不得
+创建独立 AI Core 或绕过 Shared Knowledge。`/life`、`/creator` 如需展示，仍只能是
+coming-later 占位，不能进入空 Workspace。
 
 ## 4.3 Frontend Responsibilities
 
@@ -994,8 +1007,8 @@ Codex 在实现前必须先阅读：
 ## Architecture Rules
 
 - 保持 Universe Portal → Planet → Workspace → Module 层级。
-- Study Planet 是 MVP 唯一可进入 Planet。
-- Future Planets 只能作为 Portal placeholders。
+- Study Planet 是当前产品主线；Work 与 Novel 仅可在已交付的受限路由内运行。
+- Life 与 Creator 只能作为 Portal placeholders。
 - Frontend 只能通过 API 访问 backend。
 - AI prompt、RAG、Memory 写入和 embedding 逻辑必须在 backend / AI Core / service 层。
 - Study 专属逻辑不能写进 Universe Core。

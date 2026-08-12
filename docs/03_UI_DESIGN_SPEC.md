@@ -1,13 +1,17 @@
 # Universe OS
 # 03_UI_DESIGN_SPEC.md
 
-Version: 1.1
+Version: 1.2
 
 Document Type: UI Design Specification
 
 Product: Universe OS
 
 Purpose: Define the visual language, interaction rules, screen states and user experience standards.
+
+> 当前运行时基线：唯一正常入口为 5180 的空间房间。房间、家具热点与模块世界使用
+> Three.js；Knowledge/Wordbook 书架阅读器当前是 DOM/CSS 3D 动效，不应误称为
+> Three.js 书架。旧 Vue 页面不是用户入口。
 
 ---
 
@@ -40,8 +44,8 @@ Planet 是主要体验单元。用户不是打开功能列表，而是进入一�
 每个 Planet 必须有独立气质：
 
 - Study Planet：calm、focused、knowledge-oriented。
-- Work Planet：professional、structured、future placeholder only in MVP。
-- Novel Planet：creative、imaginative、future placeholder only in MVP。
+- Work Planet：professional、structured、当前仅开放既有的受限工作区。
+- Novel Planet：creative、imaginative、当前仅开放持久化草稿空间。
 - Life Planet：personal、rhythmic、future placeholder only in MVP。
 - Creator Planet：expressive、maker-oriented、future placeholder only in MVP。
 
@@ -150,10 +154,10 @@ Review: 2 due
 Action: Enter
 ```
 
-Future Planet 示例：
+Future Planet 示例（仅 Life / Creator）：
 
 ```text
-Novel Planet
+Life Planet
 Status: Coming later
 Action: Preview unavailable
 ```
@@ -214,7 +218,7 @@ Study Workspace
 
 Navigation 不应呈现为传统后台菜单。它更像空间中的区域切换。
 
-Wordbook 应呈现为学习空间中的“小型词汇花园”：主区域先横向选择语言、再用标签缩小词表，列表用于轻量回看，详情用于沉淀词组、例句与个人记忆；新增和批量导入收进工具入口，不要退化为只有列和筛选器的词典后台。
+Wordbook 当前以与 Knowledge 一致的实体词汇书呈现：标签映射为书本，点击封面后进入双页阅读和记忆卡；词条保留发音、个人释义、短语、例句、笔记以及背过/记错状态。后续任何词汇花园等替代视图必须复用同一 Wordbook API 和数据所有权，不能另建词库。
 
 ## 4.2 Responsive Rules
 
@@ -708,7 +712,7 @@ Universe：
 
 - Universe Portal。
 - Study Planet active object。
-- Work/Novel/Life/Creator future placeholders。
+- Work 的受限工作区、Novel 草稿入口，以及 Life/Creator future placeholders。
 - Planet entry transition。
 
 Study Planet：

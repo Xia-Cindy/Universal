@@ -9,6 +9,10 @@ Status: Recommendation
 
 Scope: Milestone 7.7 analysis only
 
+> 历史分析说明：本文件记录 Milestone 7.7 的问题和建议，不能作为当前运行时或
+> 完成功能清单。当前空间入口、实体书架、Wordbook、复习卡片、Work/Novel 边界和
+> RAGFlow 验收状态以 `docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 为准。
+
 ---
 
 # 1. Current Architecture Assessment

@@ -1,11 +1,11 @@
 # Universe OS
 # 09_STUDY_WORK_PRODUCT_DESIGN.md
 
-Version: 0.1
+Version: 0.2
 
 Document Type: Product Design and Architecture Proposal
 
-Status: Draft for Review
+Status: Historical design proposal with implementation-status addendum
 
 Scope:
 
@@ -13,6 +13,11 @@ Scope:
 - RAGFlow PDF embedding validation
 - Work Planet initial product design
 - Dynamic Resume design
+
+> 2026-08-12 状态说明：本文件中的 Goal 创建、Plan 日历、Work 基础模型、实体书架、
+> 资料归属的笔记/知识卡和 Wordbook 记忆卡已有不同程度实现。它们的真实能力与限制以
+> `docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 为准；本文件中仍标记为“建议”或
+> “Recommendation”的数据模型、自动化和 RAGFlow 验收事项均不得视为已交付。
 
 ---
 

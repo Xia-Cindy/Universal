@@ -69,6 +69,29 @@ const wordbookPages = (book) => ({
     }))
 });
 
+const KNOWLEDGE_RESOURCES = {
+    study: {
+        cacheKey: 'universe-room:study-knowledge-books',
+        planetType: 'study',
+        list: roomApi.knowledgeDocuments,
+        detail: roomApi.knowledgeDocument,
+        refresh: roomApi.refreshKnowledgeDocument,
+        create: roomApi.createKnowledgeDocument,
+        process: roomApi.processKnowledgeDocument,
+        remove: roomApi.deleteKnowledgeDocument,
+        update: roomApi.updateKnowledgeDocument
+    },
+    work: {
+        cacheKey: 'universe-room:work-knowledge-books',
+        planetType: 'work',
+        list: roomApi.workKnowledgeDocuments,
+        detail: roomApi.workKnowledgeDocument,
+        refresh: roomApi.refreshWorkKnowledgeDocument,
+        create: roomApi.createWorkKnowledgeDocument,
+        process: roomApi.processWorkKnowledgeDocument
+    }
+};
+
 const Experience = React.memo(() => {
     const [activeSpace, setActiveSpace] = useState(null);
     const [activeModule, setActiveModule] = useState(null);
@@ -145,16 +168,14 @@ const Experience = React.memo(() => {
     const isReferenceBooks = activeModule === 'study-knowledge' || activeModule === 'work-knowledge' || isWordbookBooks;
     const isWorkKnowledge = activeModule === 'work-knowledge';
     const isKnowledgeCardsGallery = activeModule === 'study-cards';
+    const knowledgeResource = KNOWLEDGE_RESOURCES[isWorkKnowledge ? 'work' : 'study'];
 
     useEffect(() => {
         if (!isReferenceBooks) return undefined;
         let current = true;
-        const load = isWordbookBooks
-            ? roomApi.wordbook
-            : isWorkKnowledge ? roomApi.workKnowledgeDocuments : roomApi.knowledgeDocuments;
+        const load = isWordbookBooks ? roomApi.wordbook : knowledgeResource.list;
         const cacheKey = isWordbookBooks
-            ? 'universe-room:study-wordbook-books'
-            : isWorkKnowledge ? 'universe-room:work-knowledge-books' : 'universe-room:study-knowledge-books';
+            ? 'universe-room:study-wordbook-books' : knowledgeResource.cacheKey;
         try {
             const cached = window.localStorage.getItem(cacheKey);
             if (cached && current) {
@@ -190,7 +211,7 @@ const Experience = React.memo(() => {
         return () => {
             current = false;
         };
-    }, [isReferenceBooks, isWorkKnowledge, isWordbookBooks, knowledgeRevision, wordbookRevision]);
+    }, [isReferenceBooks, isWordbookBooks, knowledgeResource, knowledgeRevision, wordbookRevision]);
 
     useEffect(() => {
         if (!isReferenceBooks || isWorkKnowledge) return undefined;
@@ -219,9 +240,7 @@ const Experience = React.memo(() => {
                 reader.readAsDataURL(file);
             })
             : await file.text();
-        const create = isWorkKnowledge ? roomApi.createWorkKnowledgeDocument : roomApi.createKnowledgeDocument;
-        const process = isWorkKnowledge ? roomApi.processWorkKnowledgeDocument : roomApi.processKnowledgeDocument;
-        const document = await create({
+        const document = await knowledgeResource.create({
             fileName: file.name,
             fileType,
             subject,
@@ -230,24 +249,22 @@ const Experience = React.memo(() => {
             content,
             contentEncoding: fileType === 'pdf' ? 'base64' : 'text',
             storagePath: file.name,
-            planetType: isWorkKnowledge ? 'work' : 'study'
+            planetType: knowledgeResource.planetType
         });
-        if (document.provider !== 'local' || document.fileType !== 'pdf') await process(document.id);
+        if (document.provider !== 'local' || document.fileType !== 'pdf') await knowledgeResource.process(document.id);
         setKnowledgeRevision((revision) => revision + 1);
     };
 
     const deleteKnowledge = async (book) => {
-        if (isWorkKnowledge) throw new Error('Work Knowledge 暂不支持从书架删除。');
-        await roomApi.deleteKnowledgeDocument(book.id);
+        if (!knowledgeResource.remove) throw new Error('Work Knowledge 暂不支持从书架删除。');
+        await knowledgeResource.remove(book.id);
         setKnowledgeRevision((revision) => revision + 1);
     };
 
     const openKnowledgeBook = async (book) => {
-        const getDetail = isWorkKnowledge ? roomApi.workKnowledgeDocument : roomApi.knowledgeDocument;
-        const refresh = isWorkKnowledge ? roomApi.refreshWorkKnowledgeDocument : roomApi.refreshKnowledgeDocument;
-        const detail = await getDetail(book.id);
+        const detail = await knowledgeResource.detail(book.id);
         if (detail.document?.provider === 'ragflow' && ['parsing', 'chunking'].includes(detail.document.processingStatus)) {
-            const refreshed = await refresh(book.id);
+            const refreshed = await knowledgeResource.refresh(book.id);
             setKnowledgeRevision((revision) => revision + 1);
             return refreshed;
         }
@@ -260,8 +277,8 @@ const Experience = React.memo(() => {
     };
 
     const editKnowledge = async (book, payload) => {
-        if (isWorkKnowledge) throw new Error('Work Knowledge 暂不支持从书架编辑。');
-        await roomApi.updateKnowledgeDocument(book.id, payload);
+        if (!knowledgeResource.update) throw new Error('Work Knowledge 暂不支持从书架编辑。');
+        await knowledgeResource.update(book.id, payload);
         setKnowledgeRevision((revision) => revision + 1);
     };
 
