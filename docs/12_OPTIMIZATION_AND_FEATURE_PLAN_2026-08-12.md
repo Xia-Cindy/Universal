@@ -1,7 +1,7 @@
 # Universe OS 代码优化与功能新增计划
 
 日期：2026-08-12
-状态：O1、F1、O2 已完成；其余阶段待按顺序实施
+状态：O1、F1、O2、O3 已完成；其余阶段待按顺序实施
 依据：当前代码审计、`docs/10_PLATFORM_CAPABILITIES_AND_GAPS.md` 与现有 Git 历史
 
 ## 0. 审计结论与边界
@@ -55,6 +55,14 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **数据库/API：** 无 migration、后端 API 或 `postMessage` event/payload 变更。新模块只承接既有目录计算、真实 chunk 到阅读页的映射，以及父窗口的消息分派。
 - **风险与控制：** 参考书架仍来自受控 iframe 文档，事件桥接是高风险边界；保留原始事件名、回调和书签 localStorage key，未移动 iframe 内已验收的 CSS/动画脚本。
 - **验收：** `npm run test:bookshelf` 覆盖三册分页、筛选、真实 chunk、注释与书签模型；eslint、Vite build、5180 核心 route smoke 通过。浏览器重新打开已处理 PDF，封面展开后仍显示原始 chunk 和 `第 1 / 1 页`，无 console error。
+
+### O3 交付记录（2026-08-13）
+
+- **目标：** 将 Knowledge 书架和知识黑板的 CSS 从空间房间 shell 中分离，避免后续模块优化时出现跨模块层叠误改。
+- **受影响文件：** `room-portfolio/src/style.css`、`room-portfolio/src/styles/bookshelf.css`、`knowledgeBoard.css`。
+- **数据库/API：** 无。CSS 选择器、数值、响应式规则和 iframe 内参考样式均未改变；root 只新增表达既有书架层级的共享 z-index token。
+- **风险与控制：** 导入顺序会影响层叠结果，因此两个模块在原全局字体 import 后加载，保留相同 specificity 和实际 z-index。
+- **验收：** eslint、Vite build、5180 核心路由 smoke 通过；浏览器确认 `/study/knowledge` 的 iframe 与 `/study/cards` 的知识黑板均挂载且无 console error。
 
 ## 2. 新增功能计划
 

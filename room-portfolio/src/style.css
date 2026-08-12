@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+@import './styles/knowledgeBoard.css';
+@import './styles/bookshelf.css';
 
 :root {
     color: #f6f2ff;
@@ -8,6 +10,9 @@
     --muted: #a99eb8;
     --cyan: #6dd0c9;
     --violet: #a98aca;
+    --space-z-overlay: 1000;
+    --space-z-dialog: 1001;
+    --space-z-notice: 1002;
 }
 
 * {
@@ -500,94 +505,6 @@ canvas {
     color: #eaffff;
 }
 
-.knowledge-board-instrument {
-    width: min(620px, calc(100vw - 42px));
-    padding: 22px;
-    border: 1px solid rgba(109, 208, 201, 0.32);
-    border-radius: 18px;
-    background: rgba(16, 24, 31, 0.93);
-    box-shadow: 0 26px 68px rgba(0, 0, 0, 0.4);
-    color: #edf6f2;
-    backdrop-filter: blur(18px);
-}
-
-.knowledge-board-instrument header,
-.knowledge-board-instrument footer,
-.knowledge-board-instrument nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.knowledge-board-instrument header small,
-.knowledge-board-instrument article > small,
-.knowledge-board-sticky small {
-    color: #8edbd1;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-}
-
-.knowledge-board-instrument h2,
-.knowledge-board-instrument h3 {
-    margin: 4px 0 0;
-    font-family: Georgia, 'Times New Roman', serif;
-}
-
-.knowledge-board-instrument h2 { font-size: 28px; }
-.knowledge-board-instrument h3 { font-size: 21px; line-height: 1.42; }
-.knowledge-board-instrument header p { margin: 0; color: #b8c8c5; font-size: 12px; }
-
-.knowledge-board-instrument nav { justify-content: flex-start; margin: 18px 0; }
-
-.knowledge-board-instrument button {
-    min-height: 34px;
-    padding: 0 13px;
-    border: 1px solid rgba(235, 247, 240, 0.18);
-    border-radius: 999px;
-    background: rgba(235, 247, 240, 0.08);
-    color: #eaf7f3;
-    font-size: 12px;
-    font-weight: 750;
-}
-
-.knowledge-board-instrument button:hover,
-.knowledge-board-instrument button.is-active {
-    border-color: rgba(109, 208, 201, 0.68);
-    background: rgba(109, 208, 201, 0.18);
-}
-
-.knowledge-board-instrument article {
-    min-height: 170px;
-    padding: 18px;
-    border: 1px solid rgba(231, 210, 185, 0.17);
-    border-radius: 13px;
-    background: rgba(231, 210, 185, 0.07);
-}
-
-.knowledge-board-instrument article p { color: #c3d5cf; font: 16px/1.65 Georgia, 'Times New Roman', serif; white-space: pre-wrap; }
-.knowledge-board-instrument footer { justify-content: flex-start; margin-top: 16px; }
-.knowledge-board-instrument button.is-mastered { border-color: rgba(220, 174, 114, 0.62); color: #f1c98f; }
-.knowledge-board-empty { margin: 0; color: #b8c8c5; line-height: 1.7; }
-.knowledge-board-gesture { margin: -6px 0 14px; color: rgba(167, 203, 195, 0.72); font-size: 12px; letter-spacing: 0.02em; }
-
-.knowledge-board-sticky {
-    width: 180px;
-    color: #1d2c30;
-    pointer-events: none;
-}
-
-.knowledge-board-sticky strong,
-.knowledge-board-sticky span {
-    display: block;
-    margin-top: 5px;
-    font-size: 11px;
-    line-height: 1.35;
-}
-
-.knowledge-board-sticky span { color: rgba(29, 44, 48, 0.72); font-size: 9px; }
-
 .room-return {
     position: fixed;
     z-index: 110;
@@ -793,157 +710,6 @@ canvas {
     cursor: pointer;
     pointer-events: auto;
     white-space: nowrap;
-}
-
-.deployed-books {
-    position: fixed;
-    z-index: 1000;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    background: #141a32;
-}
-
-.deployed-books iframe {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border: 0;
-}
-
-.deployed-books > p {
-    display: grid;
-    height: 100%;
-    margin: 0;
-    place-items: center;
-    color: #e8e1ee;
-}
-
-.knowledge-composer {
-    position: fixed;
-    z-index: 1001;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    background: rgba(10, 13, 29, 0.62);
-    backdrop-filter: blur(12px);
-}
-
-.knowledge-composer form {
-    position: relative;
-    display: grid;
-    width: min(460px, 100%);
-    gap: 15px;
-    padding: 32px;
-    border: 1px solid rgba(253, 251, 244, 0.46);
-    border-radius: 24px;
-    background: #fdfbf4;
-    color: #141a32;
-    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.4);
-}
-
-.knowledge-composer p,
-.knowledge-composer h2 {
-    margin: 0;
-}
-
-.knowledge-composer p {
-    color: #d65f81;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-}
-
-.knowledge-composer h2 {
-    font-family: Georgia, serif;
-    font-size: 32px;
-}
-
-.knowledge-composer label {
-    display: grid;
-    gap: 7px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.knowledge-composer input,
-.knowledge-composer select {
-    width: 100%;
-    padding: 11px 12px;
-    border: 1px solid #c9d0ee;
-    border-radius: 8px;
-    background: #fff;
-    color: #141a32;
-}
-
-.knowledge-composer label span,
-.knowledge-composer small {
-    color: #5d6480;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.knowledge-composer-close {
-    position: absolute;
-    top: 16px;
-    right: 17px;
-    width: 32px;
-    height: 32px;
-    border: 0;
-    border-radius: 50%;
-    background: #e8e9f1;
-    color: #141a32;
-    font-size: 23px;
-    line-height: 1;
-}
-
-.knowledge-composer-submit {
-    min-height: 46px;
-    border: 0;
-    border-radius: 999px;
-    background: #141a32;
-    color: #fdfbf4;
-    font-weight: 700;
-}
-
-.knowledge-composer-submit:disabled {
-    cursor: progress;
-    opacity: 0.55;
-}
-
-.knowledge-load-notice {
-    position: fixed;
-    z-index: 1002;
-    left: 50%;
-    bottom: 34px;
-    display: grid;
-    min-width: min(420px, calc(100vw - 36px));
-    gap: 5px;
-    padding: 16px 18px;
-    border: 1px solid rgba(253, 251, 244, 0.28);
-    border-radius: 15px;
-    background: rgba(20, 26, 50, 0.9);
-    color: #fdfbf4;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
-    transform: translateX(-50%);
-}
-
-.knowledge-load-notice span {
-    color: #c9d0ee;
-    font-size: 13px;
-}
-
-.knowledge-load-notice button {
-    justify-self: start;
-    margin-top: 5px;
-    padding: 7px 12px;
-    border: 0;
-    border-radius: 999px;
-    background: #fdfbf4;
-    color: #141a32;
-    font-weight: 700;
 }
 
 .world-action:hover {

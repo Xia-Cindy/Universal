@@ -6,6 +6,7 @@
 - [x] Consolidate the spatial client's duplicate Study/Work Knowledge resource selection without changing the API contract.
 - [x] Add a 5180 core-route smoke suite for the normal entry, Study, Plan, Knowledge, Wordbook, Cards, Work, Novel and the Vite API proxy before splitting any large spatial client module.
 - [x] Split bookshelf catalog, reader-page model and iframe bridge responsibilities after the regression baseline passes; retain the confirmed reference scene and `postMessage` contract.
+- [x] Separate bookshelf and Knowledge Blackboard CSS from the room shell; preserve existing values and keep the 5180 visual surfaces regression-checked.
 - [ ] Verify source license and actual implementation before localizing any external bookshelf resources.
 - [x] Run one controlled RAGFlow TXT, Markdown and PDF acceptance set with a valid embedding provider; record `processed`, chunk evidence, reader content and Tutor source links without requeueing existing long PDFs.
 - [x] Complete F1 runtime acceptance with one approved new PDF after restoring a stuck worker; leave existing long PDFs unsubmitted and record the evidence in the dated plan and installation guide.

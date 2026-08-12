@@ -1,0 +1,19 @@
+.knowledge-board-instrument { width: min(620px, calc(100vw - 42px)); padding: 22px; border: 1px solid rgba(109, 208, 201, 0.32); border-radius: 18px; background: rgba(16, 24, 31, 0.93); box-shadow: 0 26px 68px rgba(0, 0, 0, 0.4); color: #edf6f2; backdrop-filter: blur(18px); }
+.knowledge-board-instrument header, .knowledge-board-instrument footer, .knowledge-board-instrument nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.knowledge-board-instrument header small, .knowledge-board-instrument article > small, .knowledge-board-sticky small { color: #8edbd1; font-size: 10px; font-weight: 800; letter-spacing: 0.12em; }
+.knowledge-board-instrument h2, .knowledge-board-instrument h3 { margin: 4px 0 0; font-family: Georgia, 'Times New Roman', serif; }
+.knowledge-board-instrument h2 { font-size: 28px; }
+.knowledge-board-instrument h3 { font-size: 21px; line-height: 1.42; }
+.knowledge-board-instrument header p { margin: 0; color: #b8c8c5; font-size: 12px; }
+.knowledge-board-instrument nav { justify-content: flex-start; margin: 18px 0; }
+.knowledge-board-instrument button { min-height: 34px; padding: 0 13px; border: 1px solid rgba(235, 247, 240, 0.18); border-radius: 999px; background: rgba(235, 247, 240, 0.08); color: #eaf7f3; font-size: 12px; font-weight: 750; }
+.knowledge-board-instrument button:hover, .knowledge-board-instrument button.is-active { border-color: rgba(109, 208, 201, 0.68); background: rgba(109, 208, 201, 0.18); }
+.knowledge-board-instrument article { min-height: 170px; padding: 18px; border: 1px solid rgba(231, 210, 185, 0.17); border-radius: 13px; background: rgba(231, 210, 185, 0.07); }
+.knowledge-board-instrument article p { color: #c3d5cf; font: 16px/1.65 Georgia, 'Times New Roman', serif; white-space: pre-wrap; }
+.knowledge-board-instrument footer { justify-content: flex-start; margin-top: 16px; }
+.knowledge-board-instrument button.is-mastered { border-color: rgba(220, 174, 114, 0.62); color: #f1c98f; }
+.knowledge-board-empty { margin: 0; color: #b8c8c5; line-height: 1.7; }
+.knowledge-board-gesture { margin: -6px 0 14px; color: rgba(167, 203, 195, 0.72); font-size: 12px; letter-spacing: 0.02em; }
+.knowledge-board-sticky { width: 180px; color: #1d2c30; pointer-events: none; }
+.knowledge-board-sticky strong, .knowledge-board-sticky span { display: block; margin-top: 5px; font-size: 11px; line-height: 1.35; }
+.knowledge-board-sticky span { color: rgba(29, 44, 48, 0.72); font-size: 9px; }
