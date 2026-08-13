@@ -72,6 +72,14 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **设计结论：** 在 shared persistence 的一个 transaction 内，以 Session `in_progress -> finished` 条件更新作为并发线性化点；Task、Event 和两条 Memory 只在同一 transaction 内写入。不得通过嵌套现有 repository transaction 实现。
 - **实施结果：** SQLite 与 in-memory 覆盖成功、重复、五个写入点故障注入、failure 后 retry 与并发 finish；全量后端 205 通过，5180 路由/API proxy 回归通过。PostgreSQL 在一次性独立 schema 中实际覆盖故障回滚与 retry，测试后 schema 已删除且未触碰用户数据。旧半完成数据仍必须单独、可审计地修复，普通 finish 不会静默补写。完整设计与边界见 `docs/13_STUDY_SESSION_UNIT_OF_WORK_DESIGN_2026-08-13.md`。
 
+### O4 许可证与实际实现核验记录（2026-08-13，阻止本地化）
+
+- **核验目标：** 判断 `thebuggeddev/books` 与 `books-sigma-ashen.vercel.app` 是否提供可合法本地化的实际参考实现；本次不改产品代码、不复制源文件、不改变数据库或 API。
+- **实际实现证据：** 上游默认分支为 `main`，核验提交为 `22ee800461780f6b70205e37445ab2ecc6b35dac`。仓库完整树只有 `.gitignore`、`index.html`、`package*.json`、`public/` 和 `src/`；实际书架实现在根 `index.html`，而不是 Vite `src/main.js` 占位模板。该文件使用 CDN `three.js r128`、`THREE.WebGLRenderer`、raycast/slots/spring 动画和 `requestAnimationFrame`；与部署页 `https://books-sigma-ashen.vercel.app/` 的 SHA-256 均为 `c9ebdab5dea82fd78d08c36ff2d94688eb2abced21c368e97eb34d849ba66f38`（79,756 bytes），因此确认部署页确实来自该实际实现。
+- **许可证证据：** GitHub 仓库元数据 `license` 为 `null`，递归文件树没有 `LICENSE`、`COPYING` 或等价授权文件，仓库页面也未声明许可证。公开可见和可 fork 不等于获得复制、修改或分发的授权；在无许可证情况下，默认版权规则适用。
+- **结论与范围：** O4 的“将必要资源本地化”前置条件未满足，**不得**将该 `index.html`、Three.js 场景、程序化封面、动画或资源复制进 Universe，也不得以视觉相似重写来规避该门槛。现有运行时 iframe 引用保持原样，不增加外部实现的本地副本；本次无 migration、API 变更、单元测试或 5180 行为变更。
+- **恢复条件：** 只有在作者提供明确书面授权或向上游加入可核验、兼容的许可证并明确涵盖所需实现/资源后，才重新启动 O4；届时先记录许可证版本和 attribution，再以离线降级、封面/开启/翻页视觉对比、5180 路由回归和独立提交验收。
+
 ## 2. 新增功能计划
 
 | 阶段 | 用户价值与范围 | 数据库/API | 前置条件与风险 | 验收标准 |
