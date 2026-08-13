@@ -424,6 +424,10 @@ def create_app():
     def knowledge_provider_health():
         return api.knowledge_provider_health()
 
+    @app.post("/api/knowledge/provider/runtime-verification")
+    def verify_knowledge_provider_runtime():
+        return api.verify_knowledge_provider_runtime()
+
     @app.patch("/api/study/knowledge/documents/{document_id}")
     def update_knowledge_document(document_id: str, payload: dict):
         return api.update_knowledge_document(document_id, payload)

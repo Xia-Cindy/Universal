@@ -279,3 +279,8 @@
 - [x] Pass three browser smoke-test rounds across 13 Study/Work routes and novel draft saving.
 - [x] Replace static route overlays with API-driven spatial consoles and furniture-focus camera states.
 - [x] Keep active Study, Knowledge and Work furniture visible beside responsive data consoles.
+# 2026-08-13 RAGFlow runtime upload guard
+
+- [x] Add an explicit fixed-text embedding/retrieval probe that returns a safe `verified`/`failed` result without creating a dataset, document or parsing job.
+- [x] Require a verified RAGFlow probe before the 5180 bookshelf uploads a new provider-backed Knowledge document.
+- [ ] Keep validating individual historical long PDFs separately; do not treat the probe as proof that an existing queued document has finished.

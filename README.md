@@ -71,6 +71,12 @@ Novel actions continue to use the existing backend services and migrations.
   chunks, provider retrieval and Tutor source links on 2026-08-13. This is
   local runtime evidence, not a guarantee that every existing long document
   or another provider will complete without its own validation.
+- Before the 5180 bookshelf creates a RAGFlow-backed document, it performs one
+  explicit fixed-text embedding/retrieval runtime probe against an already
+  processed user document. The probe reports only `verified`/`failed`, time and
+  a redacted reason; it neither uploads user content nor creates a dataset or
+  parsing task. A failed probe blocks the upload so a new file cannot silently
+  accumulate in a broken RAGFlow queue.
 
 ## Start locally
 

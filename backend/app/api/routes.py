@@ -927,6 +927,10 @@ class ApiFacade:
             return {"provider": "local", "status": "ok", "experimental": True}
         return self.knowledge_provider.health_check()
 
+    def verify_knowledge_provider_runtime(self) -> dict[str, object]:
+        user = self.users.current_user()
+        return self.knowledge.verify_provider_runtime(user.id)
+
     def update_knowledge_document(self, document_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         payload = dict(payload)

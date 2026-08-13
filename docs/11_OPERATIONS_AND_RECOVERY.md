@@ -41,6 +41,25 @@ RAGFLOW_RERANK_MODEL="<model label>"
 
 `GET /api/knowledge/provider/health` reports API reachability and these optional Universe-side labels. It does not claim that RAGFlow has successfully processed a file; runtime acceptance still requires TXT, Markdown and PDF samples to reach `processed` with asynchronous status polling.
 
+### Explicit runtime verification before a bookshelf upload
+
+`POST /api/knowledge/provider/runtime-verification` is the explicit runtime acceptance
+check used by the 5180 Knowledge bookshelf before it creates a new RAGFlow-backed
+document. It returns only `verified` or `failed`, a `checkedAt` timestamp, a stable
+`errorCode`, and a user-safe message. It does **not** accept a file payload, create a
+dataset, upload a document, persist a probe record, or schedule parsing.
+
+When RAGFlow is enabled, the backend sends one fixed, tiny query through
+`/api/v1/retrieval` against one already-`processed` document owned by the current
+user. RAGFlow therefore executes its query embedding and retrieval paths, while no
+user-provided text is sent by the probe. A missing processed source is deliberately a
+`failed` result (`RAGFLOW_RUNTIME_NO_PROCESSED_SOURCE`) rather than creating a throwaway
+dataset just to test the provider.
+
+The bookshelf blocks a new RAGFlow upload when this response is not `verified` and
+shows the safe reason instead. `GET /api/knowledge/provider/health` remains a reachability
+diagnostic only; it is not an upload safety check.
+
 ## Email registration
 
 Development defaults to a console sender and keeps the last verification code in the process for tests. Production should set `EMAIL_BACKEND=smtp` and provide `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` and `SMTP_FROM` through a secret manager.

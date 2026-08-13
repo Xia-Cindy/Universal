@@ -57,6 +57,12 @@ MILESTONE_3_CONTRACTS: tuple[ApiContract, ...] = (
 
 MILESTONE_4_1_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/knowledge/provider/health", "knowledge_provider_health", "milestone_8_runtime"),
+    ApiContract(
+        "POST",
+        "/api/knowledge/provider/runtime-verification",
+        "verify_knowledge_provider_runtime",
+        "milestone_8_runtime",
+    ),
     ApiContract("POST", "/api/study/knowledge/documents", "create_knowledge_document", "milestone_4_1"),
     ApiContract(
         "POST",

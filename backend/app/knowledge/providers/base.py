@@ -9,6 +9,16 @@ class KnowledgeProvider(Protocol):
     def health_check(self) -> dict[str, object]:
         ...
 
+    def runtime_probe(
+        self,
+        *,
+        user_id: str,
+        dataset_id: str,
+        document_id: str,
+    ) -> dict[str, object]:
+        """Run a provider-owned, non-mutating embedding/retrieval acceptance probe."""
+        ...
+
     def upload_document(self, *, user_id: str, document: Document) -> dict[str, object]:
         ...
 

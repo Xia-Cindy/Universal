@@ -63,6 +63,8 @@ export const roomApi = {
         apiRequest(`/api/study/knowledge/documents/${documentId}`),
     refreshKnowledgeDocument: (documentId) =>
         apiRequest(`/api/study/knowledge/documents/${documentId}/status`),
+    verifyKnowledgeProviderRuntime: () =>
+        apiRequest('/api/knowledge/provider/runtime-verification', { method: 'POST' }),
     createKnowledgeDocument: (payload) =>
         apiRequest('/api/study/knowledge/documents', {
             method: 'POST',

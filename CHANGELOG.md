@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-13
+
+### Added
+
+- Added `POST /api/knowledge/provider/runtime-verification`, an explicit
+  RAGFlow embedding/retrieval acceptance probe. It uses a fixed tiny query and
+  one already processed source, returns only `verified`/`failed`, `checkedAt`
+  and a redacted reason, and never uploads a file, creates a dataset, or
+  schedules parsing.
+- The 5180 Knowledge bookshelf now verifies RAGFlow before creating a new
+  provider-backed document. A failed runtime check stops the upload with an
+  actionable safe message, preventing new material from joining a known-broken
+  parsing queue.
+
 ## Unreleased
 
 ### Current feature summary

@@ -76,6 +76,79 @@ class KnowledgeService:
             self._repository.replace_document_goal_links(user_id, saved.id, goal_ids)
         return saved
 
+    def verify_provider_runtime(self, user_id: str) -> dict[str, object]:
+        """Run one non-mutating provider probe before accepting a new upload.
+
+        A completed RAGFlow-backed document is deliberately reused as the
+        retrieval source.  The probe never calls upload, dataset creation, or
+        parsing APIs, and it does not persist a status row of its own.
+        """
+        checked_at = local_now().isoformat()
+        if not self._provider or self._provider.name != "ragflow":
+            return {
+                "provider": self._provider.name if self._provider else "local",
+                "status": "failed",
+                "verified": False,
+                "checkedAt": checked_at,
+                "errorCode": "RAGFLOW_NOT_CONFIGURED",
+                "message": "当前未启用 RAGFlow，无法执行 embedding/retrieval 运行时验证。",
+            }
+
+        source = next(
+            (
+                document
+                for document in self._repository.list_documents(user_id)
+                if document.provider == "ragflow"
+                and document.processing_status == DocumentStatus.PROCESSED
+                and document.provider_dataset_id
+                and document.provider_document_id
+            ),
+            None,
+        )
+        if not source:
+            return {
+                "provider": "ragflow",
+                "status": "failed",
+                "verified": False,
+                "checkedAt": checked_at,
+                "errorCode": "RAGFLOW_RUNTIME_NO_PROCESSED_SOURCE",
+                "message": "没有可用于只读验证的已完成资料，无法安全确认 RAGFlow 当前可用。",
+            }
+
+        try:
+            probe = self._provider.runtime_probe(
+                user_id=user_id,
+                dataset_id=str(source.provider_dataset_id),
+                document_id=str(source.provider_document_id),
+            )
+        except (RuntimeError, ValueError) as exc:
+            code, message = _runtime_probe_failure(str(exc))
+            return {
+                "provider": "ragflow",
+                "status": "failed",
+                "verified": False,
+                "checkedAt": checked_at,
+                "errorCode": code,
+                "message": message,
+            }
+        if probe.get("status") != "verified":
+            return {
+                "provider": "ragflow",
+                "status": "failed",
+                "verified": False,
+                "checkedAt": checked_at,
+                "errorCode": "RAGFLOW_RUNTIME_PROBE_FAILED",
+                "message": "RAGFlow embedding/retrieval 探针未通过。",
+            }
+        return {
+            "provider": "ragflow",
+            "status": "verified",
+            "verified": True,
+            "checkedAt": checked_at,
+            "errorCode": None,
+            "message": "RAGFlow embedding 与检索探针已通过。",
+        }
+
     def adopt_ragflow_document(self, user_id: str, payload: dict) -> dict[str, object]:
         """Attach a pre-existing RAGFlow document without uploading or parsing it.
 
@@ -859,3 +932,20 @@ def _provider_error_code(message: str) -> str | None:
     if "bind embedding model" in message.lower():
         return "RAGFLOW_EMBEDDING_MODEL_BIND_FAILED"
     return None
+
+
+def _runtime_probe_failure(message: str) -> tuple[str, str]:
+    """Map provider details to stable, non-secret API diagnostics."""
+    normalized = message.lower()
+    code = _provider_error_code(message)
+    if code == "RAGFLOW_EMBEDDING_INVALID_API_KEY":
+        return code, "RAGFlow embedding 凭据无效或未配置。"
+    if code == "RAGFLOW_EMBEDDING_MODEL_BIND_FAILED":
+        return code, "RAGFlow 无法绑定 embedding 模型。"
+    if "timeout" in normalized or "timed out" in normalized:
+        return "RAGFLOW_RUNTIME_TIMEOUT", "RAGFlow 运行时探针超时。"
+    if "connection" in normalized or "name resolution" in normalized or "dns" in normalized:
+        return "RAGFLOW_RUNTIME_CONNECTION_FAILED", "RAGFlow 或其 embedding 服务当前不可连接。"
+    if "no retrieval result" in normalized:
+        return "RAGFLOW_RUNTIME_NO_RETRIEVAL_RESULT", "RAGFlow 未返回可检索结果，无法确认运行时可用。"
+    return "RAGFLOW_RUNTIME_PROBE_FAILED", "RAGFlow embedding/retrieval 探针未通过。"

@@ -22,6 +22,12 @@ DEFAULT_DATASET_PARSER_CONFIG: dict[str, object] = {
     "graphrag": {"use_graphrag": False},
 }
 
+# This is intentionally fixed rather than supplied by a learner.  RAGFlow's
+# retrieval endpoint embeds the question before searching, so one request
+# proves the configured embedding path and retrieval path without uploading a
+# file, creating a dataset, or scheduling parsing work.
+RUNTIME_PROBE_QUERY = "Universe OS RAGFlow embedding retrieval runtime probe"
+
 
 class RAGFlowClient:
     def __init__(self, *, base_url: str, api_key: str, timeout_seconds: int = 30) -> None:
@@ -161,6 +167,25 @@ class RAGFlowKnowledgeProvider:
             },
             "note": "Model execution is owned by RAGFlow; this endpoint reports only Universe-side labels and API reachability.",
         }
+
+    def runtime_probe(
+        self,
+        *,
+        user_id: str,
+        dataset_id: str,
+        document_id: str,
+    ) -> dict[str, object]:
+        result = self.search(
+            user_id=user_id,
+            query=RUNTIME_PROBE_QUERY,
+            dataset_ids=[dataset_id],
+            document_ids=[document_id],
+            limit=1,
+        )
+        result_count = len(result.get("results", []))
+        if not result_count:
+            raise RAGFlowAPIError("RAGFlow runtime probe returned no retrieval result")
+        return {"status": "verified", "resultCount": result_count}
 
     def upload_document(self, *, user_id: str, document: Document) -> dict[str, object]:
         dataset_id = self._ensure_dataset(document)

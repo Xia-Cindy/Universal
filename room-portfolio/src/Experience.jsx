@@ -249,6 +249,11 @@ const Experience = React.memo(() => {
         const extension = file.name.split('.').pop()?.toLowerCase();
         const fileType = extension === 'pdf' ? 'pdf' : ['md', 'markdown'].includes(extension) ? 'markdown' : extension === 'txt' ? 'txt' : null;
         if (!fileType) throw new Error('仅支持 TXT、Markdown 与 PDF。');
+        const runtime = await roomApi.verifyKnowledgeProviderRuntime();
+        if (runtime.provider === 'ragflow' && runtime.status !== 'verified') {
+            const code = runtime.errorCode ? `（${runtime.errorCode}）` : '';
+            throw new Error(`RAGFlow 当前不可用${code}：${runtime.message || '请稍后重试。'}`);
+        }
         const content = fileType === 'pdf'
             ? await new Promise((resolve, reject) => {
                 const reader = new FileReader();

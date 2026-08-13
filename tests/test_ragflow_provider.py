@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from backend.app.knowledge import KnowledgeRepository, KnowledgeService
 from backend.app.knowledge.providers import RAGFlowKnowledgeProvider
-from backend.app.knowledge.providers.ragflow import RAGFlowAPIError, RAGFlowClient
+from backend.app.knowledge.providers.ragflow import RAGFlowAPIError, RAGFlowClient, RUNTIME_PROBE_QUERY
 from backend.app.models import Document, DocumentStatus, DocumentType
 from backend.app.retrieval import RetrievalQuery, RetrievalService
 
@@ -15,6 +15,7 @@ class FakeKnowledgeProvider:
         self.upload_calls = []
         self.parse_calls = []
         self.search_calls = []
+        self.runtime_probe_calls = []
         self.document_status = "done"
 
     def upload_document(self, *, user_id, document):
@@ -75,6 +76,12 @@ class FakeKnowledgeProvider:
                 }
             ],
         }
+
+    def runtime_probe(self, *, user_id, dataset_id, document_id):
+        self.runtime_probe_calls.append(
+            {"userId": user_id, "datasetId": dataset_id, "documentId": document_id}
+        )
+        return {"status": "verified", "resultCount": 1}
 
 
 class StubRAGFlowClient:
@@ -404,6 +411,83 @@ class RAGFlowProviderTests(unittest.TestCase):
             document_id="doc-1",
         )
         self.assertEqual(deleted["status"], "deleted")
+
+    def test_runtime_probe_only_executes_fixed_retrieval(self):
+        client = StubRAGFlowClient()
+        provider = RAGFlowKnowledgeProvider(client=client)
+
+        result = provider.runtime_probe(
+            user_id="local-user",
+            dataset_id="dataset-existing",
+            document_id="document-existing",
+        )
+
+        self.assertEqual(result, {"status": "verified", "resultCount": 1})
+        self.assertEqual(len(client.requests), 1)
+        method, path, payload, _ = client.requests[0]
+        self.assertEqual((method, path), ("POST", "/api/v1/retrieval"))
+        self.assertEqual(payload["question"], RUNTIME_PROBE_QUERY)
+        self.assertEqual(payload["dataset_ids"], ["dataset-existing"])
+        self.assertEqual(payload["document_ids"], ["document-existing"])
+
+    def test_runtime_verification_reuses_processed_source_without_mutating_provider(self):
+        provider = FakeKnowledgeProvider()
+        repository = KnowledgeRepository()
+        repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="verified-source.md",
+                file_type=DocumentType.MARKDOWN,
+                subject="runtime",
+                topic="acceptance",
+                provider="ragflow",
+                provider_dataset_id="dataset-verified",
+                provider_document_id="document-verified",
+                processing_status=DocumentStatus.PROCESSED,
+            )
+        )
+
+        result = KnowledgeService(repository=repository, provider=provider).verify_provider_runtime("local-user")
+
+        self.assertEqual(result["status"], "verified")
+        self.assertTrue(result["verified"])
+        self.assertEqual(provider.runtime_probe_calls[0]["datasetId"], "dataset-verified")
+        self.assertEqual(provider.upload_calls, [])
+        self.assertEqual(provider.parse_calls, [])
+
+    def test_runtime_verification_fails_safely_without_processed_source(self):
+        result = KnowledgeService(
+            repository=KnowledgeRepository(), provider=FakeKnowledgeProvider()
+        ).verify_provider_runtime("local-user")
+
+        self.assertEqual(result["status"], "failed")
+        self.assertFalse(result["verified"])
+        self.assertEqual(result["errorCode"], "RAGFLOW_RUNTIME_NO_PROCESSED_SOURCE")
+
+    def test_runtime_verification_redacts_embedding_provider_error(self):
+        class FailingProbeProvider(FakeKnowledgeProvider):
+            def runtime_probe(self, *, user_id, dataset_id, document_id):
+                raise RAGFlowAPIError("Fail to bind embedding model: InvalidApiKey secret-value")
+
+        repository = KnowledgeRepository()
+        repository.save_document(
+            Document(
+                user_id="local-user",
+                file_name="verified-source.md",
+                file_type=DocumentType.MARKDOWN,
+                subject="runtime",
+                topic="acceptance",
+                provider="ragflow",
+                provider_dataset_id="dataset-verified",
+                provider_document_id="document-verified",
+                processing_status=DocumentStatus.PROCESSED,
+            )
+        )
+
+        result = KnowledgeService(repository=repository, provider=FailingProbeProvider()).verify_provider_runtime("local-user")
+
+        self.assertEqual(result["errorCode"], "RAGFLOW_EMBEDDING_INVALID_API_KEY")
+        self.assertNotIn("secret-value", result["message"])
 
     def test_running_ragflow_document_exposes_completed_chunks_without_becoming_processed(self):
         provider = RAGFlowKnowledgeProvider(client=StubRAGFlowClient(status_run="RUNNING"))

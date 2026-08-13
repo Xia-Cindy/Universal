@@ -113,6 +113,15 @@ Knowledge/Wordbook 书架是参考站点 HTML 驱动的 DOM/CSS 3D 阅读器，�
 - **测试：** `python3 -m unittest tests.test_ragflow_provider tests.test_knowledge_upload_flow`：16 通过；`python3 -m unittest discover -s tests`：178 通过；`room-portfolio npm run build` 通过；`scripts/smoke_spatial_routes.py` 覆盖的 5180 核心路由和 API proxy 全部通过。
 - **风险与限制：** Apple Silicon 上的 amd64 RAGFlow 冷启动约五分钟；这不是对任意大型 PDF、历史队列或其他 embedding provider 的完成承诺。后续只在单独授权下处理遗留长资料。
 
+### F1 上传前运行时探针实施记录（2026-08-13）
+
+- **目标：** 将 embedding 配置从“health API 可达”提升为可执行的上传前 runtime acceptance，避免在 provider 已失效时继续创建资料、数据集或解析队列。
+- **受影响文件：** `backend/app/knowledge/providers/{base,ragflow}.py`、`backend/app/knowledge/service.py`、`backend/app/api/{routes,contracts}.py`、`backend/app/main.py`、`room-portfolio/src/{api,Experience}.jsx`、相关测试与运行文档。
+- **数据库/API：** 无 migration、无写操作；新增 `POST /api/knowledge/provider/runtime-verification`。响应只含 `provider`、`status`（`verified`/`failed`）、`verified`、`checkedAt`、`errorCode` 和脱敏 `message`，不含 RAGFlow 原始响应、资料 ID、数据集 ID 或凭据。
+- **实现：** provider 对一个当前用户已有的 `processed` RAGFlow 资料执行固定文本的 `/api/v1/retrieval` 请求。该请求让 RAGFlow 做 query embedding 和 document retrieval；代码不调用 datasets、documents upload 或 chunks parse API，也不会新建或修改 Universe 数据。
+- **失败语义：** 无已完成资料时返回 `RAGFLOW_RUNTIME_NO_PROCESSED_SOURCE`；embedding 凭据、模型绑定、连接、超时和空检索分别映射为稳定且无秘密的错误代码与提示。书架只在 RAGFlow provider 返回 `verified` 时继续上传。
+- **验收结果：** provider adapter 测试证明唯一 upstream 调用为固定 retrieval；服务测试证明不上传/解析且不泄漏 provider 错误。使用与正常运行相同环境的临时 API 实例，在 `2026-08-13T18:47:28+08:00` 收到真实 `200 / verified`；实例随后立即停止。书架测试、Vite build 与 5180 核心路由 smoke 也通过。
+
 ### F3 交付记录（2026-08-13）
 
 - **目标：** 在既有“背过/记错”事实层之上，为资料归属知识卡和 Wordbook 词条提供同一份可解释、可手动覆盖的间隔复习日程；不把笔记混入复习队列。
