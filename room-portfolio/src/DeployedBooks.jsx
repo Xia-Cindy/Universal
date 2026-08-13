@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { asReferenceBook, createShelfCatalog } from './bookshelf/shelfCatalog';
 import { useBookshelfBridge } from './bookshelf/useBookshelfBridge';
@@ -578,6 +578,11 @@ export default function DeployedBooks({
         [mode, onDelete, onDeleteWord, onEditKnowledge, onEditWord, onManageShareGrants, onOpenKnowledge, onOpenWordbook, shelfPage, source, subjectFilter, subjects, totalPages, visibleBooks]
     );
 
+    const sendReaderToFrame = useCallback(() => {
+        if (!reader || !frame.current?.contentWindow) return;
+        frame.current.contentWindow.postMessage({ source: 'universe-books', type: 'reader-pages', ...reader }, '*');
+    }, [reader]);
+
     useEffect(() => {
         setShelfPage((page) => Math.min(page, totalPages - 1));
     }, [totalPages]);
@@ -611,9 +616,8 @@ export default function DeployedBooks({
     });
 
     useEffect(() => {
-        if (!reader || !frame.current?.contentWindow) return;
-        frame.current.contentWindow.postMessage({ source: 'universe-books', type: 'reader-pages', ...reader }, '*');
-    }, [reader, bookDocument]);
+        sendReaderToFrame();
+    }, [bookDocument, sendReaderToFrame]);
 
     const selectFile = (event) => {
         const nextFile = event.target.files?.[0] || null;
@@ -684,7 +688,7 @@ export default function DeployedBooks({
     return (
         <section className="deployed-books" aria-label={`${mode === 'wordbook' ? 'Wordbook' : 'Knowledge'} 3D books`}>
             {bookDocument ? (
-                <iframe ref={frame} srcDoc={bookDocument} title="Knowledge books" />
+                <iframe ref={frame} srcDoc={bookDocument} title="Knowledge books" onLoad={sendReaderToFrame} />
             ) : (
                 <p>正在装配书本场景…</p>
             )}

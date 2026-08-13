@@ -580,25 +580,35 @@ class ApiFacade:
 
     def create_knowledge_document(self, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
+        payload = self._prepare_knowledge_document_payload(user.id, payload)
+        document = self.knowledge.create_document(user.id, payload)
+        return self.knowledge.document_detail(user.id, document.id)["document"]
+
+    def adopt_ragflow_knowledge_document(self, payload: dict) -> dict[str, object]:
+        """Expose a controlled backend-only bridge for existing RAGFlow files."""
+        user = self.users.current_user()
+        payload = self._prepare_knowledge_document_payload(user.id, payload)
+        return self.knowledge.adopt_ragflow_document(user.id, payload)
+
+    def _prepare_knowledge_document_payload(self, user_id: str, payload: dict) -> dict:
         payload = dict(payload)
         goal_ids = payload.get("goalIds") if isinstance(payload.get("goalIds"), list) else []
         if payload.get("goalId"):
             goal_ids = [payload["goalId"], *goal_ids]
         goal_ids = list(dict.fromkeys(str(goal_id) for goal_id in goal_ids if goal_id))
         for goal_id in goal_ids:
-            self.study_repository.get_goal(goal_id, user.id)
+            self.study_repository.get_goal(goal_id, user_id)
         if payload.get("goalId"):
-            goal = self.study_repository.get_goal(str(payload["goalId"]), user.id)
+            goal = self.study_repository.get_goal(str(payload["goalId"]), user_id)
             payload["scopeName"] = goal.goal_name
         if payload.get("planetType") == "work" and payload.get("techStackId"):
             try:
-                tech_stack = self.work_repository.get_tech_stack(payload["techStackId"], user.id)
+                tech_stack = self.work_repository.get_tech_stack(payload["techStackId"], user_id)
             except KeyError:
                 tech_stack = None
             if tech_stack:
                 payload["scopeName"] = tech_stack.name
-        document = self.knowledge.create_document(user.id, payload)
-        return self.knowledge.document_detail(user.id, document.id)["document"]
+        return payload
 
     def get_knowledge_document_goal_links(self, document_id: str) -> dict[str, object]:
         user = self.users.current_user()

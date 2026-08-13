@@ -13,7 +13,9 @@ class FakeKnowledgeProvider:
 
     def __init__(self):
         self.upload_calls = []
+        self.parse_calls = []
         self.search_calls = []
+        self.document_status = "done"
 
     def upload_document(self, *, user_id, document):
         self.upload_calls.append({"userId": user_id, "documentId": document.id})
@@ -25,11 +27,20 @@ class FakeKnowledgeProvider:
         }
 
     def parse_document(self, *, user_id, dataset_id, document_id):
+        self.parse_calls.append({"userId": user_id, "datasetId": dataset_id, "documentId": document_id})
         return {
             "provider": self.name,
             "datasetId": dataset_id,
             "documentId": document_id,
             "status": "parsed",
+        }
+
+    def get_document_status(self, *, user_id, dataset_id, document_id):
+        return {
+            "provider": self.name,
+            "datasetId": dataset_id,
+            "documentId": document_id,
+            "status": self.document_status,
         }
 
     def list_document_chunks(self, *, user_id, dataset_id, document_id, limit=30):
@@ -185,6 +196,30 @@ class RAGFlowProviderTests(unittest.TestCase):
         service.process_document("local-user", document.id)
 
         self.assertEqual(len(provider.upload_calls), 1)
+
+    def test_adopt_existing_ragflow_document_caches_readable_chunks_without_upload_or_parse(self):
+        provider = FakeKnowledgeProvider()
+        provider.document_status = "running"
+        service = KnowledgeService(repository=KnowledgeRepository(), provider=provider)
+
+        detail = service.adopt_ragflow_document(
+            "local-user",
+            {
+                "fileName": "existing.pdf",
+                "fileType": "pdf",
+                "subject": "data",
+                "topic": "governance",
+                "providerDatasetId": "dataset-existing",
+                "providerDocumentId": "provider-doc-existing",
+            },
+        )
+
+        self.assertEqual(detail["document"]["providerDatasetId"], "dataset-existing")
+        self.assertEqual(detail["document"]["providerDocumentId"], "provider-doc-existing")
+        self.assertEqual(detail["document"]["processingStatus"], "chunking")
+        self.assertEqual(detail["chunks"][0]["content"], "RAGFlow chunk content")
+        self.assertEqual(provider.upload_calls, [])
+        self.assertEqual(provider.parse_calls, [])
 
     def test_retrieval_service_uses_provider_search(self):
         provider = FakeKnowledgeProvider()

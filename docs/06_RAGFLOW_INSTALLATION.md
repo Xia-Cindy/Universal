@@ -281,6 +281,29 @@ if a worker is stuck with no task progress, cancel only the affected new task,
 restore worker health, then resume that one approved sample after confirming
 its parser configuration.
 
+## 8.2 Adopt an existing RAGFlow document without reprocessing
+
+Files uploaded in the RAGFlow administration UI do not automatically create a
+Universe-owned Knowledge record. A controlled backend-only adoption endpoint
+exists for that recovery path:
+
+```text
+POST /api/study/knowledge/documents/adopt-ragflow
+```
+
+Required metadata is the normal Knowledge `fileName`, `fileType`, `subject`
+and `topic`, plus the existing `providerDatasetId` and `providerDocumentId`.
+Before persisting anything, Universe verifies that exact dataset/document pair
+through the provider. It then creates only the local ownership metadata and
+refreshes the chunks already readable from RAGFlow. It does **not** upload a
+file, submit a parse request, or reset the provider queue. Repeating the same
+request refreshes the existing Universe record instead of duplicating it.
+
+Use this recovery operation only for a document the current learner owns and
+intends to manage through the Universe bookshelf. Once adopted, the ordinary
+Universe delete action continues to delete its linked provider document, just
+as it does for documents uploaded from Universe.
+
 ---
 
 # 9. Troubleshooting

@@ -352,6 +352,10 @@ def create_app():
     def create_knowledge_document(payload: dict):
         return api.create_knowledge_document(payload)
 
+    @app.post("/api/study/knowledge/documents/adopt-ragflow")
+    def adopt_ragflow_knowledge_document(payload: dict):
+        return api.adopt_ragflow_knowledge_document(payload)
+
     @app.get("/api/study/knowledge")
     def knowledge_overview():
         return api.knowledge_overview()

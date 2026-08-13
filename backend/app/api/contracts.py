@@ -58,6 +58,12 @@ MILESTONE_3_CONTRACTS: tuple[ApiContract, ...] = (
 MILESTONE_4_1_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/knowledge/provider/health", "knowledge_provider_health", "milestone_8_runtime"),
     ApiContract("POST", "/api/study/knowledge/documents", "create_knowledge_document", "milestone_4_1"),
+    ApiContract(
+        "POST",
+        "/api/study/knowledge/documents/adopt-ragflow",
+        "adopt_ragflow_knowledge_document",
+        "milestone_8_runtime",
+    ),
     ApiContract("GET", "/api/study/knowledge", "knowledge_overview", "milestone_4_1"),
     ApiContract("GET", "/api/study/knowledge/documents", "list_knowledge_documents", "milestone_4_1"),
     ApiContract(

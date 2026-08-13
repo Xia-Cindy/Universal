@@ -38,6 +38,16 @@ test('reader pages preserve real chunks, annotations and local bookmarks', () =>
     assert.deepEqual(model.bookmark, { page: 1 });
 });
 
+test('processing RAGFlow documents expose returned chunks before parsing completes', () => {
+    const model = readerPages({
+        document: { processingStatus: 'chunking', provider: 'ragflow', providerStatus: 'running' },
+        chunks: [{ content: '已完成的 OCR 内容可以立即阅读。' }]
+    }, 'doc-running', { fileName: 'long.pdf', fileType: 'pdf' });
+
+    assert.equal(model.pages[0].content, '已完成的 OCR 内容可以立即阅读。');
+    assert.match(model.book.readingStatus, /持续解析中/);
+});
+
 test('reader uses a newer synced reading position but retains a newer local fallback', () => {
     const detail = {
         document: { processingStatus: 'processed' },

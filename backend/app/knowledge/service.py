@@ -76,6 +76,60 @@ class KnowledgeService:
             self._repository.replace_document_goal_links(user_id, saved.id, goal_ids)
         return saved
 
+    def adopt_ragflow_document(self, user_id: str, payload: dict) -> dict[str, object]:
+        """Attach a pre-existing RAGFlow document without uploading or parsing it.
+
+        This is deliberately a metadata-only operation for documents created in
+        the RAGFlow administration UI.  The provider status lookup validates the
+        supplied dataset/document pair before Universe persists its own source
+        record; ``refresh_document`` then caches only chunks RAGFlow has already
+        made readable.
+        """
+        if not self._provider or self._provider.name != "ragflow":
+            raise ValueError("RAGFlow provider is not configured")
+        dataset_id = str(payload.get("providerDatasetId") or "").strip()
+        provider_document_id = str(payload.get("providerDocumentId") or "").strip()
+        if not dataset_id or not provider_document_id:
+            raise ValueError("providerDatasetId and providerDocumentId are required")
+
+        existing = next(
+            (
+                document
+                for document in self._repository.list_documents(user_id)
+                if document.provider == self._provider.name
+                and document.provider_dataset_id == dataset_id
+                and document.provider_document_id == provider_document_id
+            ),
+            None,
+        )
+        if existing:
+            return self.refresh_document(user_id, existing.id)
+
+        # Do this before creating a local record. A mistyped external ID must not
+        # leave a dangling Universe document, and it must never cause a reparse.
+        status = self._provider.get_document_status(
+            user_id=user_id,
+            dataset_id=dataset_id,
+            document_id=provider_document_id,
+        )
+        document = self.create_document(
+            user_id,
+            {
+                **payload,
+                "content": "",
+                "storagePath": None,
+            },
+        )
+        document.provider = self._provider.name
+        document.provider_dataset_id = dataset_id
+        document.provider_document_id = provider_document_id
+        document.provider_status = str(status.get("status") or "unknown")
+        document.provider_error_code = status.get("errorCode")
+        document.processing_status = DocumentStatus.CHUNKING
+        document.updated_at = local_now()
+        self._repository.save_document(document)
+        return self.refresh_document(user_id, document.id)
+
     def update_document(self, user_id: str, document_id: str, payload: dict) -> Document:
         document = self._repository.get_document(document_id, user_id)
         original_planet_type = document.planet_type

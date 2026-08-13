@@ -119,6 +119,7 @@ class KnowledgeFoundationTests(unittest.TestCase):
         contracts = {(contract["method"], contract["path"]) for contract in list_contracts()}
 
         self.assertIn(("POST", "/api/study/knowledge/documents"), contracts)
+        self.assertIn(("POST", "/api/study/knowledge/documents/adopt-ragflow"), contracts)
         self.assertIn(("GET", "/api/study/knowledge"), contracts)
         self.assertIn(("GET", "/api/study/knowledge/documents"), contracts)
         self.assertIn(("GET", "/api/study/knowledge/documents/{document_id}"), contracts)

@@ -44,6 +44,7 @@
 
 - Provider adapter 支持上传、状态刷新、重试、删除同步与 provider-backed retrieval；Study Goal 和 Work Tech Stack 可保持隔离作用域。
 - 处理中资料会显示真实状态，并在 provider 已返回 chunk 时先显示可读页面；这不表示完整解析已经结束。
+- RAGFlow 管理台中已存在、但尚未映射到 Universe 的资料可通过受控接管接口验证 dataset/document 后进入书架；接管只写 Universe 元数据并同步已完成 chunks，不上传、不解析、不重置队列。
 - 2026-08-13 的受控 TXT、Markdown 和新 PDF 已在有效 embedding 配置下到达 `processed`，各有非零 provider chunk、阅读页内容和 Tutor 来源回链。该样本验收不代表所有历史长 PDF 已完成；每份长文档仍需单独核对 provider 状态与 chunks，且不得为验收而盲目重试。
 - RAGFlow API key 与其他凭据仅存在本地运行时配置中，前端、Tutor、AI Core 都不能直接调用 RAGFlow。
 
