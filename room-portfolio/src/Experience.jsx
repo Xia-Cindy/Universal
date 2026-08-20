@@ -96,7 +96,20 @@ const KNOWLEDGE_RESOURCES = {
     }
 };
 
+const isWorkbenchPath = (pathname) => pathname === '/work' || pathname.startsWith('/work/');
+
+const LocalSylvaWorkbench = () => (
+    <main aria-label="Sylva Workbench" style={{ background: '#050b11', height: '100dvh', overflow: 'hidden' }}>
+        <iframe
+            src="/sylva/index.html"
+            title="Sylva interactive landscape"
+            style={{ border: 0, display: 'block', height: '100%', width: '100%' }}
+        />
+    </main>
+);
+
 const Experience = React.memo(() => {
+    const [pathname, setPathname] = useState(() => window.location.pathname);
     const [activeSpace, setActiveSpace] = useState(null);
     const [activeModule, setActiveModule] = useState(null);
     const [knowledgeBooks, setKnowledgeBooks] = useState([]);
@@ -122,6 +135,12 @@ const Experience = React.memo(() => {
         []
     );
 
+    useEffect(() => {
+        const updatePathname = () => setPathname(window.location.pathname);
+        window.addEventListener('popstate', updatePathname);
+        return () => window.removeEventListener('popstate', updatePathname);
+    }, []);
+
     const selectModule = (moduleId, { replace = false } = {}) => {
         const route = moduleRoute(moduleId);
         setActiveModule(moduleId);
@@ -132,6 +151,11 @@ const Experience = React.memo(() => {
     };
 
     const openSpace = (space) => {
+        if (space === 'work') {
+            window.history.pushState({}, '', '/work');
+            setPathname('/work');
+            return;
+        }
         const moduleId = SPACE_GROUPS[space]?.modules[0]?.id;
         if (!moduleId) return;
         if (portalTimer.current) window.clearTimeout(portalTimer.current);
@@ -412,6 +436,8 @@ const Experience = React.memo(() => {
     };
 
     const wordbookBooks = useMemo(() => asWordbookBooks(wordbookEntries), [wordbookEntries]);
+
+    if (isWorkbenchPath(pathname)) return <LocalSylvaWorkbench />;
 
     return (
         <>
