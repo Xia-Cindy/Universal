@@ -7,6 +7,7 @@ node_modules/
 dist/
 .env
 docker/universe.env
+docker/development/universe.env
 docker/ragflow/.env
 docker/ragflow/universe.env
 docker/ragflow/ragflow-logs/

@@ -4,6 +4,11 @@
 
 ### Added
 
+- **2026-08-23 cloud development package:** added an isolated Docker Compose
+  stack for the JD Cloud development checkout. It owns only its PostgreSQL and
+  object-storage volumes, binds the frontend to server loopback, and leaves
+  the existing host Nginx and AI Agent stack untouched. The image explicitly
+  disables the local-only Sylva asset and uses a bundled Study fallback.
 - Added `POST /api/knowledge/provider/runtime-verification`, an explicit
   RAGFlow embedding/retrieval acceptance probe. It uses a fixed tiny query and
   one already processed source, returns only `verified`/`failed`, `checkedAt`

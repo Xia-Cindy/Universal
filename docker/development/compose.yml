@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${UNIVERSE_POSTGRES_DB}
+      POSTGRES_USER: ${UNIVERSE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${UNIVERSE_POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    volumes:
+      - universe_postgres:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ../..
+      dockerfile: docker/development/Dockerfile.api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PERSISTENCE_BACKEND: postgres
+      DATABASE_URL: postgresql://${UNIVERSE_POSTGRES_USER}:${UNIVERSE_POSTGRES_PASSWORD}@db:5432/${UNIVERSE_POSTGRES_DB}
+      KNOWLEDGE_PROVIDER: ${KNOWLEDGE_PROVIDER:-local}
+      OBJECT_STORAGE_BACKEND: local
+      OBJECT_STORAGE_ROOT: storage/objects
+      EMAIL_BACKEND: console
+    restart: unless-stopped
+    volumes:
+      - universe_objects:/app/storage/objects
+
+  room:
+    build:
+      context: ../..
+      dockerfile: docker/development/Dockerfile.room
+      args:
+        VITE_ENABLE_LOCAL_SYLVA: "false"
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:${UNIVERSE_DEV_PORT:-15180}:80"
+    restart: unless-stopped
+
+volumes:
+  universe_postgres:
+  universe_objects:

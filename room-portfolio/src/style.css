@@ -51,6 +51,31 @@ canvas {
     inset: 0;
 }
 
+.study-entry-fallback {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: radial-gradient(circle at 72% 20%, rgba(115, 160, 122, .25), transparent 27%), linear-gradient(145deg, #12251f, #07120f 64%, #040908);
+    color: #f4f5ed;
+}
+
+.study-entry-fallback__glow {
+    position: absolute;
+    width: min(72vw, 800px);
+    aspect-ratio: 1;
+    border: 1px solid rgba(229, 239, 212, .18);
+    border-radius: 50%;
+    box-shadow: 0 0 0 70px rgba(121, 171, 132, .04), 0 0 120px rgba(151, 210, 138, .14);
+}
+
+.study-entry-fallback section { position: relative; z-index: 1; width: min(650px, calc(100% - 48px)); text-align: center; }
+.study-entry-fallback span { color: #b3c9a8; font-size: 11px; font-weight: 800; letter-spacing: .2em; }
+.study-entry-fallback h1 { margin: 16px 0 14px; font-family: Georgia, 'Noto Serif SC', serif; font-size: clamp(52px, 10vw, 110px); font-weight: 400; letter-spacing: -.07em; line-height: .9; }
+.study-entry-fallback p { max-width: 400px; margin: 0 auto; color: rgba(235, 240, 226, .72); font-size: 15px; line-height: 1.8; }
+.study-entry-fallback button { margin-top: 32px; padding: 11px 16px; border: 1px solid rgba(232, 240, 219, .32); border-radius: 999px; background: rgba(255, 255, 255, .08); color: inherit; font-size: 12px; font-weight: 800; }
+
 .hanging-gallery {
     position: fixed;
     z-index: 500;

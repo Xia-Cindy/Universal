@@ -1,4 +1,4 @@
-/* eslint-disable react/display-name */
+/* eslint-disable react/display-name, react/prop-types */
 import { Loader, Stars } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import {
@@ -99,6 +99,7 @@ const KNOWLEDGE_RESOURCES = {
 
 const isWorkSpacePath = (pathname) => pathname === '/work' || pathname.startsWith('/work/');
 const isStudySpacePath = (pathname) => pathname === '/study' || pathname === '/study/home';
+const localSylvaEnabled = import.meta.env.VITE_ENABLE_LOCAL_SYLVA !== 'false';
 
 const LocalSylvaSpace = () => (
     <main aria-label="Immersive Universe space" style={{ background: '#050b11', height: '100dvh', overflow: 'hidden' }}>
@@ -107,6 +108,18 @@ const LocalSylvaSpace = () => (
             title="Sylva interactive landscape"
             style={{ border: 0, display: 'block', height: '100%', width: '100%' }}
         />
+    </main>
+);
+
+const StudyEntryFallback = ({ onReturn }) => (
+    <main className="study-entry-fallback" aria-label="Study Space">
+        <div className="study-entry-fallback__glow" />
+        <section>
+            <span>STUDY PLANET</span>
+            <h1>Study Space</h1>
+            <p>在知识、词汇与记忆卡片之间，逐步建立自己的学习世界。</p>
+            <button onClick={onReturn} type="button">← Universe Home</button>
+        </section>
     </main>
 );
 
@@ -451,7 +464,9 @@ const Experience = React.memo(() => {
 
     const wordbookBooks = useMemo(() => asWordbookBooks(wordbookEntries), [wordbookEntries]);
 
-    if (isStudySpacePath(pathname)) return <LocalSylvaSpace />;
+    if (isStudySpacePath(pathname)) {
+        return localSylvaEnabled ? <LocalSylvaSpace /> : <StudyEntryFallback onReturn={closeSpace} />;
+    }
 
     if (isWorkSpacePath(pathname)) {
         return <WorkCaseWorkspace onNavigate={navigate} onReturn={closeSpace} pathname={pathname} />;
