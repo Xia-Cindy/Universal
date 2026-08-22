@@ -275,8 +275,28 @@ class ApiFacade:
         self.registry.get_enterable_planet("work")
         return self.work.home(
             user.id,
-            knowledge_summary={"documents": self.knowledge.list_work_documents(user.id)},
+            knowledge_summary={"documents": []},
         )
+
+    def list_work_cases(self) -> list[dict[str, object]]:
+        user = self.users.current_user()
+        self.registry.get_enterable_planet("work")
+        return self.work.list_practice_cases(user.id)
+
+    def create_work_case(self, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        self.registry.get_enterable_planet("work")
+        return self.work.create_practice_case(user.id, payload)
+
+    def get_work_case(self, case_id: str) -> dict[str, object]:
+        user = self.users.current_user()
+        self.registry.get_enterable_planet("work")
+        return self.work.get_practice_case(user.id, case_id)
+
+    def update_work_case(self, case_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        self.registry.get_enterable_planet("work")
+        return self.work.update_practice_case(user.id, case_id, payload)
 
     def list_work_tech_stacks(self) -> list[dict[str, object]]:
         user = self.users.current_user()

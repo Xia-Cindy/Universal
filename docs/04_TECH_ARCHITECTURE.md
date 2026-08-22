@@ -154,8 +154,9 @@ Current spatial routes:
 /study/wordbook           Wordbook bookshelf
 /study/cards              Knowledge cards and notes
 /work                     Work Home
+/work/cases               Practice Case list and create
+/work/cases/:case_id      Practice Case detail
 /work/tech-stack          Work Tech Stack
-/work/knowledge           Work Knowledge
 /work/projects            Work Projects
 /work/resume              Work Resume
 /novel                    Novel drafts
@@ -1590,6 +1591,24 @@ Not changed:
 - Work Planet does not own a separate Knowledge implementation.
 - Study Planet and Work Planet do not call RAGFlow directly.
 - AI Core, ToolRouter, Retrieval and Memory architecture remain unchanged.
+
+---
+
+## Work Case Foundation (2026-08-22)
+
+`PracticeCase` is the Work Planet aggregate root for the professional-practice loop:
+
+```text
+Discover → Define → Govern → Validate → Operate → Review
+```
+
+- The Work service, not React, selects one active Case, constrains stage advancement to one stage at a time, calculates case progress and returns `nextAction`.
+- Case records use the existing unified `work_records` persistence with a new nullable `case_id` relation column. PostgreSQL migration `024_work_practice_cases.sql` and SQLite migration `012_work_practice_cases.sql` preserve all existing Work records.
+- `GET /api/work/home` now exposes `activeCase`, `currentStage`, `nextAction` and `caseProgress`; CRUD is provided by `/api/work/cases` and `/api/work/cases/{case_id}`.
+- The active 5180 React entry renders a normal Case overview, list and detail form. `/work` is intentionally not Three.js in this phase.
+- `/work/knowledge` is retired from active navigation. Legacy Work Knowledge APIs and stored records are retained temporarily for compatibility; no new Case workflow writes Knowledge content, duplicates documents, accesses RAGFlow directly or bypasses shared authorization.
+
+Not implemented in this phase: Artifact/BA, Backlog/PM, Governance, Lab/LabRun, Operations, SOP, Radar, Bookshelf relations, or the Three.js Work Tree.
 
 ---
 

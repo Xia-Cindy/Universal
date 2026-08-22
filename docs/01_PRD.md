@@ -174,7 +174,7 @@ Universe Portal
 
 Universe Portal 当前展示：
 
-- Work Planet：受限工作区，包含既有 Tech Stack、Knowledge、项目证据、文章与简历草稿能力。
+- Work Planet：受限的职业实践工作区；当前以 Practice Case 为主线，已有 Tech Stack、Projects 与 Resume 仅作为可关联能力，不再提供独立 Work Knowledge 空间。
 - Novel Planet：仅限持久化草稿，不新增 Novel Agent。
 - Life Planet
 - Creator Planet

@@ -2,11 +2,10 @@
 import { SPACE_GROUPS } from './spaces';
 
 const roomZones = [
-    ['study', '学习控制台'],
-    ['plan', '计划桌'],
-    ['library', '知识书架'],
-    ['board', '知识黑板'],
-    ['work', 'Work Bench'],
+    ['study', 'Study Space'],
+    ['library', '书架'],
+    ['board', '记忆卡片'],
+    ['work', 'Work Space'],
     ['novel', '作品展墙']
 ];
 

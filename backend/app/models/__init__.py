@@ -25,7 +25,16 @@ from backend.app.models.study import (
     WordEntrySource,
     YearPlan,
 )
-from backend.app.models.work import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
+from backend.app.models.work import (
+    WORK_CASE_STAGES,
+    WORK_CASE_STATUSES,
+    PracticeCase,
+    ResumeVersion,
+    TechStack,
+    WorkArticle,
+    WorkLearningRecord,
+    WorkProject,
+)
 
 __all__ = [
     "DailyTask",
@@ -56,6 +65,7 @@ __all__ = [
     "Planet",
     "PlanetModule",
     "PlanetStatus",
+    "PracticeCase",
     "ResumeVersion",
     "SessionStatus",
     "StudyGoal",
@@ -68,6 +78,8 @@ __all__ = [
     "WordEntry",
     "WordEntrySource",
     "WorkArticle",
+    "WORK_CASE_STAGES",
+    "WORK_CASE_STATUSES",
     "WorkLearningRecord",
     "WorkProject",
     "YearPlan",

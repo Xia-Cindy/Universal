@@ -687,10 +687,8 @@ export default function DeployedBooks({
 
     return (
         <section className="deployed-books" aria-label={`${mode === 'wordbook' ? 'Wordbook' : 'Knowledge'} 3D books`}>
-            {bookDocument ? (
+            {bookDocument && (
                 <iframe ref={frame} srcDoc={bookDocument} title="Knowledge books" onLoad={sendReaderToFrame} />
-            ) : (
-                <p>正在装配书本场景…</p>
             )}
             {loadError && (
                 <div className="knowledge-load-notice" role="status">

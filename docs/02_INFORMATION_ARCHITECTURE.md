@@ -72,7 +72,7 @@ Universe OS Room
 │   ├── Plan / Review / Analytics
 │   └── Knowledge / Wordbook / Recall Board
 ├── Work: active
-│   └── Home / Tech Stack / Knowledge / Projects / Resume
+│   └── Case Home / Cases / Tech Stack / Projects / Resume
 ├── Novel: persisted draft workspace
 ├── Life: future
 └── Creator: future

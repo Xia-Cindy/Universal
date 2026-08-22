@@ -20,11 +20,10 @@ const clip = (text, length) => {
 const wrap = (value, span) => ((value % span) + span) % span;
 
 const roomShortcuts = [
-    ['study', '学习控制台'],
-    ['plan', '计划桌'],
-    ['library', '知识书架'],
-    ['board', '知识黑板'],
-    ['work', 'Work Bench'],
+    ['study', 'Study Space'],
+    ['library', '书架'],
+    ['board', '记忆卡片'],
+    ['work', 'Work Space'],
     ['novel', '作品展墙']
 ];
 

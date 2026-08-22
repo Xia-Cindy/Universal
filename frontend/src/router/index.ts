@@ -17,7 +17,6 @@ import WorkWorkspace from '../planets/work/layout/WorkWorkspace.vue'
 import WorkHome from '../planets/work/home/WorkHome.vue'
 import TechStackDirectory from '../planets/work/tech-stack/TechStackDirectory.vue'
 import TechStackDetail from '../planets/work/tech-stack/TechStackDetail.vue'
-import WorkKnowledge from '../planets/work/knowledge/WorkKnowledge.vue'
 import WorkProjects from '../planets/work/projects/WorkProjects.vue'
 import DynamicResume from '../planets/work/resume/DynamicResume.vue'
 import Register from '../pages/Register.vue'
@@ -52,7 +51,6 @@ export const router = createRouter({
         { path: '', name: 'WorkHome', component: WorkHome },
         { path: 'tech-stack', name: 'TechStackDirectory', component: TechStackDirectory },
         { path: 'tech-stack/:techStackId', name: 'TechStackDetail', component: TechStackDetail },
-        { path: 'knowledge', name: 'WorkKnowledge', component: WorkKnowledge },
         { path: 'projects', name: 'WorkProjects', component: WorkProjects },
         { path: 'resume', name: 'DynamicResume', component: DynamicResume },
       ],

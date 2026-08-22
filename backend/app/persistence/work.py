@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from backend.app.models import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
+from backend.app.models import PracticeCase, ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
 from backend.app.persistence.codec import (
     article_from_payload,
     dumps,
     loads,
     learning_record_from_payload,
+    practice_case_from_payload,
     project_from_payload,
     resume_from_payload,
     tech_stack_from_payload,
@@ -55,13 +56,30 @@ class SQLiteWorkRepository:
     def list_resume_versions(self, user_id: str) -> list[ResumeVersion]:
         return [resume_from_payload(item) for item in self._list("resume", user_id)]
 
-    def _save(self, record_type: str, record_id: str, user_id: str, payload: dict, created_at: str, updated_at: str, tech_stack_id: str | None = None):
+    def save_practice_case(self, case: PracticeCase) -> PracticeCase:
+        return self._save(
+            "practice_case",
+            case.id,
+            case.user_id,
+            case.to_dict(),
+            case.created_at.isoformat(),
+            case.updated_at.isoformat(),
+            case_id=case.id,
+        )
+
+    def get_practice_case(self, case_id: str, user_id: str) -> PracticeCase:
+        return practice_case_from_payload(self._get("practice_case", case_id, user_id))
+
+    def list_practice_cases(self, user_id: str) -> list[PracticeCase]:
+        return [practice_case_from_payload(item) for item in self._list("practice_case", user_id)]
+
+    def _save(self, record_type: str, record_id: str, user_id: str, payload: dict, created_at: str, updated_at: str, tech_stack_id: str | None = None, case_id: str | None = None):
         with self._db.transaction() as db:
             db.execute(
-                """INSERT INTO work_records(id,user_id,record_type,tech_stack_id,payload,created_at,updated_at)
-                   VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
-                   tech_stack_id=excluded.tech_stack_id,payload=excluded.payload,updated_at=excluded.updated_at""",
-                (record_id, user_id, record_type, tech_stack_id, dumps(payload), created_at, updated_at),
+                """INSERT INTO work_records(id,user_id,record_type,tech_stack_id,case_id,payload,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                   tech_stack_id=excluded.tech_stack_id,case_id=excluded.case_id,payload=excluded.payload,updated_at=excluded.updated_at""",
+                (record_id, user_id, record_type, tech_stack_id, case_id, dumps(payload), created_at, updated_at),
             )
         return payload_to_model(record_type, payload)
 
@@ -92,5 +110,6 @@ def payload_to_model(record_type: str, payload: dict):
         "project": project_from_payload,
         "article": article_from_payload,
         "learning_record": learning_record_from_payload,
+        "practice_case": practice_case_from_payload,
         "resume": resume_from_payload,
     }[record_type](payload)

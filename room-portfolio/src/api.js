@@ -149,6 +149,18 @@ export const roomApi = {
             body: JSON.stringify(payload)
         }),
     workHome: () => apiRequest('/api/work/home'),
+    workCases: () => apiRequest('/api/work/cases'),
+    createWorkCase: (payload) =>
+        apiRequest('/api/work/cases', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+    workCase: (caseId) => apiRequest(`/api/work/cases/${caseId}`),
+    updateWorkCase: (caseId, payload) =>
+        apiRequest(`/api/work/cases/${caseId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        }),
     workKnowledgeDocuments: (techStackId = '') =>
         apiRequest(`/api/work/knowledge/documents${techStackId ? `?techStackId=${encodeURIComponent(techStackId)}` : ''}`),
     workKnowledgeDocument: (documentId) =>

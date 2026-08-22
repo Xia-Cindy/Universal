@@ -1,4 +1,4 @@
-from backend.app.models import ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
+from backend.app.models import PracticeCase, ResumeVersion, TechStack, WorkArticle, WorkLearningRecord, WorkProject
 
 from backend.app.persistence.work import SQLiteWorkRepository
 
@@ -12,6 +12,7 @@ class WorkRepository:
         self.articles: dict[str, WorkArticle] = {}
         self.learning_records: dict[str, WorkLearningRecord] = {}
         self.resume_versions: dict[str, ResumeVersion] = {}
+        self.practice_cases: dict[str, PracticeCase] = {}
 
     def save_tech_stack(self, tech_stack: TechStack) -> TechStack:
         self.tech_stacks[tech_stack.id] = tech_stack
@@ -76,6 +77,23 @@ class WorkRepository:
     def list_resume_versions(self, user_id: str) -> list[ResumeVersion]:
         return sorted(
             [item for item in self.resume_versions.values() if item.user_id == user_id],
+            key=lambda item: item.updated_at,
+            reverse=True,
+        )
+
+    def save_practice_case(self, case: PracticeCase) -> PracticeCase:
+        self.practice_cases[case.id] = case
+        return case
+
+    def get_practice_case(self, case_id: str, user_id: str) -> PracticeCase:
+        case = self.practice_cases[case_id]
+        if case.user_id != user_id:
+            raise PermissionError("Practice Case does not belong to user")
+        return case
+
+    def list_practice_cases(self, user_id: str) -> list[PracticeCase]:
+        return sorted(
+            [item for item in self.practice_cases.values() if item.user_id == user_id],
             key=lambda item: item.updated_at,
             reverse=True,
         )

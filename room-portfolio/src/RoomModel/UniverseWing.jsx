@@ -212,11 +212,11 @@ function GalleryWall({ active, onOpen }) {
     );
 }
 
-function Workbench({ active, onOpen }) {
+function WorkSpace({ active, onOpen }) {
     return (
         <Hotspot
             hint="Stacks · Projects · Resume"
-            label="Work Bench"
+            label="Work Space"
             onOpen={onOpen}
             position={[8.85, 2.0, 0.55]}
         >
@@ -277,16 +277,11 @@ export default function UniverseWing({ activeSpace, onOpen }) {
 
             <Bookshelf active={activeSpace === 'library'} onOpen={() => onOpen('library')} />
             <GalleryWall active={activeSpace === 'novel'} onOpen={() => onOpen('novel')} />
-            <Workbench active={activeSpace === 'work'} onOpen={() => onOpen('work')} />
+            <WorkSpace active={activeSpace === 'work'} onOpen={() => onOpen('work')} />
             <FocusBeacon
                 active={activeSpace === 'study'}
                 color={palette.cyan}
                 position={[1.75, 0.18, 2.4]}
-            />
-            <FocusBeacon
-                active={activeSpace === 'plan'}
-                color={palette.violet}
-                position={[-5.15, 0.18, -1.8]}
             />
             <FocusBeacon
                 active={activeSpace === 'library'}

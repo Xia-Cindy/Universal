@@ -21,10 +21,12 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertEqual(work["status"], "active")
         self.assertEqual(work["primaryAction"], "Enter Work Planet")
 
-    def test_work_home_primary_action_starts_with_tech_stack(self):
+    def test_work_home_primary_action_starts_with_practice_case(self):
         home = self.api.get_work_home()
 
-        self.assertEqual(home["primaryAction"]["type"], "create_tech_stack")
+        self.assertEqual(home["primaryAction"]["type"], "create_practice_case")
+        self.assertIsNone(home["activeCase"])
+        self.assertEqual(home["summary"]["caseCount"], 0)
         self.assertEqual(home["summary"]["techStackCount"], 0)
 
     def test_tech_stack_detail_and_dynamic_resume_use_confirmed_evidence(self):
@@ -53,7 +55,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertIn("RAG", resume["content"])
         self.assertIn(f"tech_stack:{stack['id']}", resume["evidenceRefs"])
         self.assertIn(f"project:{project['id']}", resume["evidenceRefs"])
-        self.assertEqual(home["primaryAction"]["type"], "review_resume")
+        self.assertEqual(home["primaryAction"]["type"], "create_practice_case")
 
     def test_tech_stack_supports_articles_and_learning_records(self):
         stack = self.api.create_work_tech_stack(
@@ -231,7 +233,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
 
         self.assertIn("path: '/work'", router)
         self.assertIn("TechStackDirectory", router)
-        self.assertIn("WorkKnowledge", router)
+        self.assertNotIn("WorkKnowledge", router)
         self.assertIn("DynamicResume", router)
         self.assertIn("Enter Work Planet", portal)
         self.assertNotIn("/:futurePlanet(work|novel|life|creator)", router)

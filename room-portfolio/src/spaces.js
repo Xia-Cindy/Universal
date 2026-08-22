@@ -1,11 +1,11 @@
 export const SPACE_GROUPS = {
     study: {
-        title: 'Study Console',
+        title: 'Study Space',
         eyebrow: 'Study Planet',
-        entryLabel: '学习电脑',
+        entryLabel: 'Study Space',
         portal: { x: 1.75, stageZ: -12.5 },
         modules: [
-            { id: 'study-home', label: 'Home', path: '/study' },
+            { id: 'study-home', label: 'Study Space', path: '/study' },
             { id: 'study-goals', label: 'Goals', path: '/study/goals' },
             { id: 'study-tutor', label: 'Tutor', path: '/study/tutor' }
         ]
@@ -44,22 +44,22 @@ export const SPACE_GROUPS = {
         ]
     },
     board: {
-        title: 'Knowledge Board',
+        title: 'Memory Cards',
         eyebrow: 'Study recall',
-        entryLabel: '知识黑板',
+        entryLabel: '记忆卡片',
         portal: { x: -5.15, stageZ: -12.5 },
         modules: [
             {
                 id: 'study-cards',
-                label: '知识卡片与笔记',
+                label: '记忆卡片与笔记',
                 path: '/study/cards'
             }
         ]
     },
     work: {
-        title: 'Work Bench',
+        title: 'Work Space',
         eyebrow: 'Work Planet',
-        entryLabel: 'Work Bench',
+        entryLabel: 'Work Space',
         portal: { x: 8.85, stageZ: -12.5 },
         modules: [
             { id: 'work-home', label: 'Home', path: '/work' },
@@ -67,11 +67,6 @@ export const SPACE_GROUPS = {
                 id: 'work-tech-stack',
                 label: 'Tech Stack',
                 path: '/work/tech-stack'
-            },
-            {
-                id: 'work-knowledge',
-                label: 'Knowledge',
-                path: '/work/knowledge'
             },
             { id: 'work-projects', label: 'Projects', path: '/work/projects' },
             { id: 'work-resume', label: 'Resume', path: '/work/resume' }

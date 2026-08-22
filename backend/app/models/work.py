@@ -6,6 +6,18 @@ from uuid import uuid4
 from backend.app.core.dates import local_now
 
 
+WORK_CASE_STAGES = (
+    "discover",
+    "define",
+    "govern",
+    "validate",
+    "operate",
+    "review",
+)
+
+WORK_CASE_STATUSES = ("draft", "active", "paused", "completed", "archived")
+
+
 def _id() -> str:
     return str(uuid4())
 
@@ -143,6 +155,44 @@ class ResumeVersion:
             "content": self.content,
             "evidenceRefs": list(self.evidence_refs),
             "status": self.status,
+            "createdAt": self.created_at.isoformat(),
+            "updatedAt": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class PracticeCase:
+    """The Work Planet's source-of-truth unit of professional practice."""
+
+    user_id: str
+    title: str
+    problem: str = ""
+    goal: str = ""
+    scope: str = ""
+    non_goal: str = ""
+    status: str = "active"
+    current_stage: str = "discover"
+    success_metrics: tuple[str, ...] = ()
+    risks: tuple[str, ...] = ()
+    dependencies: tuple[str, ...] = ()
+    id: str = field(default_factory=_id)
+    created_at: datetime = field(default_factory=local_now)
+    updated_at: datetime = field(default_factory=local_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "title": self.title,
+            "problem": self.problem,
+            "goal": self.goal,
+            "scope": self.scope,
+            "nonGoal": self.non_goal,
+            "status": self.status,
+            "currentStage": self.current_stage,
+            "successMetrics": list(self.success_metrics),
+            "risks": list(self.risks),
+            "dependencies": list(self.dependencies),
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
         }

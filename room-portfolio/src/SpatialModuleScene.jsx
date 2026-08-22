@@ -367,97 +367,6 @@ function StudyGoalsWorld({ payload, reload }) {
     );
 }
 
-function TaskCrystal({ task, index, onComplete, onSelect, selected }) {
-    const x = (index - 1) * 3.35;
-    const color = task.status === 'completed' ? palette.green : palette.cyan;
-    return (
-        <group position={[x, 1.3, 1.5]}>
-            <Interactive onClick={() => onSelect(task)} selected={selected}>
-                <Float floatIntensity={0.22} rotationIntensity={0.06} speed={1 + index * 0.12}>
-                    <mesh castShadow rotation={[0, Math.PI / 4, 0]}>
-                        <octahedronGeometry args={[0.78, 0]} />
-                        <SoftMaterial color={color} emissive={color} emissiveIntensity={0.35} />
-                    </mesh>
-                    <WorldLabel position={[0, -1.08, 0]} scale={0.27}>
-                        <strong>{truncate(task.topic, 28)}</strong>
-                        <span>{task.estimatedMinutes || 0} 分钟 · {task.status}</span>
-                    </WorldLabel>
-                </Float>
-            </Interactive>
-            {selected && task.status !== 'completed' && (
-                <WorldButton onClick={() => onComplete(task.id)} position={[0, -2.0, 0]}>
-                    完成任务
-                </WorldButton>
-            )}
-        </group>
-    );
-}
-
-function StudyHomeWorld({ onOpenSpace, payload, reload }) {
-    const tasks = payload.todayTasks?.length
-        ? payload.todayTasks
-        : payload.plans?.dailyTasks?.slice(-3) || [];
-    const [selected, setSelected] = useState(tasks[0] || null);
-    const goal = payload.currentGoal;
-    const complete = async (taskId) => {
-        await roomApi.completeTask(taskId);
-        reload();
-    };
-    return (
-        <>
-            <group position={[0, 4.5, -1.8]}>
-                <Float floatIntensity={0.38} rotationIntensity={0.08} speed={1.1}>
-                    <mesh castShadow>
-                        <sphereGeometry args={[1.35, 48, 48]} />
-                        <SoftMaterial
-                            color={palette.blue}
-                            emissive={palette.cyan}
-                            emissiveIntensity={0.3}
-                        />
-                    </mesh>
-                    <mesh rotation={[Math.PI / 2, 0, 0]}>
-                        <torusGeometry args={[1.8, 0.035, 10, 96]} />
-                        <SoftMaterial
-                            color={palette.gold}
-                            emissive={palette.deskGlow}
-                            emissiveIntensity={0.8}
-                        />
-                    </mesh>
-                </Float>
-                <WorldLabel position={[0, 2.0, 0]}>
-                    <strong>{goal?.goalName || '创建你的第一个 Goal'}</strong>
-                    <span>{goal?.description || 'Study Planet 正在等待方向'}</span>
-                </WorldLabel>
-            </group>
-            {tasks.slice(0, 3).map((task, index) => (
-                <TaskCrystal
-                    index={index}
-                    key={task.id}
-                    onComplete={complete}
-                    onSelect={setSelected}
-                    selected={selected?.id === task.id}
-                    task={task}
-                />
-            ))}
-            {!tasks.length && (
-                <group position={[0, 1.25, 1.5]}>
-                    <mesh castShadow rotation={[0, Math.PI / 4, 0]}>
-                        <octahedronGeometry args={[0.75, 0]} />
-                        <SoftMaterial color={palette.gold} emissive={palette.gold} emissiveIntensity={0.35} />
-                    </mesh>
-                    <WorldLabel position={[0, -1.1, 0]}>
-                        <strong>今天还没有任务</strong>
-                        <span>前往计划桌安排下一步</span>
-                    </WorldLabel>
-                </group>
-            )}
-            <WorldButton onClick={() => onOpenSpace('plan')} position={[0, 0.35, 3.1]}>
-                {payload.primaryAction?.label || '打开计划桌'}
-            </WorldButton>
-        </>
-    );
-}
-
 function monthCells(tasks) {
     const taskDate = tasks.find((task) => task.taskDate)?.taskDate;
     const anchor = taskDate ? new Date(`${taskDate}T12:00:00`) : new Date();
@@ -2399,12 +2308,12 @@ function KnowledgeBoardWorld({ payload, reload }) {
                     <header>
                         <div>
                             <small>STUDY RECALL BOARD</small>
-                            <h2>知识黑板</h2>
+                            <h2>记忆卡片</h2>
                         </div>
                         <p>{cards.length} 张卡片 · {notes.length} 条笔记</p>
                     </header>
-                    <nav aria-label="知识黑板内容">
-                        <button className={mode === 'cards' ? 'is-active' : ''} onClick={() => setMode('cards')} type="button">知识卡片</button>
+                    <nav aria-label="记忆卡片内容">
+                        <button className={mode === 'cards' ? 'is-active' : ''} onClick={() => setMode('cards')} type="button">记忆卡片</button>
                         <button className={mode === 'notes' ? 'is-active' : ''} onClick={() => setMode('notes')} type="button">笔记</button>
                     </nav>
                     {visible.length > 0 && <p className="knowledge-board-gesture">左右拖动、滚轮或 ← → 可连续浏览</p>}
@@ -2432,17 +2341,14 @@ function KnowledgeBoardWorld({ payload, reload }) {
                 </section>
             </Html>
             <WorldLabel position={[-5.9, 6.45, -0.28]}>
-                <strong>知识黑板</strong>
+                <strong>记忆卡片</strong>
                 <span>点击卡片复习，笔记与资料保持关联</span>
             </WorldLabel>
         </>
     );
 }
 
-function ModuleContent({ moduleId, onOpenSpace, payload, reload }) {
-    if (moduleId === 'study-home') {
-        return <StudyHomeWorld onOpenSpace={onOpenSpace} payload={payload} reload={reload} />;
-    }
+function ModuleContent({ moduleId, payload, reload }) {
     if (moduleId === 'study-goals') {
         return <StudyGoalsWorld payload={payload} reload={reload} />;
     }
@@ -2466,7 +2372,7 @@ function ModuleContent({ moduleId, onOpenSpace, payload, reload }) {
     return null;
 }
 
-export default function SpatialModuleScene({ moduleId, onOpenSpace }) {
+export default function SpatialModuleScene({ moduleId }) {
     const [payload, setPayload] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -2515,7 +2421,6 @@ export default function SpatialModuleScene({ moduleId, onOpenSpace }) {
             ) : (
                 <ModuleContent
                     moduleId={moduleId}
-                    onOpenSpace={onOpenSpace}
                     payload={payload}
                     reload={() => setRevision((value) => value + 1)}
                 />

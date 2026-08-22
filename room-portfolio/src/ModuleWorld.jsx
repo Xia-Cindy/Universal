@@ -2,7 +2,7 @@
 import { SPACE_GROUPS } from './spaces';
 import SpatialModuleScene from './SpatialModuleScene';
 
-export default function ModuleWorld({ activeModule, activeSpace, onOpenSpace }) {
+export default function ModuleWorld({ activeModule, activeSpace }) {
     if (!activeModule) return null;
     const portal = SPACE_GROUPS[activeSpace]?.portal || { x: 0, stageZ: -12.5 };
 
@@ -13,7 +13,6 @@ export default function ModuleWorld({ activeModule, activeSpace, onOpenSpace }) 
         >
             <SpatialModuleScene
                 moduleId={activeModule}
-                onOpenSpace={onOpenSpace}
             />
         </group>
     );

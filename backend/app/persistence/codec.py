@@ -214,6 +214,27 @@ def word_entry_from_payload(payload: dict[str, Any]) -> WordEntry:
     )
 
 
+def practice_case_from_payload(payload: dict[str, Any]):
+    from backend.app.models.work import PracticeCase
+
+    return PracticeCase(
+        user_id=payload["userId"],
+        title=payload["title"],
+        problem=payload.get("problem", ""),
+        goal=payload.get("goal", ""),
+        scope=payload.get("scope", ""),
+        non_goal=payload.get("nonGoal", ""),
+        status=payload.get("status", "active"),
+        current_stage=payload.get("currentStage", "discover"),
+        success_metrics=tuple(payload.get("successMetrics", [])),
+        risks=tuple(payload.get("risks", [])),
+        dependencies=tuple(payload.get("dependencies", [])),
+        id=payload["id"],
+        created_at=parse_datetime(payload["createdAt"]),
+        updated_at=parse_datetime(payload["updatedAt"]),
+    )
+
+
 def document_from_payload(payload: dict[str, Any]) -> Document:
     return Document(
         user_id=payload["userId"], file_name=payload["fileName"], file_type=DocumentType(payload["fileType"]),

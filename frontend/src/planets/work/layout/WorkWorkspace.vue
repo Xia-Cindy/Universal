@@ -6,7 +6,7 @@
       <div class="workspace-crumbs" aria-label="Universe / Work Planet">
         <span>Work Planet</span><i>/</i><strong>{{ currentLocation }}</strong>
       </div>
-      <div class="workspace-goal-switcher work-focus"><span class="workspace-goal-label">Career loop</span><strong>Stack · Evidence · Resume</strong></div>
+      <div class="workspace-goal-switcher work-focus"><span class="workspace-goal-label">Practice loop</span><strong>Case · Evidence · Review</strong></div>
     </header>
 
     <section class="workspace-grid work-grid">
@@ -28,13 +28,12 @@ import UniverseBackdrop from '../../../ui/UniverseBackdrop.vue'
 const navigation = [
   { label: 'Home', route: '/work' },
   { label: 'Tech Stack', route: '/work/tech-stack' },
-  { label: 'Knowledge', route: '/work/knowledge' },
   { label: 'Projects', route: '/work/projects' },
   { label: 'Resume', route: '/work/resume' },
 ]
 
 const navIcons: Record<string, string> = {
-  Home: '⌂', 'Tech Stack': '▱', Knowledge: '⌬', Projects: '◇', Resume: '▤',
+  Home: '⌂', 'Tech Stack': '▱', Projects: '◇', Resume: '▤',
 }
 
 const route = useRoute()

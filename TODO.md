@@ -284,3 +284,14 @@
 - [x] Add an explicit fixed-text embedding/retrieval probe that returns a safe `verified`/`failed` result without creating a dataset, document or parsing job.
 - [x] Require a verified RAGFlow probe before the 5180 bookshelf uploads a new provider-backed Knowledge document.
 - [ ] Keep validating individual historical long PDFs separately; do not treat the probe as proof that an existing queued document has finished.
+
+# 2026-08-22 Work Case Foundation
+
+- [x] Audit the existing Work, shared Knowledge and persistence boundaries.
+- [x] Add PracticeCase, active-case policy, stage progression and server-owned next action.
+- [x] Add shared PostgreSQL/SQLite `case_id` migration and Case CRUD APIs.
+- [x] Replace active `/work` with real Case overview/list/detail UI; retire Work Knowledge from active navigation without deleting legacy data.
+- [ ] Add Artifact + BA inputs linked to PracticeCase.
+- [ ] Add BacklogItem + PM references without copying BA text.
+- [ ] Add Governance, Lab/LabRun, Operations, SOP and Radar in separate approved phases.
+- [ ] Add Bookshelf references and Three.js Work Tree only after the above workflow is proven.

@@ -175,9 +175,25 @@ Click Study Planet：
 ```text
 Portal
 → Planet transition
-→ Study Workspace loading
-→ Study Home
+→ `/study` Study Entrance
+→ Study entrance only (other Study spaces retain their existing routes)
 ```
+
+### Study Entrance Runtime Slice (2026-08-20)
+
+当前只复用本地 Sylva 沉浸空间的视觉与动画，不重做 Study 的业务模块。
+
+- `/study` 与兼容路由 `/study/home` 复用本地 Sylva 空间；Study 暂不请求或展示 Goal、任务、`primaryAction` 等业务数据。`/work` 在 Work Case Foundation 后改为普通 React Case 工作台。
+- 页面保留浮动 dock、自然场、入场与视差动画；其 Home 标记返回 Universe 房间。
+- 旧 Study Home 3D 场景、任务晶体和静态 Study 卡片均已移除，后续由 Study 专属设计替换 Sylva 中的文案、导航和内容结构。
+- Wordbook 继续只存在于 Knowledge 书架，不在入口重复开发。
+- Plan、Knowledge、Tutor、Review、Analytics 和后端 API 在本切片中不改造。
+
+### Room Entry Naming and Shelf Flow (2026-08-20)
+
+- 主房间将 Knowledge/Wordbook 入口命名为“知识书架”，快捷入口将其简写为“书架”；Study、记忆回顾和 Work 入口分别命名为 `Study Space`、“记忆卡片”和 `Work Space`。
+- “计划桌”不再作为房间或快捷导航入口；既有 `/study/plan`、`/study/review`、`/study/analytics` 直达路由保留，避免损失已实现的学习工作流。
+- 知识书架不再展示“正在装配书本场景”的中间页面，书架文档生成后直接进入既有书架内容。
 
 Click Future Planet：
 

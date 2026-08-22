@@ -19,6 +19,7 @@ import KnowledgeCardsGallery from './KnowledgeCardsGallery';
 import ModuleWorld from './ModuleWorld';
 import RoomModel from './RoomModel/roomModel';
 import { SPACE_GROUPS } from './spaces';
+import WorkCaseWorkspace from './WorkCaseWorkspace';
 
 const moduleRoute = (moduleId) => Object.values(SPACE_GROUPS)
     .flatMap((group) => group.modules)
@@ -96,10 +97,11 @@ const KNOWLEDGE_RESOURCES = {
     }
 };
 
-const isWorkbenchPath = (pathname) => pathname === '/work' || pathname.startsWith('/work/');
+const isWorkSpacePath = (pathname) => pathname === '/work' || pathname.startsWith('/work/');
+const isStudySpacePath = (pathname) => pathname === '/study' || pathname === '/study/home';
 
-const LocalSylvaWorkbench = () => (
-    <main aria-label="Sylva Workbench" style={{ background: '#050b11', height: '100dvh', overflow: 'hidden' }}>
+const LocalSylvaSpace = () => (
+    <main aria-label="Immersive Universe space" style={{ background: '#050b11', height: '100dvh', overflow: 'hidden' }}>
         <iframe
             src="/sylva/index.html"
             title="Sylva interactive landscape"
@@ -147,10 +149,16 @@ const Experience = React.memo(() => {
         focusModule(moduleId);
         if (route && window.location.pathname !== route) {
             window.history[replace ? 'replaceState' : 'pushState']({ moduleId }, '', route);
+            setPathname(route);
         }
     };
 
     const openSpace = (space) => {
+        if (space === 'study') {
+            window.history.pushState({}, '', '/study');
+            setPathname('/study');
+            return;
+        }
         if (space === 'work') {
             window.history.pushState({}, '', '/work');
             setPathname('/work');
@@ -175,6 +183,12 @@ const Experience = React.memo(() => {
         setActiveModule(null);
         resetCamera();
         if (window.location.pathname !== '/') window.history.pushState({}, '', '/');
+        setPathname('/');
+    };
+
+    const navigate = (route) => {
+        if (window.location.pathname !== route) window.history.pushState({}, '', route);
+        setPathname(route);
     };
 
     useEffect(() => {
@@ -437,7 +451,11 @@ const Experience = React.memo(() => {
 
     const wordbookBooks = useMemo(() => asWordbookBooks(wordbookEntries), [wordbookEntries]);
 
-    if (isWorkbenchPath(pathname)) return <LocalSylvaWorkbench />;
+    if (isStudySpacePath(pathname)) return <LocalSylvaSpace />;
+
+    if (isWorkSpacePath(pathname)) {
+        return <WorkCaseWorkspace onNavigate={navigate} onReturn={closeSpace} pathname={pathname} />;
+    }
 
     return (
         <>
@@ -476,7 +494,6 @@ const Experience = React.memo(() => {
                                 <ModuleWorld
                                     activeModule={activeModule}
                                     activeSpace={activeSpace}
-                                    onOpenSpace={openSpace}
                                 />
                                 <Stars count={900} depth={40} factor={2.2} fade radius={80} speed={0.22} />
                             </Selection>

@@ -54,17 +54,6 @@
 
     <section class="home-section">
       <div class="section-heading">
-        <h3>Work Knowledge</h3>
-        <RouterLink class="secondary-action" to="/work/knowledge">Open Knowledge</RouterLink>
-      </div>
-      <p class="surface-copy">
-        Work has its own Knowledge Space for tech notes, JD material, interview questions, project evidence, and resume material.
-        Study Knowledge can still be referenced when it supports a capability.
-      </p>
-    </section>
-
-    <section class="home-section">
-      <div class="section-heading">
         <h3>动态简历</h3>
         <RouterLink class="secondary-action" to="/work/resume">Open Resume</RouterLink>
       </div>

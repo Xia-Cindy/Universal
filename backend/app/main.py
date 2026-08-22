@@ -76,6 +76,22 @@ def create_app():
     def get_work_home():
         return api.get_work_home()
 
+    @app.get("/api/work/cases")
+    def list_work_cases():
+        return api.list_work_cases()
+
+    @app.post("/api/work/cases")
+    def create_work_case(payload: dict):
+        return api.create_work_case(payload)
+
+    @app.get("/api/work/cases/{case_id}")
+    def get_work_case(case_id: str):
+        return api.get_work_case(case_id)
+
+    @app.patch("/api/work/cases/{case_id}")
+    def update_work_case(case_id: str, payload: dict):
+        return api.update_work_case(case_id, payload)
+
     @app.get("/api/work/tech-stacks")
     def list_work_tech_stacks():
         return api.list_work_tech_stacks()

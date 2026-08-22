@@ -248,6 +248,13 @@ MILESTONE_10_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("POST", "/api/work/resumes/draft", "create_work_resume_draft", "milestone_10"),
 )
 
+WORK_CASE_FOUNDATION_CONTRACTS: tuple[ApiContract, ...] = (
+    ApiContract("GET", "/api/work/cases", "list_work_cases", "work_case_foundation"),
+    ApiContract("POST", "/api/work/cases", "create_work_case", "work_case_foundation"),
+    ApiContract("GET", "/api/work/cases/{case_id}", "get_work_case", "work_case_foundation"),
+    ApiContract("PATCH", "/api/work/cases/{case_id}", "update_work_case", "work_case_foundation"),
+)
+
 SPATIAL_STUDIO_CONTRACTS: tuple[ApiContract, ...] = (
     ApiContract("GET", "/api/novel/drafts", "list_novel_drafts", "spatial_studio"),
     ApiContract("POST", "/api/novel/drafts", "create_novel_draft", "spatial_studio"),
@@ -276,6 +283,7 @@ def list_contracts() -> list[dict[str, str]]:
             *KNOWLEDGE_SHARE_GRANT_CONTRACTS,
             *STUDY_RECALL_CONTRACTS,
             *MILESTONE_10_CONTRACTS,
+            *WORK_CASE_FOUNDATION_CONTRACTS,
             *SPATIAL_STUDIO_CONTRACTS,
         )
     ]
