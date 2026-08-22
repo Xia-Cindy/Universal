@@ -60,3 +60,28 @@ Phase 1 proves `Create Case → activeCase → currentStage → nextAction → e
 Case`. Artifact/BA, Backlog/PM, Governance, Labs, Operations, Evidence
 relations, SOP, Radar, Bookshelf links and the Three.js Work Tree remain out
 of scope.
+
+## 2026-08-23 R1 direction correction: personal capability learning space
+
+The learner clarified that Work Planet is a personal career-learning space,
+not a client-delivery workspace. Its first screen must not require a project,
+Case, metrics, or professional history before it becomes useful.
+
+`/work` therefore becomes a capability entry surface with five domains:
+
+1. BA / Business Analysis
+2. PM / Product and Project Management
+3. Governance
+4. Operations
+5. Technology Stack
+
+Each domain initially offers a clear learning path and the kinds of evidence
+the learner may later collect. It does not display invented progress and does
+not create a new Knowledge, Memory, AI Core, or content store. Future domain
+materials must use Shared Knowledge; a real-work exercise may use the existing
+PracticeCase aggregate only when the learner explicitly chooses to open one.
+
+The existing Case APIs, records, stage rules and `/work/cases` routes remain
+intact as an optional practice layer. A low-resource technology service lab is
+also deferred until an isolated sandbox design has been approved; it must not
+share the Universe OS runtime or expose a host service directly.

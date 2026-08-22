@@ -1,5 +1,19 @@
 # TODO
 
+## Work R1 Personal Capability Learning Space
+
+- [x] Replace the `/work` landing requirement for a Practice Case with five
+  personal career-learning entries: BA, PM, Governance, Operations and
+  Technology Stack.
+- [x] Keep existing Practice Case persistence, API stage rules and
+  `/work/cases` editing as an optional exercise layer.
+- [x] Keep R1 presentation-only: no synthetic progress, new Work store,
+  independent Knowledge, Memory or AI Core.
+- [ ] Connect each capability domain to user-selected Shared Knowledge and
+  real learning evidence after the learner confirms its capture workflow.
+- [ ] Design a separate low-resource sandbox for Technology Stack practice;
+  do not run practice services inside the Universe OS host/runtime.
+
 ## 2026-08-12 Optimization and Feature Plan
 
 - [x] Audit the active runtime, renderer boundary, Git history and stale documentation; document that the room is Three.js while the active bookshelf is DOM/CSS 3D.

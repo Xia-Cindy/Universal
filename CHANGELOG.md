@@ -23,6 +23,13 @@
 
 ### Current feature summary
 
+- **2026-08-23 Work R1 personal learning entry:** `/work` now begins with five
+  career capability domains (BA, PM, Governance, Operations and Technology
+  Stack) rather than an empty Practice Case requirement. Each domain has a
+  non-fabricated learning path and intended evidence; the existing Case API,
+  data and `/work/cases` editor remain as an explicitly optional practice
+  layer. This slice adds no persistence, AI Core, Memory or Knowledge copy.
+
 - **Single local entry:** `startup.sh` now launches only the Universe API and the 5180 spatial room. The retired Vue page is no longer started or documented as a user entry; its source stays only for compatibility and contract tests.
 - **Spatial Study room:** the monitor screen is the direct Study entry, the planning table remains the Plan/Review/Analytics entry, the bookshelf opens Knowledge/Wordbook, and the wall blackboard opens the card-and-note review space. The old large white hotspot outlines are removed; the bottom dock remains a shortcut.
 - **Knowledge bookshelf:** uploaded documents render as physical books in the reference shelf composition, with three books per shelf page, subject filtering, multi-Goal association, edit/delete controls, a cover-click open step, paired-page reading, page jumping, local-first bookmarks and optional user/document progress synchronization. RAGFlow processing state remains visible and already-returned chunks stay readable.
@@ -31,6 +38,10 @@
 - **Wordbook review:** each tag is a vocabulary book using the same shelf/reader flow. Memory cards flip from English to the learner meaning, with durable remembered/mistake results, next-review dates/reasons and learner overrides while retaining the existing Wordbook fields.
 
 ### Fixed
+
+- **2026-08-23 cloud API image dependency:** removed unused `boto3` from the
+  local-object-storage development image requirements, avoiding an unnecessary
+  external dependency during the isolated cloud deployment build.
 
 - **2026-08-22 Work Case interaction recovery:** `/work` now owns a viewport-sized, independently scrollable container instead of being clipped by the spatial room's fixed 3D root. The Cases route and its native form controls remain editable even when the API is unavailable; persistence still truthfully requires the local PostgreSQL service to be running.
 - **2026-08-20 Workbench runtime handoff:** `/work` in the active 5180 spatial entry now renders the locally deployed Sylva page instead of the retired 3D Work module; selecting Work Bench in the room follows the same route. The local-only Sylva source remains Git-ignored because its upstream README does not grant reuse or redistribution rights. Smoke validation passed: 213 backend tests (1 skipped), both frontend production builds, 4 bookshelf tests, API/Study/Wordbook/Knowledge/5180 proxy checks, Sylva asset delivery, and the non-mutating RAGFlow retrieval probe (`verified: true`).
