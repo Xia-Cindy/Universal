@@ -18,6 +18,8 @@ services:
     build:
       context: ../..
       dockerfile: docker/development/Dockerfile.api
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
     depends_on:
       db:
         condition: service_healthy

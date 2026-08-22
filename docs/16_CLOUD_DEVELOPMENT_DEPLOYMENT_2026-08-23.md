@@ -23,6 +23,12 @@ changing its existing AI Agent, default Nginx route, PostgreSQL or Redis.
 On the server, create `docker/development/universe.env` with mode `0600` from
 the example, replacing only the PostgreSQL password with a long random value.
 
+If the server can reach `pypi.org` with curl but Python/pip wheel downloads
+time out, set `PIP_INDEX_URL` in this same `/Universal`-scoped file to a
+reviewed HTTPS mirror for the build. This is passed only to Docker's API image
+build argument; it does not alter the host's pip configuration or the running
+containers.
+
 ```bash
 cd /Universal
 docker compose --env-file docker/development/universe.env \
