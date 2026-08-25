@@ -355,7 +355,8 @@ def article_from_payload(payload: dict[str, Any]) -> WorkArticle:
     return WorkArticle(
         user_id=payload["userId"], tech_stack_id=payload["techStackId"], title=payload["title"],
         content=payload.get("content", ""), article_type=payload.get("articleType", "knowledge"),
-        summary=payload.get("summary", ""), tags=tuple(payload.get("tags", [])), status=payload.get("status", "draft"),
+        summary=payload.get("summary", ""), tags=tuple(payload.get("tags", [])),
+        attachments=tuple(payload.get("attachments", [])), status=payload.get("status", "draft"),
         id=payload["id"], created_at=parse_datetime(payload["createdAt"]), updated_at=parse_datetime(payload["updatedAt"]),
     )
 
@@ -364,7 +365,7 @@ def learning_record_from_payload(payload: dict[str, Any]) -> WorkLearningRecord:
     return WorkLearningRecord(
         user_id=payload["userId"], tech_stack_id=payload["techStackId"], title=payload["title"],
         notes=payload.get("notes", ""), minutes=int(payload.get("minutes", 0)), tags=tuple(payload.get("tags", [])),
-        status=payload.get("status", "recorded"), id=payload["id"],
+        attachments=tuple(payload.get("attachments", [])), status=payload.get("status", "recorded"), id=payload["id"],
         created_at=parse_datetime(payload["createdAt"]), updated_at=parse_datetime(payload["updatedAt"]),
     )
 

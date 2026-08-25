@@ -58,6 +58,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
         self.assertEqual(home["primaryAction"]["type"], "create_practice_case")
 
     def test_tech_stack_supports_articles_and_learning_records(self):
+        image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL0NwAAAABJRU5ErkJggg=="
         stack = self.api.create_work_tech_stack(
             {
                 "name": "FastAPI",
@@ -74,6 +75,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
                 "summary": "Dependency injection patterns.",
                 "content": "Use dependencies to express request-scoped capabilities.",
                 "tags": ["backend", "auth"],
+                "attachments": [image],
             },
         )
         record = self.api.create_work_learning_record(
@@ -83,6 +85,7 @@ class WorkPlanetFoundationTests(unittest.TestCase):
                 "notes": "Mapped dependency injection to auth middleware.",
                 "minutes": 45,
                 "tags": ["reading"],
+                "attachments": [image],
             },
         )
         detail = self.api.get_work_tech_stack(stack["id"])
@@ -91,11 +94,26 @@ class WorkPlanetFoundationTests(unittest.TestCase):
 
         self.assertEqual(detail["articles"][0]["id"], article["id"])
         self.assertEqual(detail["articles"][0]["articleType"], "note")
+        self.assertEqual(detail["articles"][0]["attachments"], [image])
         self.assertEqual(detail["learningRecords"][0]["id"], record["id"])
+        self.assertEqual(detail["learningRecords"][0]["attachments"], [image])
         self.assertEqual(home["summary"]["articleCount"], 1)
         self.assertEqual(home["summary"]["learningRecordCount"], 1)
         self.assertIn(f"article:{article['id']}", resume["evidenceRefs"])
         self.assertIn(f"learning_record:{record['id']}", resume["evidenceRefs"])
+
+    def test_tech_stack_rejects_unsafe_or_excessive_image_attachments(self):
+        stack = self.api.create_work_tech_stack({"name": "Docker", "category": "Runtime", "proficiency": "learning"})
+
+        with self.assertRaises(ValueError):
+            self.api.create_work_article(
+                stack["id"],
+                {
+                    "title": "Unsafe attachment",
+                    "content": "This should not be saved.",
+                    "attachments": ["data:image/svg+xml;base64,PHN2Zy8+"],
+                },
+            )
 
     def test_tech_stacks_keep_creation_order(self):
         java = self.api.create_work_tech_stack(

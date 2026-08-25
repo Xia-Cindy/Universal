@@ -85,6 +85,7 @@ class WorkArticle:
     article_type: str = "knowledge"
     summary: str = ""
     tags: tuple[str, ...] = ()
+    attachments: tuple[str, ...] = ()
     status: str = "draft"
     id: str = field(default_factory=_id)
     created_at: datetime = field(default_factory=local_now)
@@ -100,6 +101,7 @@ class WorkArticle:
             "summary": self.summary,
             "content": self.content,
             "tags": list(self.tags),
+            "attachments": list(self.attachments),
             "status": self.status,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
@@ -114,6 +116,7 @@ class WorkLearningRecord:
     notes: str
     minutes: int = 0
     tags: tuple[str, ...] = ()
+    attachments: tuple[str, ...] = ()
     status: str = "recorded"
     id: str = field(default_factory=_id)
     created_at: datetime = field(default_factory=local_now)
@@ -128,6 +131,7 @@ class WorkLearningRecord:
             "notes": self.notes,
             "minutes": self.minutes,
             "tags": list(self.tags),
+            "attachments": list(self.attachments),
             "status": self.status,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),

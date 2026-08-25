@@ -1,3 +1,5 @@
+import re
+
 from backend.app.models import (
     WORK_CASE_STAGES,
     WORK_CASE_STATUSES,
@@ -13,6 +15,10 @@ from backend.app.core.dates import local_now
 
 
 class WorkService:
+    _MAX_IMAGE_ATTACHMENTS = 4
+    _MAX_IMAGE_DATA_URL_LENGTH = 1_500_000
+    _IMAGE_DATA_URL = re.compile(r"^data:image/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$")
+
     def __init__(self, repository: WorkRepository) -> None:
         self._repository = repository
 
@@ -188,6 +194,7 @@ class WorkService:
             summary=payload.get("summary", ""),
             content=content,
             tags=tuple(payload.get("tags", [])),
+            attachments=self._image_attachments(payload),
             status=payload.get("status", "draft"),
         )
         return self._repository.save_article(article).to_dict()
@@ -204,6 +211,7 @@ class WorkService:
             notes=payload.get("notes", ""),
             minutes=int(payload.get("minutes", 0)),
             tags=tuple(payload.get("tags", [])),
+            attachments=self._image_attachments(payload),
             status=payload.get("status", "recorded"),
         )
         return self._repository.save_learning_record(record).to_dict()
@@ -214,6 +222,22 @@ class WorkService:
         tech_stack_id: str | None = None,
     ) -> list[dict[str, object]]:
         return [item.to_dict() for item in self._repository.list_learning_records(user_id, tech_stack_id)]
+
+    def _image_attachments(self, payload: dict) -> tuple[str, ...]:
+        """Allow a small, private screenshot set without accepting executable data URLs."""
+        attachments = payload.get("attachments", [])
+        if not isinstance(attachments, (list, tuple)):
+            raise ValueError("Image attachments must be a list")
+        if len(attachments) > self._MAX_IMAGE_ATTACHMENTS:
+            raise ValueError(f"A technical entry can include at most {self._MAX_IMAGE_ATTACHMENTS} images")
+        normalized: list[str] = []
+        for attachment in attachments:
+            if not isinstance(attachment, str) or len(attachment) > self._MAX_IMAGE_DATA_URL_LENGTH:
+                raise ValueError("Each pasted image is too large")
+            if not self._IMAGE_DATA_URL.fullmatch(attachment):
+                raise ValueError("Only base64 PNG, JPEG, WebP, or GIF images are allowed")
+            normalized.append(attachment)
+        return tuple(normalized)
 
     def create_project(self, user_id: str, payload: dict) -> dict[str, object]:
         for tech_stack_id in payload.get("techStackIds", []):

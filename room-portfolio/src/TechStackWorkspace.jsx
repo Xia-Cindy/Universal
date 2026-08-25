@@ -15,8 +15,12 @@ const emptyEntry = {
     title: '',
     content: '',
     tags: '',
-    minutes: ''
+    minutes: '',
+    attachments: []
 };
+
+const maxAttachments = 4;
+const maxAttachmentDataUrlLength = 1_500_000;
 
 const splitTags = (value) => String(value || '')
     .split(/[,，\n]/)
@@ -28,6 +32,36 @@ const formatDate = (value) => value
     : '刚刚';
 
 const stackMark = (name) => String(name || 'T').trim().slice(0, 2).toUpperCase();
+
+const compressClipboardImage = (file) => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+        URL.revokeObjectURL(url);
+        const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
+        const scale = Math.min(1, 1600 / Math.max(longestSide, 1));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+            reject(new Error('当前浏览器无法压缩图片。'));
+            return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/webp', 0.82);
+        if (dataUrl.length > maxAttachmentDataUrlLength) {
+            reject(new Error('图片压缩后仍超过 1.5 MB，请裁剪后再粘贴。'));
+            return;
+        }
+        resolve(dataUrl);
+    };
+    image.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('无法读取这张图片。'));
+    };
+    image.src = url;
+});
 
 export default function TechStackWorkspace({ onNavigate }) {
     const [stacks, setStacks] = useState([]);
@@ -99,6 +133,30 @@ export default function TechStackWorkspace({ onNavigate }) {
         setEntryForm((current) => ({ ...current, [name]: value }));
     };
 
+    const addPastedImages = async (event) => {
+        const files = Array.from(event.clipboardData?.items || [])
+            .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+            .map((item) => item.getAsFile())
+            .filter(Boolean);
+        if (!files.length) return;
+        event.preventDefault();
+        if (entryForm.attachments.length + files.length > maxAttachments) {
+            setError(`每条技术记录最多保留 ${maxAttachments} 张图片。`);
+            return;
+        }
+        setError('');
+        try {
+            const images = await Promise.all(files.map(compressClipboardImage));
+            setEntryForm((current) => ({ ...current, attachments: [...current.attachments, ...images] }));
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : '无法处理粘贴的图片。');
+        }
+    };
+
+    const removeAttachment = (index) => {
+        setEntryForm((current) => ({ ...current, attachments: current.attachments.filter((_, itemIndex) => itemIndex !== index) }));
+    };
+
     const createStack = async (event) => {
         event.preventDefault();
         setSaving(true);
@@ -135,6 +193,7 @@ export default function TechStackWorkspace({ onNavigate }) {
                     summary: entryForm.content.trim().slice(0, 140),
                     content: entryForm.content.trim(),
                     tags: splitTags(entryForm.tags),
+                    attachments: entryForm.attachments,
                     status: 'published'
                 });
             } else {
@@ -143,6 +202,7 @@ export default function TechStackWorkspace({ onNavigate }) {
                     notes: entryForm.content.trim(),
                     minutes: Number(entryForm.minutes) || 0,
                     tags: splitTags(entryForm.tags),
+                    attachments: entryForm.attachments,
                     status: 'recorded'
                 });
             }
@@ -232,9 +292,9 @@ export default function TechStackWorkspace({ onNavigate }) {
                             <div className="work-tech-space__content-grid">
                                 <section className="work-tech-space__timeline">
                                     <div className="work-tech-space__section-heading"><div><span>LIVE LOG</span><h3>这里发生过什么</h3></div><button className="work-tech-space__solid-button" onClick={() => setShowEntryForm((value) => !value)} type="button">{showEntryForm ? '收起记录' : '+ 添加内容'}</button></div>
-                                    {showEntryForm && <EntryForm form={entryForm} onChange={updateEntryForm} onSubmit={createEntry} saving={saving} />}
+                                    {showEntryForm && <EntryForm form={entryForm} onChange={updateEntryForm} onPasteImages={addPastedImages} onRemoveAttachment={removeAttachment} onSubmit={createEntry} saving={saving} />}
                                     {!timeline.length && <p className="work-tech-space__empty-log">还没有实践记录。完成一次真实操作、验证或复盘后，它会在这里留下证据。</p>}
-                                    {timeline.map((item) => <article className={`work-tech-space__log-item is-${item.kind}`} key={`${item.kind}-${item.id}`}><span className="work-tech-space__log-kind">实践</span><div><small>{formatDate(item.date)}{item.minutes ? ` · ${item.minutes} 分钟` : ''}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p>{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</div></article>)}
+                                    {timeline.map((item) => <article className={`work-tech-space__log-item is-${item.kind}`} key={`${item.kind}-${item.id}`}><span className="work-tech-space__log-kind">实践</span><div><small>{formatDate(item.date)}{item.minutes ? ` · ${item.minutes} 分钟` : ''}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p><AttachmentStrip attachments={item.attachments} />{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</div></article>)}
                                 </section>
                                 <section className="work-tech-space__knowledge">
                                     <span>SHARED KNOWLEDGE</span><h3>关联资料</h3><p>资料仍属于共享 Knowledge；技术栈只引用已授权内容，不复制文档或 RAGFlow 数据。</p>
@@ -254,14 +314,20 @@ function EmptyTechSpace({ onCreate }) {
 }
 
 function GuideColumn({ emptyText, items, label, title }) {
-    return <section className="work-tech-space__guide-column"><span>{label}</span><h3>{title}</h3>{items.length ? items.map((item) => <article key={item.id}><small>{formatDate(item.updatedAt)}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p>{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</article>) : <p className="work-tech-space__guide-empty">{emptyText}</p>}</section>;
+    return <section className="work-tech-space__guide-column"><span>{label}</span><h3>{title}</h3>{items.length ? items.map((item) => <article key={item.id}><small>{formatDate(item.updatedAt)}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p><AttachmentStrip attachments={item.attachments} />{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</article>) : <p className="work-tech-space__guide-empty">{emptyText}</p>}</section>;
 }
 
-function EntryForm({ form, onChange, onSubmit, saving }) {
-    return <form className="work-tech-space__entry-form" onSubmit={onSubmit}>
+function AttachmentStrip({ attachments = [] }) {
+    if (!attachments.length) return null;
+    return <div className="work-tech-space__attachment-strip">{attachments.map((attachment, index) => <a href={attachment} key={`${index}-${attachment.length}`} rel="noreferrer" target="_blank"><img alt={`技术记录附件 ${index + 1}`} loading="lazy" src={attachment} /></a>)}</div>;
+}
+
+function EntryForm({ form, onChange, onPasteImages, onRemoveAttachment, onSubmit, saving }) {
+    return <form className="work-tech-space__entry-form" onPaste={onPasteImages} onSubmit={onSubmit}>
         <label>记录类型<select name="kind" onChange={onChange} value={form.kind}><option value="principle">实现原理 / 理论笔记</option><option value="practice">真实操作 / 实践</option><option value="extension">可延伸方向</option></select></label>
         <label>标题<input autoFocus name="title" onChange={onChange} placeholder={form.kind === 'practice' ? '例如：完成 Room 静态资源缓存发布' : form.kind === 'extension' ? '例如：把运行时验证接入发布门禁' : '例如：RAGFlow 在 Universe 中的边界'} required value={form.title} /></label>
         <label>内容<textarea name="content" onChange={onChange} placeholder="记录你理解到的原理、决策、命令结果或后续问题。" required value={form.content} /></label>
+        <section className="work-tech-space__image-paste" tabIndex="0"><strong>粘贴截图</strong><p>在内容框或此处按 ⌘V / Ctrl+V。最多 {maxAttachments} 张；会压缩为私有学习附件，不会进入共享 Knowledge。</p>{form.attachments.length > 0 && <div>{form.attachments.map((attachment, index) => <figure key={`${index}-${attachment.length}`}><img alt={`待保存附件 ${index + 1}`} src={attachment} /><button aria-label={`删除图片 ${index + 1}`} onClick={() => onRemoveAttachment(index)} type="button">×</button></figure>)}</div>}</section>
         <label>标签<input name="tags" onChange={onChange} placeholder="用逗号分隔" value={form.tags} /></label>
         {form.kind === 'practice' && <label>投入分钟<input min="0" name="minutes" onChange={onChange} placeholder="可选" type="number" value={form.minutes} /></label>}
         <div><span>{form.kind === 'practice' ? '保存后会成为此技术的真实实践证据。' : '保存后会进入该技术的学习地图。'}</span><button className="work-tech-space__solid-button" disabled={saving} type="submit">{saving ? '保存中…' : '保存记录'}</button></div>

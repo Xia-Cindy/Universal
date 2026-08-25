@@ -115,3 +115,18 @@ delivery and Nginx caching. RAGFlow is represented as a planned shared
 Knowledge infrastructure until its own cloud deployment and retrieval-only
 verification have completed. A future `ragflow-lab` must use isolated data and
 must not read or write the `universe-ragflow` production Knowledge runtime.
+
+### R2.1: Pasted screenshot evidence
+
+One implementation-principle, extension or practice record may carry up to
+four pasted screenshots. The 5180 client downscales the clipboard image to a
+maximum 1600-pixel edge and previews the compressed WebP before save. The
+existing `WorkArticle` and `WorkLearningRecord` payloads persist those small
+private attachments in `work_records`; there is no second file store, Knowledge
+document, RAGFlow upload or cross-Planet copy.
+
+The Work service accepts only base64 PNG/JPEG/WebP/GIF data URLs, rejects SVG
+and other executable URL forms, and caps each payload image at 1.5 MB. This is
+appropriate for a personal development-learning log. Larger evidence and
+shared-source materials remain a future object-storage/Knowledge authorization
+decision, rather than being silently added to the Work record model.
