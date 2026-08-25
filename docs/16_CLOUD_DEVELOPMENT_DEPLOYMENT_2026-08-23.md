@@ -8,8 +8,12 @@ changing its existing AI Agent, default Nginx route, PostgreSQL or Redis.
 ## Boundary
 
 - Checkout: `/Universal` on the server.
-- Entry: `127.0.0.1:15180` on the server, reached from the development Mac by
-  an SSH tunnel. No domain, public listener or Nginx modification is used.
+- Default entry: `127.0.0.1:15180` on the server, reached from the development
+  Mac by an SSH tunnel. No domain or Nginx modification is used.
+- Direct IP option: set `UNIVERSE_BIND_ADDRESS=0.0.0.0` in the private
+  `/Universal/docker/development/universe.env` file. The frontend is then
+  available at `http://<server-ip>:15180`; API and PostgreSQL remain internal
+  to the Compose network. Allow only TCP `15180` in the cloud security group.
 - Services: dedicated Universe frontend, API, PostgreSQL volume and local
   object-storage volume.
 - Knowledge provider: `local` for this milestone. RAGFlow needs separate
@@ -45,6 +49,18 @@ ssh -N -L 15180:127.0.0.1:15180 jdcloud-lavm
 
 Then open `http://127.0.0.1:15180/` locally. The API remains reachable only
 through the frontend proxy and is not exposed as a separate host port.
+
+For direct IP access, restart only the `room` service after setting the bind
+address:
+
+```bash
+cd /Universal
+docker compose --env-file docker/development/universe.env \
+  -f docker/development/compose.yml up -d --no-deps room
+```
+
+Then open `http://<server-ip>:15180/`. This is plain HTTP until a domain and
+TLS reverse-proxy milestone is separately approved.
 
 ## Acceptance
 

@@ -43,7 +43,7 @@ services:
     depends_on:
       - api
     ports:
-      - "127.0.0.1:${UNIVERSE_DEV_PORT:-15180}:80"
+      - "${UNIVERSE_BIND_ADDRESS:-127.0.0.1}:${UNIVERSE_DEV_PORT:-15180}:80"
     restart: unless-stopped
 
 volumes:

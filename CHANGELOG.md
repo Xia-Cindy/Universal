@@ -23,6 +23,12 @@
 
 ### Current feature summary
 
+- **2026-08-25 direct-IP development access:** the isolated cloud Compose
+  entry now has an explicit `UNIVERSE_BIND_ADDRESS` setting. It defaults to
+  loopback; the server-local private environment can set `0.0.0.0` to expose
+  only the Universe frontend on TCP 15180, while API and PostgreSQL remain
+  internal to the Compose network.
+
 - **2026-08-23 Work R1 personal learning entry:** `/work` now begins with five
   career capability domains (BA, PM, Governance, Operations and Technology
   Stack) rather than an empty Practice Case requirement. Each domain has a
