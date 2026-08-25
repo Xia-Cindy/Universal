@@ -161,6 +161,23 @@ export const roomApi = {
             method: 'PATCH',
             body: JSON.stringify(payload)
         }),
+    workTechStacks: () => apiRequest('/api/work/tech-stacks'),
+    createWorkTechStack: (payload) =>
+        apiRequest('/api/work/tech-stacks', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+    workTechStack: (techStackId) => apiRequest(`/api/work/tech-stacks/${techStackId}`),
+    createWorkArticle: (techStackId, payload) =>
+        apiRequest(`/api/work/tech-stacks/${techStackId}/articles`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+    createWorkLearningRecord: (techStackId, payload) =>
+        apiRequest(`/api/work/tech-stacks/${techStackId}/learning-records`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
     workKnowledgeDocuments: (techStackId = '') =>
         apiRequest(`/api/work/knowledge/documents${techStackId ? `?techStackId=${encodeURIComponent(techStackId)}` : ''}`),
     workKnowledgeDocument: (documentId) =>

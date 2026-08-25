@@ -18,6 +18,18 @@
 - [ ] Design a separate low-resource sandbox for Technology Stack practice;
   do not run practice services inside the Universe OS host/runtime.
 
+## Work R2 Technology Stack Learning Space
+
+- [x] Make `/work` a five-domain capability entrance: PM, BA, SRE, Data
+  Governance and Technology Stack.
+- [x] Add the active Room client for `/work/tech-stack`: one persistent
+  technology per horizontal tab, with theory/work notes and real practice
+  records backed by the existing Work API.
+- [ ] Add an explicit, user-reviewable Universe build-event recorder so a
+  validated deployment can propose a practice record without inventing one.
+- [ ] Provision `universe-ragflow` as shared Knowledge infrastructure, then
+  record retrieval-only verification evidence; keep `ragflow-lab` isolated.
+
 ## 2026-08-12 Optimization and Feature Plan
 
 - [x] Audit the active runtime, renderer boundary, Git history and stale documentation; document that the room is Three.js while the active bookshelf is DOM/CSS 3D.

@@ -25,6 +25,7 @@ CORE_ROUTES = (
     "/study/wordbook",
     "/study/cards",
     "/work",
+    "/work/tech-stack",
     "/novel",
 )
 

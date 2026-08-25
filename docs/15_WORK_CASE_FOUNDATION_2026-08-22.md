@@ -85,3 +85,32 @@ The existing Case APIs, records, stage rules and `/work/cases` routes remain
 intact as an optional practice layer. A low-resource technology service lab is
 also deferred until an isolated sandbox design has been approved; it must not
 share the Universe OS runtime or expose a host service directly.
+
+## 2026-08-25 R2: Technology Stack as a living learning space
+
+`/work` is the capability entrance, with exactly five visible domains:
+
+1. PM
+2. BA
+3. SRE
+4. Data Governance
+5. Technology Stack
+
+Technology Stack is not a résumé form or a proficiency scoreboard. Each
+Technology Stack record opens one horizontal tab in a personal technical
+space. The tab may accumulate two kinds of user-owned evidence:
+
+- theory and work notes (`WorkArticle`); and
+- a record of a real operation or practice (`WorkLearningRecord`).
+
+The R2 room client reuses the existing Work API and PostgreSQL-backed
+`work_records` persistence; it does not create an additional Work content
+store, independent Knowledge base, or another RAGFlow client. Shared Knowledge
+can be displayed only through the existing explicit grant path.
+
+The current Universe build may be recorded as truthful practice evidence—for
+example React/Three.js room work, FastAPI, PostgreSQL, Docker Compose, Linux
+delivery and Nginx caching. RAGFlow is represented as a planned shared
+Knowledge infrastructure until its own cloud deployment and retrieval-only
+verification have completed. A future `ragflow-lab` must use isolated data and
+must not read or write the `universe-ragflow` production Knowledge runtime.
