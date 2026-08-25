@@ -102,7 +102,8 @@ space. The tab presents a learner-facing map with three durable layers:
 
 - implementation principles and system position (`WorkArticle`);
 - a record of a real operation or practice (`WorkLearningRecord`); and
-- a learner-authored extension path (`WorkArticle` with `articleType=extension`).
+- a learner-authored theory-extension and real-application note
+  (`WorkArticle` with `articleType=extension`).
 
 The R2 room client reuses the existing Work API and PostgreSQL-backed
 `work_records` persistence; it does not create an additional Work content
@@ -130,3 +131,11 @@ and other executable URL forms, and caps each payload image at 1.5 MB. This is
 appropriate for a personal development-learning log. Larger evidence and
 shared-source materials remain a future object-storage/Knowledge authorization
 decision, rather than being silently added to the Work record model.
+
+Theory-extension notes are not an implementation backlog for Universe. Each
+one should first state the theorem, architecture pattern, constraint or
+engineering trade-off that follows from the current principle, then describe
+one concrete application: its system context, operational constraint and what
+would be verified. The subsequent real attempt belongs in the separate
+practice log, preserving the distinction between understanding, application
+design and observed evidence.

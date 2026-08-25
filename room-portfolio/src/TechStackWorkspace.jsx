@@ -223,7 +223,7 @@ export default function TechStackWorkspace({ onNavigate }) {
                 <div>
                     <p className="work-case-space__eyebrow">TECHNOLOGY FIELD · LIVE EVIDENCE</p>
                     <h1>技术不是履历，<em>是正在生长的能力。</em></h1>
-                    <p>每一项技术都是一个自己的空间：把真实部署、理论理解、工作笔记和后续练习放在一起。不会自动宣称“掌握”，只保留发生过的证据。</p>
+                    <p>每一项技术都是一个自己的空间：把真实部署、理论理解、从原理推导出的延伸与落地应用放在一起。不会自动宣称“掌握”，只保留发生过的证据。</p>
                 </div>
                 <div className="work-tech-space__hero-actions">
                     <button className="work-tech-space__outline-button" onClick={() => onNavigate('/work')} type="button">← 能力入口</button>
@@ -282,10 +282,10 @@ export default function TechStackWorkspace({ onNavigate }) {
                                     title="实现原理与系统位置"
                                 />
                                 <GuideColumn
-                                    emptyText="还没有延伸方向。记录下想继续验证的架构、性能、安全或运维问题。"
+                                    emptyText="还没有理论延伸。先写从当前原理可继续推导的命题，再补一个真实系统中的落地场景。"
                                     items={extensions}
-                                    label="EXTEND NEXT"
-                                    title="下一步可延伸什么"
+                                    label="THEORY → APPLICATION"
+                                    title="理论延伸与落地应用"
                                 />
                             </section>
 
@@ -324,12 +324,12 @@ function AttachmentStrip({ attachments = [] }) {
 
 function EntryForm({ form, onChange, onPasteImages, onRemoveAttachment, onSubmit, saving }) {
     return <form className="work-tech-space__entry-form" onPaste={onPasteImages} onSubmit={onSubmit}>
-        <label>记录类型<select name="kind" onChange={onChange} value={form.kind}><option value="principle">实现原理 / 理论笔记</option><option value="practice">真实操作 / 实践</option><option value="extension">可延伸方向</option></select></label>
-        <label>标题<input autoFocus name="title" onChange={onChange} placeholder={form.kind === 'practice' ? '例如：完成 Room 静态资源缓存发布' : form.kind === 'extension' ? '例如：把运行时验证接入发布门禁' : '例如：RAGFlow 在 Universe 中的边界'} required value={form.title} /></label>
-        <label>内容<textarea name="content" onChange={onChange} placeholder="记录你理解到的原理、决策、命令结果或后续问题。" required value={form.content} /></label>
+        <label>记录类型<select name="kind" onChange={onChange} value={form.kind}><option value="principle">实现原理 / 理论笔记</option><option value="practice">真实操作 / 实践</option><option value="extension">理论延伸 / 落地应用</option></select></label>
+        <label>标题<input autoFocus name="title" onChange={onChange} placeholder={form.kind === 'practice' ? '例如：完成 Room 静态资源缓存发布' : form.kind === 'extension' ? '例如：分层缓存理论如何落地到 Web 服务' : '例如：RAGFlow 在 Universe 中的边界'} required value={form.title} /></label>
+        <label>内容<textarea name="content" onChange={onChange} placeholder={form.kind === 'extension' ? '先写：从哪个原理推导出什么结论；再写：它可在哪个真实系统、约束和场景中落地。' : '记录你理解到的原理、决策、命令结果或后续问题。'} required value={form.content} /></label>
         <section className="work-tech-space__image-paste" tabIndex="0"><strong>粘贴截图</strong><p>在内容框或此处按 ⌘V / Ctrl+V。最多 {maxAttachments} 张；会压缩为私有学习附件，不会进入共享 Knowledge。</p>{form.attachments.length > 0 && <div>{form.attachments.map((attachment, index) => <figure key={`${index}-${attachment.length}`}><img alt={`待保存附件 ${index + 1}`} src={attachment} /><button aria-label={`删除图片 ${index + 1}`} onClick={() => onRemoveAttachment(index)} type="button">×</button></figure>)}</div>}</section>
         <label>标签<input name="tags" onChange={onChange} placeholder="用逗号分隔" value={form.tags} /></label>
         {form.kind === 'practice' && <label>投入分钟<input min="0" name="minutes" onChange={onChange} placeholder="可选" type="number" value={form.minutes} /></label>}
-        <div><span>{form.kind === 'practice' ? '保存后会成为此技术的真实实践证据。' : '保存后会进入该技术的学习地图。'}</span><button className="work-tech-space__solid-button" disabled={saving} type="submit">{saving ? '保存中…' : '保存记录'}</button></div>
+        <div><span>{form.kind === 'practice' ? '保存后会成为此技术的真实实践证据。' : form.kind === 'extension' ? '先写理论推导，再写可落地的真实场景；平台待办不属于这里。' : '保存后会进入该技术的学习地图。'}</span><button className="work-tech-space__solid-button" disabled={saving} type="submit">{saving ? '保存中…' : '保存记录'}</button></div>
     </form>;
 }

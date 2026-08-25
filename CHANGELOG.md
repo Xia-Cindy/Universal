@@ -12,6 +12,10 @@
   compresses clipboard images before previewing them; the existing Work record
   persists only safe PNG/JPEG/WebP/GIF data URLs and renders them as private
   learning evidence.
+- refine(work): define the Technology Stack extension layer as “theory →
+  application”: it records a deduction from a technical principle and a
+  concrete real-system use case, rather than a Universe platform feature
+  backlog. Actual attempts remain separate practice evidence.
 - perf(room): load the Room application behind an immediate local loading shell, so a slow 3D bundle no longer leaves a blank first screen.
 - perf(room): remove the unreachable Google Fonts request from the first-screen stylesheet and defer the Plan-only `PlanOrbit.glb` model until its module is opened.
 
