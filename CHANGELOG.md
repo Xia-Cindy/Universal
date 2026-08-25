@@ -45,6 +45,11 @@
 
 ### Fixed
 
+- **2026-08-25 direct-IP room loading:** enabled gzip response compression for
+  the isolated room's JavaScript/CSS and immutable caching for Vite-hashed
+  assets. The HTML shell remains revalidated on each visit, while the Three.js
+  client bundle no longer transfers as an uncompressed 1.48 MB response.
+
 - **2026-08-23 cloud API image dependency:** removed unused `boto3` from the
   local-object-storage development image requirements, avoiding an unnecessary
   external dependency during the isolated cloud deployment build.

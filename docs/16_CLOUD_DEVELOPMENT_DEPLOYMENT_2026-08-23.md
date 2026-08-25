@@ -21,6 +21,9 @@ changing its existing AI Agent, default Nginx route, PostgreSQL or Redis.
 - Study: the locally ignored Sylva assets are not deployed. The production
   image uses an original Study Space fallback rather than copying unlicensed
   local assets.
+- Performance: the isolated room Nginx enables gzip for JavaScript/CSS and
+  immutable cache headers for Vite fingerprinted `/assets/` files. The HTML
+  entry remains non-cached so a new release points to new asset names.
 
 ## Start
 
