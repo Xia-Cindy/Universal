@@ -72,3 +72,12 @@ TLS reverse-proxy milestone is separately approved.
 - `/`, `/study`, `/study/wordbook`, `/study/cards`, `/work` and `/novel` load
   through the tunnel.
 - Existing host containers and Nginx configuration remain unchanged.
+
+# Room first-screen loading (2026-08-25)
+
+The Room entry is optimized for direct-IP access, where public bandwidth can be notably slower than the local development server:
+
+- the entry bundle renders a local loading shell before the Three.js application chunk resolves;
+- it no longer depends on a Google Fonts request before first paint;
+- `PlanOrbit.glb` is no longer fetched from the Room home page and loads only when its Plan module renders;
+- Nginx serves hashed `/assets/` files with immutable cache headers and gzip for text assets. Binary GLB files remain uncompressed because the primary room model did not meaningfully shrink under gzip.

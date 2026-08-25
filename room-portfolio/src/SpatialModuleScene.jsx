@@ -2428,5 +2428,3 @@ export default function SpatialModuleScene({ moduleId }) {
         </>
     );
 }
-
-useGLTF.preload('/assets/PlanOrbit.glb');

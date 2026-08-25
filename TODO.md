@@ -1,5 +1,9 @@
 # TODO
 
+## Room Direct-IP Performance
+
+- [x] Add an immediate Room loading shell, remove the external first-screen font dependency, and load the Plan-only 3D model only when that module opens.
+
 ## Work R1 Personal Capability Learning Space
 
 - [x] Replace the `/work` landing requirement for a Practice Case with five

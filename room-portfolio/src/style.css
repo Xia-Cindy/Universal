@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
 @import './styles/knowledgeBoard.css';
 @import './styles/bookshelf.css';
 @import './styles/workCaseWorkspace.css';
 
 :root {
     color: #f6f2ff;
-    font-family: 'Manrope', 'Noto Sans SC', sans-serif;
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Manrope', 'Noto Sans SC', sans-serif;
     font-synthesis: none;
     --line: rgba(183, 155, 224, 0.24);
     --muted: #a99eb8;
@@ -50,6 +49,82 @@ canvas {
     position: absolute !important;
     inset: 0;
 }
+
+.room-boot {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 74% 21%, rgba(98, 78, 142, 0.42), transparent 28%),
+        radial-gradient(circle at 22% 78%, rgba(61, 161, 155, 0.18), transparent 26%),
+        linear-gradient(165deg, #221934 0%, #120c20 66%, #090713 100%);
+    color: #f6f2ff;
+}
+
+.room-boot::before,
+.room-boot::after {
+    position: absolute;
+    width: min(72vw, 760px);
+    aspect-ratio: 1;
+    border: 1px solid rgba(215, 200, 239, 0.14);
+    border-radius: 50%;
+    content: '';
+}
+
+.room-boot::before { transform: translate(24%, -22%); }
+.room-boot::after { width: min(48vw, 480px); transform: translate(-57%, 58%); }
+
+.room-boot__content {
+    position: relative;
+    z-index: 1;
+    width: min(520px, calc(100% - 48px));
+    text-align: center;
+}
+
+.room-boot__content span {
+    color: #ad9ed0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .24em;
+}
+
+.room-boot__content h1 {
+    margin: 16px 0 12px;
+    font-family: Georgia, 'Noto Serif SC', serif;
+    font-size: clamp(42px, 7vw, 76px);
+    font-weight: 400;
+    letter-spacing: -.06em;
+    line-height: .94;
+}
+
+.room-boot__content p { margin: 0; color: rgba(240, 235, 249, .68); font-size: 14px; }
+
+.room-boot__orbit {
+    position: absolute;
+    width: min(36vw, 310px);
+    aspect-ratio: 1;
+    border: 1px solid rgba(109, 208, 201, .32);
+    border-radius: 50%;
+    animation: room-boot-spin 11s linear infinite;
+}
+
+.room-boot__orbit i {
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    width: 8px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #6dd0c9;
+    box-shadow: 0 0 18px rgba(109, 208, 201, .9);
+}
+
+.room-boot__orbit i:nth-child(2) { top: 48%; left: auto; right: -4px; width: 5px; background: #cba5ef; }
+.room-boot__orbit i:nth-child(3) { top: auto; bottom: 12%; left: -4px; width: 4px; background: #fff0b7; }
+
+@keyframes room-boot-spin { to { transform: rotate(360deg); } }
 
 .study-entry-fallback {
     position: fixed;

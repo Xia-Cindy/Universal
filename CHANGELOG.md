@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- perf(room): load the Room application behind an immediate local loading shell, so a slow 3D bundle no longer leaves a blank first screen.
+- perf(room): remove the unreachable Google Fonts request from the first-screen stylesheet and defer the Plan-only `PlanOrbit.glb` model until its module is opened.
+
 ## 2026-08-13
 
 ### Added
