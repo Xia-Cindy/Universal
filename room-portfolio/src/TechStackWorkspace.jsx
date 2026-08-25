@@ -16,7 +16,11 @@ const emptyEntry = {
     content: '',
     tags: '',
     minutes: '',
-    attachments: []
+    attachments: [],
+    sourceArticleId: '',
+    selectedQuote: '',
+    aiQuestion: '',
+    sources: []
 };
 
 const maxAttachments = 4;
@@ -75,6 +79,11 @@ export default function TechStackWorkspace({ onNavigate }) {
     const [stackForm, setStackForm] = useState(emptyStack);
     const [entryForm, setEntryForm] = useState(emptyEntry);
     const [saving, setSaving] = useState(false);
+    const [aiStatus, setAiStatus] = useState(null);
+    const [aiSelection, setAiSelection] = useState(null);
+    const [aiQuestion, setAiQuestion] = useState('');
+    const [aiResult, setAiResult] = useState(null);
+    const [askingAi, setAskingAi] = useState(false);
 
     const loadStacks = useCallback(async () => {
         setLoading(true);
@@ -91,6 +100,10 @@ export default function TechStackWorkspace({ onNavigate }) {
     }, []);
 
     useEffect(() => { loadStacks(); }, [loadStacks]);
+
+    useEffect(() => {
+        roomApi.aiStatus().then(setAiStatus).catch(() => setAiStatus({ configured: false, message: '无法读取 AI Core 配置状态。' }));
+    }, []);
 
     const loadDetail = useCallback(async () => {
         if (!selectedId) {
@@ -111,10 +124,13 @@ export default function TechStackWorkspace({ onNavigate }) {
     useEffect(() => { loadDetail(); }, [loadDetail]);
 
     const principles = useMemo(() => (detail?.articles || [])
-        .filter((item) => item.articleType !== 'extension'), [detail]);
+        .filter((item) => item.articleType !== 'extension' && item.articleType !== 'exploration'), [detail]);
 
     const extensions = useMemo(() => (detail?.articles || [])
         .filter((item) => item.articleType === 'extension'), [detail]);
+
+    const explorations = useMemo(() => (detail?.articles || [])
+        .filter((item) => item.articleType === 'exploration'), [detail]);
 
     const timeline = useMemo(() => {
         if (!detail) return [];
@@ -157,6 +173,48 @@ export default function TechStackWorkspace({ onNavigate }) {
         setEntryForm((current) => ({ ...current, attachments: current.attachments.filter((_, itemIndex) => itemIndex !== index) }));
     };
 
+    const captureAiSelection = (event) => {
+        const quote = window.getSelection?.().toString().trim();
+        const article = event.target.closest?.('[data-article-id]');
+        if (!quote || !article) return;
+        setAiSelection({ articleId: article.dataset.articleId, articleTitle: article.dataset.articleTitle, quote });
+        setAiQuestion(`请解释这段话中的「${quote.slice(0, 96)}」：它的机制、边界和一个真实应用是什么？`);
+        setAiResult(null);
+    };
+
+    const askAi = async () => {
+        if (!selectedId || !aiQuestion.trim()) return;
+        setAskingAi(true);
+        setError('');
+        try {
+            setAiResult(await roomApi.askWorkExploration(selectedId, {
+                sourceArticleId: aiSelection?.articleId || '',
+                selectedQuote: aiSelection?.quote || '',
+                question: aiQuestion.trim()
+            }));
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : 'AI 暂时无法回答这个问题。');
+        } finally {
+            setAskingAi(false);
+        }
+    };
+
+    const addAiResultToMap = () => {
+        if (!aiResult) return;
+        setEntryForm({
+            ...emptyEntry,
+            kind: 'exploration',
+            title: `AI 探索：${aiQuestion.trim().slice(0, 72)}`,
+            content: aiResult.answer,
+            tags: 'AI探索',
+            sourceArticleId: aiResult.sourceArticleId || aiSelection?.articleId || '',
+            selectedQuote: aiResult.selectedQuote || aiSelection?.quote || '',
+            aiQuestion: aiQuestion.trim(),
+            sources: aiResult.sources || []
+        });
+        setShowEntryForm(true);
+    };
+
     const createStack = async (event) => {
         event.preventDefault();
         setSaving(true);
@@ -194,6 +252,10 @@ export default function TechStackWorkspace({ onNavigate }) {
                     content: entryForm.content.trim(),
                     tags: splitTags(entryForm.tags),
                     attachments: entryForm.attachments,
+                    sourceArticleId: entryForm.sourceArticleId,
+                    selectedQuote: entryForm.selectedQuote,
+                    aiQuestion: entryForm.aiQuestion,
+                    sources: entryForm.sources,
                     status: 'published'
                 });
             } else {
@@ -279,12 +341,14 @@ export default function TechStackWorkspace({ onNavigate }) {
                                     emptyText="还没有原理笔记。先写下它在系统中解决什么问题、关键组件如何协作。"
                                     items={principles}
                                     label="IMPLEMENTATION PRINCIPLES"
+                                    onSelect={captureAiSelection}
                                     title="实现原理与系统位置"
                                 />
                                 <GuideColumn
                                     emptyText="还没有理论延伸。先写从当前原理可继续推导的命题，再补一个真实系统中的落地场景。"
                                     items={extensions}
                                     label="THEORY → APPLICATION"
+                                    onSelect={captureAiSelection}
                                     title="理论延伸与落地应用"
                                 />
                             </section>
@@ -296,10 +360,19 @@ export default function TechStackWorkspace({ onNavigate }) {
                                     {!timeline.length && <p className="work-tech-space__empty-log">还没有实践记录。完成一次真实操作、验证或复盘后，它会在这里留下证据。</p>}
                                     {timeline.map((item) => <article className={`work-tech-space__log-item is-${item.kind}`} key={`${item.kind}-${item.id}`}><span className="work-tech-space__log-kind">实践</span><div><small>{formatDate(item.date)}{item.minutes ? ` · ${item.minutes} 分钟` : ''}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p><AttachmentStrip attachments={item.attachments} />{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</div></article>)}
                                 </section>
-                                <section className="work-tech-space__knowledge">
-                                    <span>SHARED KNOWLEDGE</span><h3>关联资料</h3><p>资料仍属于共享 Knowledge；技术栈只引用已授权内容，不复制文档或 RAGFlow 数据。</p>
-                                    <div>{detail.relatedKnowledge?.length ? detail.relatedKnowledge.map((document) => <button key={document.id} onClick={() => onNavigate('/study/knowledge')} type="button"><strong>{document.fileName}</strong><small>{document.topic || document.subject || 'Knowledge document'}</small></button>) : <p className="work-tech-space__knowledge-empty">暂未关联资料。后续可从 Study 书架为此技术栈授权只读资料。</p>}</div>
-                                </section>
+                                <AiExplorePanel
+                                    aiQuestion={aiQuestion}
+                                    aiResult={aiResult}
+                                    aiSelection={aiSelection}
+                                    aiStatus={aiStatus}
+                                    asking={askingAi}
+                                    explorations={explorations}
+                                    knowledge={detail.relatedKnowledge || []}
+                                    onAddToMap={addAiResultToMap}
+                                    onAsk={askAi}
+                                    onChangeQuestion={setAiQuestion}
+                                    onNavigateKnowledge={() => onNavigate('/study/knowledge')}
+                                />
                             </div>
                         </>
                     )}
@@ -313,8 +386,8 @@ function EmptyTechSpace({ onCreate }) {
     return <section className="work-tech-space__empty"><span>YOUR FIRST TECH SPACE</span><h2>从正在发生的构建开始。</h2><p>例如：React + Three.js、FastAPI、PostgreSQL、Docker Compose、Linux，或计划作为共享 Knowledge 基础设施的 RAGFlow。</p><button className="work-tech-space__solid-button" onClick={onCreate} type="button">开通第一项技术 →</button></section>;
 }
 
-function GuideColumn({ emptyText, items, label, title }) {
-    return <section className="work-tech-space__guide-column"><span>{label}</span><h3>{title}</h3>{items.length ? items.map((item) => <article key={item.id}><small>{formatDate(item.updatedAt)}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p><AttachmentStrip attachments={item.attachments} />{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</article>) : <p className="work-tech-space__guide-empty">{emptyText}</p>}</section>;
+function GuideColumn({ emptyText, items, label, onSelect, title }) {
+    return <section className="work-tech-space__guide-column"><span>{label}</span><h3>{title}</h3>{items.length ? items.map((item) => <article data-article-id={item.id} data-article-title={item.title} key={item.id} onMouseUp={onSelect}><small>{formatDate(item.updatedAt)}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p><AttachmentStrip attachments={item.attachments} />{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</article>) : <p className="work-tech-space__guide-empty">{emptyText}</p>}</section>;
 }
 
 function AttachmentStrip({ attachments = [] }) {
@@ -322,14 +395,28 @@ function AttachmentStrip({ attachments = [] }) {
     return <div className="work-tech-space__attachment-strip">{attachments.map((attachment, index) => <a href={attachment} key={`${index}-${attachment.length}`} rel="noreferrer" target="_blank"><img alt={`技术记录附件 ${index + 1}`} loading="lazy" src={attachment} /></a>)}</div>;
 }
 
+function AiExplorePanel({ aiQuestion, aiResult, aiSelection, aiStatus, asking, explorations, knowledge, onAddToMap, onAsk, onChangeQuestion, onNavigateKnowledge }) {
+    return <section className="work-tech-space__ai-explore">
+        <span>AI EXPLORE · SHARED CORE</span><h3>划线问 AI</h3>
+        <p>选中左侧原理或延伸中的一句话后提问。AI 只会检索这项技术已授权的资料；回答不会自动写入 Knowledge。</p>
+        {!aiStatus?.configured && <p className="work-tech-space__ai-status">{aiStatus?.message || '正在检查 AI Core 配置…'}</p>}
+        {aiSelection && <div className="work-tech-space__selected-quote"><small>已选中 · {aiSelection.articleTitle}</small><q>{aiSelection.quote}</q></div>}
+        <label className="work-tech-space__ai-question">想弄懂什么？<textarea onChange={(event) => onChangeQuestion(event.target.value)} placeholder="先划线，或直接写下你不理解的技术问题。" value={aiQuestion} /></label>
+        <button className="work-tech-space__solid-button" disabled={asking || !aiQuestion.trim() || !aiStatus?.configured} onClick={onAsk} type="button">{asking ? 'AI 思考中…' : '问 AI →'}</button>
+        {aiResult && <article className="work-tech-space__ai-answer"><small>{aiResult.sourceNotice}</small><p>{aiResult.answer}</p>{aiResult.sources?.length > 0 && <div className="work-tech-space__ai-sources">{aiResult.sources.map((source) => <a href={source.sourceUrl || '#'} key={source.sourceId} onClick={(event) => { if (!source.sourceUrl) event.preventDefault(); }}><strong>{source.title}</strong><span>{source.quote}</span></a>)}</div>}<button className="work-tech-space__outline-button" onClick={onAddToMap} type="button">加入学习地图</button></article>}
+        <details className="work-tech-space__knowledge-fold"><summary>已授权资料 {knowledge.length ? `· ${knowledge.length}` : ''}</summary>{knowledge.length ? knowledge.map((document) => <button key={document.id} onClick={onNavigateKnowledge} type="button"><strong>{document.fileName}</strong><small>{document.topic || document.subject || 'Knowledge document'}</small></button>) : <p>暂无授权资料。可从 Study 书架为这项技术授权只读资料。</p>}</details>
+        {explorations.length > 0 && <div className="work-tech-space__saved-explorations"><small>已保存探索</small>{explorations.map((item) => <article key={item.id}><strong>{item.aiQuestion || item.title}</strong><p>{item.selectedQuote ? `划线：${item.selectedQuote}` : item.content}</p></article>)}</div>}
+    </section>;
+}
+
 function EntryForm({ form, onChange, onPasteImages, onRemoveAttachment, onSubmit, saving }) {
     return <form className="work-tech-space__entry-form" onPaste={onPasteImages} onSubmit={onSubmit}>
-        <label>记录类型<select name="kind" onChange={onChange} value={form.kind}><option value="principle">实现原理 / 理论笔记</option><option value="practice">真实操作 / 实践</option><option value="extension">理论延伸 / 落地应用</option></select></label>
+        <label>记录类型<select name="kind" onChange={onChange} value={form.kind}><option value="principle">实现原理 / 理论笔记</option><option value="practice">真实操作 / 实践</option><option value="extension">理论延伸 / 落地应用</option><option value="exploration">AI 探索 / 未理解点</option></select></label>
         <label>标题<input autoFocus name="title" onChange={onChange} placeholder={form.kind === 'practice' ? '例如：完成 Room 静态资源缓存发布' : form.kind === 'extension' ? '例如：分层缓存理论如何落地到 Web 服务' : '例如：RAGFlow 在 Universe 中的边界'} required value={form.title} /></label>
-        <label>内容<textarea name="content" onChange={onChange} placeholder={form.kind === 'extension' ? '先写：从哪个原理推导出什么结论；再写：它可在哪个真实系统、约束和场景中落地。' : '记录你理解到的原理、决策、命令结果或后续问题。'} required value={form.content} /></label>
+        <label>内容<textarea name="content" onChange={onChange} placeholder={form.kind === 'extension' ? '先写：从哪个原理推导出什么结论；再写：它可在哪个真实系统、约束和场景中落地。' : form.kind === 'exploration' ? '保留 AI 的解释，再改写成你自己理解的结论。' : '记录你理解到的原理、决策、命令结果或后续问题。'} required value={form.content} /></label>
         <section className="work-tech-space__image-paste" tabIndex="0"><strong>粘贴截图</strong><p>在内容框或此处按 ⌘V / Ctrl+V。最多 {maxAttachments} 张；会压缩为私有学习附件，不会进入共享 Knowledge。</p>{form.attachments.length > 0 && <div>{form.attachments.map((attachment, index) => <figure key={`${index}-${attachment.length}`}><img alt={`待保存附件 ${index + 1}`} src={attachment} /><button aria-label={`删除图片 ${index + 1}`} onClick={() => onRemoveAttachment(index)} type="button">×</button></figure>)}</div>}</section>
         <label>标签<input name="tags" onChange={onChange} placeholder="用逗号分隔" value={form.tags} /></label>
         {form.kind === 'practice' && <label>投入分钟<input min="0" name="minutes" onChange={onChange} placeholder="可选" type="number" value={form.minutes} /></label>}
-        <div><span>{form.kind === 'practice' ? '保存后会成为此技术的真实实践证据。' : form.kind === 'extension' ? '先写理论推导，再写可落地的真实场景；平台待办不属于这里。' : '保存后会进入该技术的学习地图。'}</span><button className="work-tech-space__solid-button" disabled={saving} type="submit">{saving ? '保存中…' : '保存记录'}</button></div>
+        <div><span>{form.kind === 'practice' ? '保存后会成为此技术的真实实践证据。' : form.kind === 'extension' ? '先写理论推导，再写可落地的真实场景；平台待办不属于这里。' : form.kind === 'exploration' ? '保存后会保留划线、问题与 Knowledge 引用；它不是实践证据。' : '保存后会进入该技术的学习地图。'}</span><button className="work-tech-space__solid-button" disabled={saving} type="submit">{saving ? '保存中…' : '保存记录'}</button></div>
     </form>;
 }

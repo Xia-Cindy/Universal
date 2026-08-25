@@ -86,6 +86,10 @@ class WorkArticle:
     summary: str = ""
     tags: tuple[str, ...] = ()
     attachments: tuple[str, ...] = ()
+    source_article_id: str | None = None
+    selected_quote: str = ""
+    ai_question: str = ""
+    sources: tuple[dict[str, Any], ...] = ()
     status: str = "draft"
     id: str = field(default_factory=_id)
     created_at: datetime = field(default_factory=local_now)
@@ -102,6 +106,10 @@ class WorkArticle:
             "content": self.content,
             "tags": list(self.tags),
             "attachments": list(self.attachments),
+            "sourceArticleId": self.source_article_id,
+            "selectedQuote": self.selected_quote,
+            "aiQuestion": self.ai_question,
+            "sources": list(self.sources),
             "status": self.status,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),

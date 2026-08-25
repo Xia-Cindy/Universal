@@ -325,3 +325,18 @@
 - [ ] Add BacklogItem + PM references without copying BA text.
 - [ ] Add Governance, Lab/LabRun, Operations, SOP and Radar in separate approved phases.
 - [ ] Add Bookshelf references and Three.js Work Tree only after the above workflow is proven.
+
+# 2026-08-25 Shared AI exploration and universe-ragflow
+
+- [x] Add Work Tech Stack selected-passage exploration through the shared AI Core.
+- [x] Keep AI provider Base URL, key and model server-only through an
+  OpenAI-compatible configuration boundary.
+- [x] Preserve selected passage, question and authorized Knowledge citations
+  only after the learner confirms saving an AI exploration record.
+- [x] Add a non-mutating `universe-ragflow` cloud preflight and isolated private
+  deployment template.
+- [ ] Increase cloud free disk to at least 50 GiB and explicitly approve the
+  host-level `vm.max_map_count=262144` change before starting universe-ragflow.
+- [ ] After RAGFlow starts, create its provider/model configuration, create a
+  RAGFlow API key, then prove a real processed document and retrieval-only
+  runtime verification before setting Universe `KNOWLEDGE_PROVIDER=ragflow`.

@@ -17,9 +17,9 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "${RAGFLOW_WEB_PORT:-8088}:80"
-      - "${RAGFLOW_API_PORT:-9380}:9380"
-      - "${RAGFLOW_ADMIN_PORT:-9381}:9381"
+      - "${RAGFLOW_BIND_ADDRESS:-127.0.0.1}:${RAGFLOW_WEB_PORT:-8088}:80"
+      - "${RAGFLOW_BIND_ADDRESS:-127.0.0.1}:${RAGFLOW_API_PORT:-9380}:9380"
+      - "${RAGFLOW_BIND_ADDRESS:-127.0.0.1}:${RAGFLOW_ADMIN_PORT:-9381}:9381"
     environment:
       DOC_ENGINE: ${DOC_ENGINE:-elasticsearch}
       ES_HOST: es01

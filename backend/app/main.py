@@ -44,6 +44,10 @@ def create_app():
     def health():
         return api.health()
 
+    @app.get("/api/ai/status")
+    def ai_status():
+        return api.ai_status()
+
     @app.post("/api/auth/register/request")
     def request_registration(payload: dict):
         return api.request_registration(payload)
@@ -119,6 +123,10 @@ def create_app():
     @app.post("/api/work/tech-stacks/{tech_stack_id}/articles")
     def create_work_article(tech_stack_id: str, payload: dict):
         return api.create_work_article(tech_stack_id, payload)
+
+    @app.post("/api/work/tech-stacks/{tech_stack_id}/explorations")
+    def ask_work_exploration(tech_stack_id: str, payload: dict):
+        return api.ask_work_exploration(tech_stack_id, payload)
 
     @app.get("/api/work/tech-stacks/{tech_stack_id}/learning-records")
     def list_work_learning_records(tech_stack_id: str):

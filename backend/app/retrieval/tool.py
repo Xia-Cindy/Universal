@@ -15,6 +15,7 @@ class RetrieverTool:
                 query=payload["query"],
                 limit=payload.get("limit", 5),
                 document_id=payload.get("documentId"),
+                document_ids=tuple(str(item) for item in payload.get("documentIds", []) if str(item)),
                 goal_id=payload.get("goalId"),
                 planet_type=payload.get("planetType"),
             )

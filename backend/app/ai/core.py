@@ -42,10 +42,18 @@ class AICoreService:
         )
         prompt = self.prompt_manager.get(definition.prompt_key)
         messages = [AIMessage(role="user", content=request.user_question)]
-        return self.gateway.generate(
+        response = self.gateway.generate(
             messages=messages,
             prompt=prompt,
             context_payload=context.to_dict(),
+        )
+        hints = context.to_dict().get("responseHints", {})
+        hint_metadata = hints.get("metadata", {}) if isinstance(hints, dict) else {}
+        return AIResponse(
+            answer=response.answer,
+            reasoning=response.reasoning,
+            suggested_next_action=response.suggested_next_action,
+            metadata={**(hint_metadata if isinstance(hint_metadata, dict) else {}), **response.metadata},
         )
 
     def _invoke_allowed_tools(

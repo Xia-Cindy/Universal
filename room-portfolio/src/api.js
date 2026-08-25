@@ -149,6 +149,7 @@ export const roomApi = {
             body: JSON.stringify(payload)
         }),
     workHome: () => apiRequest('/api/work/home'),
+    aiStatus: () => apiRequest('/api/ai/status'),
     workCases: () => apiRequest('/api/work/cases'),
     createWorkCase: (payload) =>
         apiRequest('/api/work/cases', {
@@ -170,6 +171,11 @@ export const roomApi = {
     workTechStack: (techStackId) => apiRequest(`/api/work/tech-stacks/${techStackId}`),
     createWorkArticle: (techStackId, payload) =>
         apiRequest(`/api/work/tech-stacks/${techStackId}/articles`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+    askWorkExploration: (techStackId, payload) =>
+        apiRequest(`/api/work/tech-stacks/${techStackId}/explorations`, {
             method: 'POST',
             body: JSON.stringify(payload)
         }),

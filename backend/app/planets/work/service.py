@@ -195,6 +195,10 @@ class WorkService:
             content=content,
             tags=tuple(payload.get("tags", [])),
             attachments=self._image_attachments(payload),
+            source_article_id=self._source_article_id(user_id, tech_stack_id, payload),
+            selected_quote=self._limited_text(payload, "selectedQuote", 4000),
+            ai_question=self._limited_text(payload, "aiQuestion", 2000),
+            sources=self._sources(payload),
             status=payload.get("status", "draft"),
         )
         return self._repository.save_article(article).to_dict()
@@ -237,6 +241,41 @@ class WorkService:
             if not self._IMAGE_DATA_URL.fullmatch(attachment):
                 raise ValueError("Only base64 PNG, JPEG, WebP, or GIF images are allowed")
             normalized.append(attachment)
+        return tuple(normalized)
+
+    def article_for_exploration(self, user_id: str, tech_stack_id: str, article_id: str | None) -> dict[str, object] | None:
+        if not article_id:
+            return None
+        article = next(
+            (item for item in self._repository.list_articles(user_id, tech_stack_id) if item.id == article_id),
+            None,
+        )
+        if article is None:
+            raise ValueError("The selected passage does not belong to this Tech Stack")
+        return article.to_dict()
+
+    def _source_article_id(self, user_id: str, tech_stack_id: str, payload: dict) -> str | None:
+        article_id = str(payload.get("sourceArticleId") or "").strip()
+        self.article_for_exploration(user_id, tech_stack_id, article_id or None)
+        return article_id or None
+
+    def _limited_text(self, payload: dict, key: str, maximum: int) -> str:
+        value = str(payload.get(key) or "").strip()
+        if len(value) > maximum:
+            raise ValueError(f"{key} must be {maximum} characters or fewer")
+        return value
+
+    def _sources(self, payload: dict) -> tuple[dict[str, object], ...]:
+        sources = payload.get("sources", [])
+        if not isinstance(sources, (list, tuple)):
+            raise ValueError("sources must be a list")
+        if len(sources) > 3:
+            raise ValueError("An exploration can cite at most 3 Knowledge sources")
+        normalized = []
+        for source in sources:
+            if not isinstance(source, dict):
+                raise ValueError("Each source must be an object")
+            normalized.append(dict(source))
         return tuple(normalized)
 
     def create_project(self, user_id: str, payload: dict) -> dict[str, object]:

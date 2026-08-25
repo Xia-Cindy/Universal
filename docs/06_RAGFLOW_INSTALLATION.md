@@ -66,6 +66,39 @@ sysctl vm.max_map_count
 sudo sysctl -w vm.max_map_count=262144
 ```
 
+## 2.1 Cloud preflight and isolated deployment
+
+The cloud installation is a separate Compose project named `universe-ragflow`.
+It owns RAGFlow, Elasticsearch, MySQL, MinIO, Valkey and their volumes; it does
+not reuse Universe PostgreSQL, does not join the main Universe database, and
+does not publish its API or admin port to the public Internet. The supplied
+minimum checks intentionally match the official CPU deployment baseline:
+
+- CPU >= 4 cores
+- RAM >= 16 GiB
+- free disk >= 50 GiB
+- `vm.max_map_count >= 262144`
+
+On the server, first run the non-mutating check:
+
+```bash
+cd /Universal
+docker/ragflow/cloud-preflight.sh
+```
+
+Only after it passes, copy `docker/ragflow/cloud.env.example` to the private
+`docker/ragflow/cloud.env`, replace every password, and set mode `0600`. Then
+run `docker/ragflow/cloud-start.sh`. The default cloud bind address is
+`127.0.0.1`; access the Web UI through an SSH tunnel rather than opening it on
+the server IP. The Universe API uses `host.docker.internal:19380` only after an
+RAGFlow API key is created in the RAGFlow UI and stored in the private
+`docker/development/universe.env` file.
+
+Do not lower the preflight values to force a start. A failed preflight is a
+deployment record, not a partial RAGFlow installation. The host kernel setting
+is outside the `/Universal` directory and requires explicit host-level
+authorization.
+
 On macOS, Docker Desktop manages this differently. Give Docker Desktop enough memory before starting RAGFlow.
 
 RAGFlow Docker images are x86. On Apple Silicon, Docker Desktop can run the stack through amd64 emulation, but startup and parsing can be slow.

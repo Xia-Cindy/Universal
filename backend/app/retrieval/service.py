@@ -64,6 +64,8 @@ class RetrievalService:
         filters = {"userId": query.user_id}
         if query.document_id:
             filters["documentId"] = query.document_id
+        if query.document_ids:
+            filters["documentIds"] = set(query.document_ids)
         if query.goal_id:
             filters["documentIds"] = {
                 document.id
@@ -100,6 +102,11 @@ class RetrievalService:
         documents = []
         if query.document_id:
             documents = [self._knowledge_repository.get_document(query.document_id, query.user_id)]
+        elif query.document_ids:
+            documents = [
+                self._knowledge_repository.get_document(document_id, query.user_id)
+                for document_id in query.document_ids
+            ]
         else:
             documents = self._knowledge_repository.list_documents(query.user_id, goal_id=query.goal_id)
         if query.planet_type:

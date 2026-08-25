@@ -356,7 +356,10 @@ def article_from_payload(payload: dict[str, Any]) -> WorkArticle:
         user_id=payload["userId"], tech_stack_id=payload["techStackId"], title=payload["title"],
         content=payload.get("content", ""), article_type=payload.get("articleType", "knowledge"),
         summary=payload.get("summary", ""), tags=tuple(payload.get("tags", [])),
-        attachments=tuple(payload.get("attachments", [])), status=payload.get("status", "draft"),
+        attachments=tuple(payload.get("attachments", [])), source_article_id=payload.get("sourceArticleId"),
+        selected_quote=payload.get("selectedQuote", ""), ai_question=payload.get("aiQuestion", ""),
+        sources=tuple(source for source in payload.get("sources", []) if isinstance(source, dict)),
+        status=payload.get("status", "draft"),
         id=payload["id"], created_at=parse_datetime(payload["createdAt"]), updated_at=parse_datetime(payload["updatedAt"]),
     )
 

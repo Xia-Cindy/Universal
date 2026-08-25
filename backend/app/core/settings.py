@@ -19,6 +19,13 @@ class Settings:
     ragflow_embedding_model: str = getenv("RAGFLOW_EMBEDDING_MODEL", "")
     ragflow_llm_model: str = getenv("RAGFLOW_LLM_MODEL", "")
     ragflow_rerank_model: str = getenv("RAGFLOW_RERANK_MODEL", "")
+    # Shared AI Core provider. The API key is server-only and must never be
+    # returned by an API response or stored in a user record.
+    ai_provider: str = getenv("AI_PROVIDER", "deterministic")
+    ai_openai_base_url: str = getenv("AI_OPENAI_BASE_URL", "")
+    ai_openai_api_key: str = getenv("AI_OPENAI_API_KEY", "")
+    ai_openai_model: str = getenv("AI_OPENAI_MODEL", "")
+    ai_openai_timeout_seconds: int = int(getenv("AI_OPENAI_TIMEOUT_SECONDS", "45"))
     # PostgreSQL is the Universe runtime data store. SQLite remains available
     # only when a local developer explicitly opts into it.
     persistence_backend: str = getenv("PERSISTENCE_BACKEND", "postgres")

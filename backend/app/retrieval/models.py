@@ -66,6 +66,7 @@ class RetrievalQuery:
     query: str
     limit: int = 5
     document_id: str | None = None
+    document_ids: tuple[str, ...] = ()
     goal_id: str | None = None
     planet_type: str | None = None
 

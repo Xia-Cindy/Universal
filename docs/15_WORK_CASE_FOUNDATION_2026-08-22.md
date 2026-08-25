@@ -139,3 +139,25 @@ one concrete application: its system context, operational constraint and what
 would be verified. The subsequent real attempt belongs in the separate
 practice log, preserving the distinction between understanding, application
 design and observed evidence.
+
+### R2.2: AI exploration with source boundaries
+
+The right-side Technology Stack panel is an **AI exploration** surface, not a
+second Work Knowledge database. A learner may select a passage in an
+implementation-principle or theory-extension note and ask one question through
+the shared AI Core. The request carries the Tech Stack, the originating Work
+article, the selected quote and only the documents explicitly granted to that
+Tech Stack. The browser never contacts an LLM provider directly.
+
+An answer displays one of two source states: citations to matching authorized
+Knowledge chunks, or a clear statement that no personal Knowledge source was
+used. It is never silently promoted into Knowledge. The learner can explicitly
+open the existing add-content form as `AI exploration / unresolved point`, edit
+the answer into their own words, and save source article ID, selected quote,
+question and citations as a WorkArticle. Practice remains a separate
+WorkLearningRecord.
+
+The shared AI Core can use an OpenAI-compatible Chat Completions provider when
+the server-only `AI_PROVIDER`, `AI_OPENAI_BASE_URL`, `AI_OPENAI_API_KEY` and
+`AI_OPENAI_MODEL` environment variables are configured. Keys are not persisted
+in PostgreSQL or `work_records`, returned to the browser, or committed.

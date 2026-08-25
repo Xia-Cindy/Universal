@@ -1,4 +1,4 @@
-from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter
+from backend.app.ai import AICoreService, AgentDefinition, DefaultToolRouter, OpenAICompatibleLLMGateway
 from backend.app.core.dates import local_today
 from backend.app.core.settings import settings
 from backend.app.knowledge import (
@@ -29,7 +29,8 @@ from backend.app.planets.study.workspace import StudyWorkspaceService
 from backend.app.planets.study.review import ReviewService
 from backend.app.planets.study.recall import StudyRecallService
 from backend.app.planets.study.wordbook import WordbookService
-from backend.app.planets.work import CSDNCommunityService, WorkRepository, WorkService
+from backend.app.planets.work import CSDNCommunityService, WorkExplorationService, WorkRepository, WorkService
+from backend.app.planets.work.context_provider import WorkExplorationContextProvider
 from backend.app.planets.work.repository import SQLiteWorkRepository
 from backend.app.planets.novel import NovelDraftService, NovelRepository, SQLiteNovelRepository
 from backend.app.persistence import (
@@ -122,13 +123,22 @@ class ApiFacade:
         )
         self.tool_router = DefaultToolRouter()
         self.tool_router.register(RetrieverTool(self.retrieval))
-        self.ai_core = AICoreService(tool_router=self.tool_router)
+        self.ai_core = AICoreService(gateway=self._create_llm_gateway(), tool_router=self.tool_router)
         self.ai_core.agent_manager.register(
             AgentDefinition(
                 agent_id="study",
                 capabilities=("tutor",),
                 prompt_key="study.tutor.answer",
                 context_builder="study.tutor",
+                allowed_tools=("retrieval.search",),
+            )
+        )
+        self.ai_core.agent_manager.register(
+            AgentDefinition(
+                agent_id="work",
+                capabilities=("explore",),
+                prompt_key="work.explore.answer",
+                context_builder="work.explore",
                 allowed_tools=("retrieval.search",),
             )
         )
@@ -149,6 +159,14 @@ class ApiFacade:
             ),
         )
         self.ai_core.prompt_manager.register(
+            "work.explore.answer",
+            (
+                "You are the Work Planet exploration capability. Explain the learner's selected technical passage "
+                "in clear Chinese. Separate definition, mechanism, trade-offs, and a realistic application. "
+                "Never claim a personal Knowledge source unless it is supplied in the context."
+            ),
+        )
+        self.ai_core.prompt_manager.register(
             "study.analyst.report",
             (
                 "You are the Study Agent Analyst capability. Explain Study progress, patterns, "
@@ -159,6 +177,7 @@ class ApiFacade:
             "study.tutor",
             StudyTutorContextProvider(),
         )
+        self.ai_core.context_manager.register_provider("work.explore", WorkExplorationContextProvider())
         self.ai_core.context_manager.register_provider(
             "study.analyst",
             StudyAnalystContextProvider(),
@@ -195,6 +214,7 @@ class ApiFacade:
         )
         self.work_repository = work_repository
         self.work = WorkService(self.work_repository)
+        self.work_exploration = WorkExplorationService(ai_core=self.ai_core)
         self.work_community = CSDNCommunityService()
         self.novel_drafts = NovelDraftService(novel_repository)
 
@@ -216,6 +236,18 @@ class ApiFacade:
                 rerank_model=settings.ragflow_rerank_model,
             )
 
+    def _create_llm_gateway(self):
+        if settings.ai_provider == "deterministic":
+            return None
+        if settings.ai_provider == "openai_compatible":
+            return OpenAICompatibleLLMGateway(
+                base_url=settings.ai_openai_base_url,
+                api_key=settings.ai_openai_api_key,
+                model=settings.ai_openai_model,
+                timeout_seconds=settings.ai_openai_timeout_seconds,
+            )
+        raise ValueError("AI_PROVIDER must be deterministic or openai_compatible")
+
     def _create_object_storage(self):
         if settings.object_storage_backend == "s3":
             return S3ObjectStorage(
@@ -231,6 +263,21 @@ class ApiFacade:
 
     def health(self) -> dict[str, str]:
         return {"status": "ok", "product": settings.app_name}
+
+    def ai_status(self) -> dict[str, object]:
+        configured = settings.ai_provider == "openai_compatible" and bool(
+            settings.ai_openai_base_url and settings.ai_openai_api_key and settings.ai_openai_model
+        )
+        return {
+            "provider": settings.ai_provider,
+            "configured": configured,
+            "model": settings.ai_openai_model if configured else None,
+            "message": (
+                "共享 AI Core 已配置。"
+                if configured
+                else "尚未配置 OpenAI-compatible AI Core；请在服务器私有环境文件中设置 Base URL、API Key 和模型。"
+            ),
+        }
 
     def request_registration(self, payload: dict) -> dict[str, object]:
         return self.auth.request_registration(
@@ -332,6 +379,24 @@ class ApiFacade:
     def create_work_article(self, tech_stack_id: str, payload: dict) -> dict[str, object]:
         user = self.users.current_user()
         return self.work.create_article(user.id, tech_stack_id, payload)
+
+    def ask_work_exploration(self, tech_stack_id: str, payload: dict) -> dict[str, object]:
+        user = self.users.current_user()
+        tech_stack = self.work.tech_stack_detail(user.id, tech_stack_id, knowledge_summary={})["techStack"]
+        source_article = self.work.article_for_exploration(
+            user.id,
+            tech_stack_id,
+            str(payload.get("sourceArticleId") or "").strip() or None,
+        )
+        allowed_documents = self.knowledge.list_work_documents(user.id, tech_stack_id=tech_stack_id)
+        return self.work_exploration.ask(
+            user=user,
+            tech_stack=tech_stack,
+            source_article=source_article,
+            selected_quote=str(payload.get("selectedQuote") or ""),
+            question=str(payload.get("question") or ""),
+            allowed_documents=allowed_documents,
+        )
 
     def list_work_learning_records(self, tech_stack_id: str | None = None) -> list[dict[str, object]]:
         user = self.users.current_user()
