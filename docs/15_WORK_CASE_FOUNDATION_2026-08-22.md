@@ -98,10 +98,11 @@ share the Universe OS runtime or expose a host service directly.
 
 Technology Stack is not a résumé form or a proficiency scoreboard. Each
 Technology Stack record opens one horizontal tab in a personal technical
-space. The tab may accumulate two kinds of user-owned evidence:
+space. The tab presents a learner-facing map with three durable layers:
 
-- theory and work notes (`WorkArticle`); and
-- a record of a real operation or practice (`WorkLearningRecord`).
+- implementation principles and system position (`WorkArticle`);
+- a record of a real operation or practice (`WorkLearningRecord`); and
+- a learner-authored extension path (`WorkArticle` with `articleType=extension`).
 
 The R2 room client reuses the existing Work API and PostgreSQL-backed
 `work_records` persistence; it does not create an additional Work content

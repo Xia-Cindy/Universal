@@ -11,7 +11,7 @@ const emptyStack = {
 };
 
 const emptyEntry = {
-    kind: 'theory',
+    kind: 'principle',
     title: '',
     content: '',
     tags: '',
@@ -76,12 +76,17 @@ export default function TechStackWorkspace({ onNavigate }) {
 
     useEffect(() => { loadDetail(); }, [loadDetail]);
 
+    const principles = useMemo(() => (detail?.articles || [])
+        .filter((item) => item.articleType !== 'extension'), [detail]);
+
+    const extensions = useMemo(() => (detail?.articles || [])
+        .filter((item) => item.articleType === 'extension'), [detail]);
+
     const timeline = useMemo(() => {
         if (!detail) return [];
-        return [
-            ...(detail.articles || []).map((item) => ({ ...item, kind: 'theory', date: item.updatedAt })),
-            ...(detail.learningRecords || []).map((item) => ({ ...item, kind: 'practice', content: item.notes, date: item.updatedAt }))
-        ].sort((left, right) => new Date(right.date) - new Date(left.date));
+        return (detail.learningRecords || [])
+            .map((item) => ({ ...item, kind: 'practice', content: item.notes, date: item.updatedAt }))
+            .sort((left, right) => new Date(right.date) - new Date(left.date));
     }, [detail]);
 
     const updateStackForm = (event) => {
@@ -123,10 +128,10 @@ export default function TechStackWorkspace({ onNavigate }) {
         setSaving(true);
         setError('');
         try {
-            if (entryForm.kind === 'theory') {
+            if (entryForm.kind !== 'practice') {
                 await roomApi.createWorkArticle(selectedId, {
                     title: entryForm.title.trim(),
-                    articleType: 'knowledge',
+                    articleType: entryForm.kind,
                     summary: entryForm.content.trim().slice(0, 140),
                     content: entryForm.content.trim(),
                     tags: splitTags(entryForm.tags),
@@ -209,12 +214,27 @@ export default function TechStackWorkspace({ onNavigate }) {
                                 <div className="work-tech-space__tag-row">{detail.techStack.tags?.length ? detail.techStack.tags.map((tag) => <b key={tag}>#{tag}</b>) : <b>#学习中</b>}</div>
                             </section>
 
+                            <section className="work-tech-space__learning-map">
+                                <GuideColumn
+                                    emptyText="还没有原理笔记。先写下它在系统中解决什么问题、关键组件如何协作。"
+                                    items={principles}
+                                    label="IMPLEMENTATION PRINCIPLES"
+                                    title="实现原理与系统位置"
+                                />
+                                <GuideColumn
+                                    emptyText="还没有延伸方向。记录下想继续验证的架构、性能、安全或运维问题。"
+                                    items={extensions}
+                                    label="EXTEND NEXT"
+                                    title="下一步可延伸什么"
+                                />
+                            </section>
+
                             <div className="work-tech-space__content-grid">
                                 <section className="work-tech-space__timeline">
                                     <div className="work-tech-space__section-heading"><div><span>LIVE LOG</span><h3>这里发生过什么</h3></div><button className="work-tech-space__solid-button" onClick={() => setShowEntryForm((value) => !value)} type="button">{showEntryForm ? '收起记录' : '+ 添加内容'}</button></div>
                                     {showEntryForm && <EntryForm form={entryForm} onChange={updateEntryForm} onSubmit={createEntry} saving={saving} />}
-                                    {!timeline.length && <p className="work-tech-space__empty-log">还没有记录。完成一次真实操作，或把刚学到的理论写下来。</p>}
-                                    {timeline.map((item) => <article className={`work-tech-space__log-item is-${item.kind}`} key={`${item.kind}-${item.id}`}><span className="work-tech-space__log-kind">{item.kind === 'practice' ? '实践' : '理论'}</span><div><small>{formatDate(item.date)}{item.minutes ? ` · ${item.minutes} 分钟` : ''}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p>{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</div></article>)}
+                                    {!timeline.length && <p className="work-tech-space__empty-log">还没有实践记录。完成一次真实操作、验证或复盘后，它会在这里留下证据。</p>}
+                                    {timeline.map((item) => <article className={`work-tech-space__log-item is-${item.kind}`} key={`${item.kind}-${item.id}`}><span className="work-tech-space__log-kind">实践</span><div><small>{formatDate(item.date)}{item.minutes ? ` · ${item.minutes} 分钟` : ''}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p>{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</div></article>)}
                                 </section>
                                 <section className="work-tech-space__knowledge">
                                     <span>SHARED KNOWLEDGE</span><h3>关联资料</h3><p>资料仍属于共享 Knowledge；技术栈只引用已授权内容，不复制文档或 RAGFlow 数据。</p>
@@ -233,13 +253,17 @@ function EmptyTechSpace({ onCreate }) {
     return <section className="work-tech-space__empty"><span>YOUR FIRST TECH SPACE</span><h2>从正在发生的构建开始。</h2><p>例如：React + Three.js、FastAPI、PostgreSQL、Docker Compose、Linux，或计划作为共享 Knowledge 基础设施的 RAGFlow。</p><button className="work-tech-space__solid-button" onClick={onCreate} type="button">开通第一项技术 →</button></section>;
 }
 
+function GuideColumn({ emptyText, items, label, title }) {
+    return <section className="work-tech-space__guide-column"><span>{label}</span><h3>{title}</h3>{items.length ? items.map((item) => <article key={item.id}><small>{formatDate(item.updatedAt)}</small><h4>{item.title}</h4><p>{item.content || item.summary || '未附加文字。'}</p>{item.tags?.length > 0 && <footer>{item.tags.map((tag) => <b key={tag}>#{tag}</b>)}</footer>}</article>) : <p className="work-tech-space__guide-empty">{emptyText}</p>}</section>;
+}
+
 function EntryForm({ form, onChange, onSubmit, saving }) {
     return <form className="work-tech-space__entry-form" onSubmit={onSubmit}>
-        <label>记录类型<select name="kind" onChange={onChange} value={form.kind}><option value="theory">理论 / 工作笔记</option><option value="practice">真实操作 / 实践</option></select></label>
-        <label>标题<input autoFocus name="title" onChange={onChange} placeholder={form.kind === 'theory' ? '例如：RAGFlow 在 Universe 中的边界' : '例如：完成 Room 静态资源缓存发布'} required value={form.title} /></label>
+        <label>记录类型<select name="kind" onChange={onChange} value={form.kind}><option value="principle">实现原理 / 理论笔记</option><option value="practice">真实操作 / 实践</option><option value="extension">可延伸方向</option></select></label>
+        <label>标题<input autoFocus name="title" onChange={onChange} placeholder={form.kind === 'practice' ? '例如：完成 Room 静态资源缓存发布' : form.kind === 'extension' ? '例如：把运行时验证接入发布门禁' : '例如：RAGFlow 在 Universe 中的边界'} required value={form.title} /></label>
         <label>内容<textarea name="content" onChange={onChange} placeholder="记录你理解到的原理、决策、命令结果或后续问题。" required value={form.content} /></label>
         <label>标签<input name="tags" onChange={onChange} placeholder="用逗号分隔" value={form.tags} /></label>
         {form.kind === 'practice' && <label>投入分钟<input min="0" name="minutes" onChange={onChange} placeholder="可选" type="number" value={form.minutes} /></label>}
-        <div><span>保存后会成为此技术的真实动态。</span><button className="work-tech-space__solid-button" disabled={saving} type="submit">{saving ? '保存中…' : '保存记录'}</button></div>
+        <div><span>{form.kind === 'practice' ? '保存后会成为此技术的真实实践证据。' : '保存后会进入该技术的学习地图。'}</span><button className="work-tech-space__solid-button" disabled={saving} type="submit">{saving ? '保存中…' : '保存记录'}</button></div>
     </form>;
 }
