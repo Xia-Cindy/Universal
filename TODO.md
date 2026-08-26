@@ -53,6 +53,8 @@
 - [x] Design optional user/document reading-progress synchronization while retaining offline browser-local bookmarks and excluding Goal progress or Wordbook review facts.
 - [x] Implement the approved reading-progress migration, API conflict handling and best-effort 5180 synchronization.
 - [x] Add a read-only, evidence-backed Study feedback recommendation API for due reviews, incomplete tasks and synced reading positions; do not automatically mutate a plan.
+- [x] Bundle a clean-room Knowledge/Wordbook bookshelf scene so the 3D shelf
+  and physical reader remain usable without the external visual reference.
 
 ## Study Bookshelf Module
 

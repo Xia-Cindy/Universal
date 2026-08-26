@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- fix(study): restore the Knowledge/Wordbook 3D bookshelf with a bundled
+  clean-room fallback. The shelf no longer becomes blank when the external
+  visual reference cannot be reached; real catalog data, filters, pagination,
+  cover opening and the existing two-page reader bridge remain intact.
 - feat(work): reshape the Technology Stack route into a categorized personal
   technical publication. Existing topics are grouped without rewriting their
   persisted categories; learner notes, principles, optional architecture

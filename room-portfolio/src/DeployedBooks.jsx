@@ -1,10 +1,10 @@
 /* eslint-disable react/prop-types */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { FALLBACK_BOOKSHELF_SOURCE } from './bookshelf/fallbackSource';
 import { asReferenceBook, createShelfCatalog } from './bookshelf/shelfCatalog';
 import { useBookshelfBridge } from './bookshelf/useBookshelfBridge';
 
-const REFERENCE_URL = 'https://books-sigma-ashen.vercel.app/';
 const BOOKMARKS_STORAGE_KEY = 'universe-books:reader-bookmarks';
 
 const loadReaderBookmarks = () => {
@@ -588,21 +588,9 @@ export default function DeployedBooks({
     }, [totalPages]);
 
     useEffect(() => {
-        let active = true;
-        fetch(REFERENCE_URL)
-            .then((response) => {
-                if (!response.ok) throw new Error('无法读取参考书本场景。');
-                return response.text();
-            })
-            .then((html) => {
-                if (active) setSource(html);
-            })
-            .catch(() => {
-                if (active) setSource('');
-            });
-        return () => {
-            active = false;
-        };
+        // Keep the bookshelf self-contained so Knowledge remains usable even
+        // when the external visual reference is unavailable or slow.
+        setSource(FALLBACK_BOOKSHELF_SOURCE);
     }, []);
 
     useBookshelfBridge({

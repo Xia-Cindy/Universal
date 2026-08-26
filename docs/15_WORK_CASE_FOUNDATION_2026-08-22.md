@@ -189,3 +189,14 @@ a copied community product: there are no fabricated readers, likes, rankings,
 external content feeds or second content service. Images remain private Work
 attachments, Shared Knowledge remains source-owned and explicitly granted, and
 AI exploration retains its existing shared-AI-Core and citation boundary.
+
+### R3.1: self-contained Knowledge bookshelf fallback
+
+The Study Knowledge and Wordbook shelves no longer require a network fetch of
+the external visual reference at runtime. A clean-room, self-contained HTML
+scene is bundled in `room-portfolio/src/bookshelf/fallbackSource.js`; it draws
+the real catalog as CSS/canvas 3D book covers and keeps the existing
+`postMessage` contract for filters, pagination, opening a book, and the reader
+bridge. The source reference remains inspiration only and is not copied or
+localized. This keeps the physical-cover and two-page reader interactions
+available when an external host is slow or unreachable.
