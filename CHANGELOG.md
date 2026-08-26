@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- feat(work): reshape the Technology Stack route into a categorized personal
+  technical publication. Existing topics are grouped without rewriting their
+  persisted categories; learner notes, principles, optional architecture
+  observations, theory extensions, AI explorations and practice records now
+  read as one filterable article stream. This introduces no community feed,
+  duplicate Work store or Knowledge copy.
 - feat(work): reframe `/work` around PM, BA, SRE, Data Governance and
   Technology Stack. The Technology Stack route now provides persistent
   per-technology tabs for implementation principles, learner-authored

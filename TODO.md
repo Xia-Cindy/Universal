@@ -25,6 +25,10 @@
 - [x] Add the active Room client for `/work/tech-stack`: one persistent
   technology per horizontal tab, with theory/work notes and real practice
   records backed by the existing Work API.
+- [x] Reframe the Technology Stack route as a categorized personal technical
+  publication: preserve existing records, present every update in an article
+  stream, and make architecture observation an optional article type rather
+  than a universal “system position” field.
 - [ ] Add an explicit, user-reviewable Universe build-event recorder so a
   validated deployment can propose a practice record without inventing one.
 - [ ] Provision `universe-ragflow` as shared Knowledge infrastructure, then

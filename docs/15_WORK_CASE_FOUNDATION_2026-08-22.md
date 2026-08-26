@@ -161,3 +161,31 @@ The shared AI Core can use an OpenAI-compatible Chat Completions provider when
 the server-only `AI_PROVIDER`, `AI_OPENAI_BASE_URL`, `AI_OPENAI_API_KEY` and
 `AI_OPENAI_MODEL` environment variables are configured. Keys are not persisted
 in PostgreSQL or `work_records`, returned to the browser, or committed.
+
+## 2026-08-26 R3: categorized technical publication
+
+The learner clarified that a fixed pair of “implementation principles / system
+position” panels is not a general model for every technology. Technology Stack
+therefore becomes a personal technical publication rather than a matrix of
+predefined learning fields.
+
+The Technology Stack landing page groups existing topics at presentation time
+into five broad domains: AI and Knowledge, Runtime and Cloud, Backend and Data,
+Frontend and Experience, and Engineering Methods. The grouping is a stable UI
+taxonomy derived from the existing stack name, category and tags. It does not
+rewrite historical categories or add a duplicate category persistence model.
+
+Within one topic, all updates appear in one reverse-chronological article
+stream. The learner may write a learning note, principle note, architecture
+observation, theory-to-application extension, practice retrospective, or AI
+exploration. “System position” is now an optional architecture-observation
+article type, not a compulsory field. Existing `WorkArticle` records remain
+articles, and existing `WorkLearningRecord` records render as practice
+retrospectives in the same stream; their separate storage and evidence meaning
+remain intact.
+
+This is CSDN-like in its topic navigation and article-reading experience, not
+a copied community product: there are no fabricated readers, likes, rankings,
+external content feeds or second content service. Images remain private Work
+attachments, Shared Knowledge remains source-owned and explicitly granted, and
+AI exploration retains its existing shared-AI-Core and citation boundary.
