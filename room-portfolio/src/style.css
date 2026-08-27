@@ -57,8 +57,8 @@ canvas {
     place-items: center;
     overflow: hidden;
     background:
-        radial-gradient(circle at 74% 21%, rgba(98, 78, 142, 0.42), transparent 28%),
-        radial-gradient(circle at 22% 78%, rgba(61, 161, 155, 0.18), transparent 26%),
+        linear-gradient(165deg, rgba(34, 25, 52, .56), rgba(18, 12, 32, .84)),
+        url('/roomfinalss1.png') center / cover no-repeat,
         linear-gradient(165deg, #221934 0%, #120c20 66%, #090713 100%);
     color: #f6f2ff;
 }

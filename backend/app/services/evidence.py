@@ -18,7 +18,7 @@ def evidence_source(result: dict[str, Any], *, source_url: str | None = None) ->
         "score": float(result.get("score") or 0),
         "metadata": metadata,
         "sourceUrl": source_url or (
-            f"/study/knowledge?documentId={document_id}#chunk-{chunk_id}" if document_id else None
+            f"/knowledge?documentId={document_id}#chunk-{chunk_id}" if document_id else None
         ),
     }
 

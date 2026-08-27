@@ -55,6 +55,8 @@
 - [x] Add a read-only, evidence-backed Study feedback recommendation API for due reviews, incomplete tasks and synced reading positions; do not automatically mutate a plan.
 - [x] Bundle a clean-room Knowledge/Wordbook bookshelf scene so the 3D shelf
   and physical reader remain usable without the external visual reference.
+- [x] Use `/knowledge` as the canonical Knowledge bookshelf route and retain
+  `/study/knowledge` as a compatibility alias.
 
 ## Study Bookshelf Module
 

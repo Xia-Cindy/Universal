@@ -34,7 +34,8 @@ export const SPACE_GROUPS = {
             {
                 id: 'study-knowledge',
                 label: 'Knowledge',
-                path: '/study/knowledge'
+                path: '/knowledge',
+                aliases: ['/study/knowledge']
             },
             {
                 id: 'study-wordbook',

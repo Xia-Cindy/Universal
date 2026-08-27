@@ -21,7 +21,8 @@ CORE_ROUTES = (
     "/",
     "/study",
     "/study/plan",
-    "/study/knowledge",
+    "/knowledge",
+    "/study/knowledge",  # legacy alias remains supported
     "/study/wordbook",
     "/study/cards",
     "/work",

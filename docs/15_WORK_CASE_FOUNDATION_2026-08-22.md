@@ -162,6 +162,14 @@ the server-only `AI_PROVIDER`, `AI_OPENAI_BASE_URL`, `AI_OPENAI_API_KEY` and
 `AI_OPENAI_MODEL` environment variables are configured. Keys are not persisted
 in PostgreSQL or `work_records`, returned to the browser, or committed.
 
+### R3.2: Knowledge route naming
+
+The canonical spatial UI route for the shared Knowledge bookshelf is now
+`/knowledge`. The previous `/study/knowledge` URL remains a compatibility alias
+for existing bookmarks and citations. The browser still calls the Study-scoped
+backend resources under `/api/study/knowledge/...`; this separates the public
+room route from the Planet-owned API namespace.
+
 ## 2026-08-26 R3: categorized technical publication
 
 The learner clarified that a fixed pair of “implementation principles / system

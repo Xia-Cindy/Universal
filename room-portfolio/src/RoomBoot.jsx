@@ -8,8 +8,8 @@ export default function RoomBoot() {
             </div>
             <section className="room-boot__content">
                 <span>UNIVERSE OS</span>
-                <h1>Preparing your room</h1>
-                <p>正在装载个人空间与交互场景</p>
+                <h1>Opening your room</h1>
+                <p>房间预览已显示，3D 交互正在后台启动</p>
             </section>
         </main>
     );

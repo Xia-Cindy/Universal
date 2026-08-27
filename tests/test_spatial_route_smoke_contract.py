@@ -10,6 +10,7 @@ class SpatialRouteSmokeContractTests(unittest.TestCase):
             '"/"',
             '"/study"',
             '"/study/plan"',
+            '"/knowledge"',
             '"/study/knowledge"',
             '"/study/wordbook"',
             '"/study/cards"',
@@ -27,8 +28,9 @@ class SpatialRouteSmokeContractTests(unittest.TestCase):
 
         self.assertIn("port: 5180", vite_config)
         self.assertIn("'/api': 'http://127.0.0.1:8000'", vite_config)
-        for route in ("/study", "/study/knowledge", "/study/wordbook", "/study/cards", "/work", "/work/tech-stack", "/novel"):
+        for route in ("/study", "/knowledge", "/study/wordbook", "/study/cards", "/work", "/work/tech-stack", "/novel"):
             self.assertIn(f"path: '{route}'", spaces)
+        self.assertIn("aliases: ['/study/knowledge']", spaces)
 
 
 if __name__ == "__main__":

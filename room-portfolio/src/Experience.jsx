@@ -27,7 +27,7 @@ const moduleRoute = (moduleId) => Object.values(SPACE_GROUPS)
 
 const moduleFromRoute = (pathname) => Object.entries(SPACE_GROUPS)
     .flatMap(([space, group]) => group.modules.map((module) => ({ space, module })))
-    .find(({ module }) => module.path === pathname) || null;
+    .find(({ module }) => module.path === pathname || module.aliases?.includes(pathname)) || null;
 
 const asWordbookBooks = (entries) => {
     const groups = new Map();
@@ -200,8 +200,9 @@ const Experience = React.memo(() => {
     };
 
     const navigate = (route) => {
-        if (window.location.pathname !== route) window.history.pushState({}, '', route);
-        setPathname(route);
+        const canonicalRoute = route === '/study/knowledge' ? '/knowledge' : route;
+        if (window.location.pathname !== canonicalRoute) window.history.pushState({}, '', canonicalRoute);
+        setPathname(canonicalRoute);
     };
 
     useEffect(() => {
@@ -223,10 +224,15 @@ const Experience = React.memo(() => {
         return () => window.removeEventListener('popstate', openFromRoute);
     }, [focusModule, focusSpace, resetCamera]);
 
-    const isWordbookBooks = activeModule === 'study-wordbook';
-    const isReferenceBooks = activeModule === 'study-knowledge' || activeModule === 'work-knowledge' || isWordbookBooks;
-    const isWorkKnowledge = activeModule === 'work-knowledge';
-    const isKnowledgeCardsGallery = activeModule === 'study-cards';
+    // Resolve a direct URL before the popstate effect runs. This lets the
+    // bookshelf mount immediately and avoids starting the heavy room model or
+    // its Loader overlay for a module that owns its own full-screen surface.
+    const routedModule = moduleFromRoute(pathname)?.module.id || null;
+    const effectiveModule = activeModule || routedModule;
+    const isWordbookBooks = effectiveModule === 'study-wordbook';
+    const isReferenceBooks = effectiveModule === 'study-knowledge' || effectiveModule === 'work-knowledge' || isWordbookBooks;
+    const isWorkKnowledge = effectiveModule === 'work-knowledge';
+    const isKnowledgeCardsGallery = effectiveModule === 'study-cards';
     const knowledgeResource = KNOWLEDGE_RESOURCES[isWorkKnowledge ? 'work' : 'study'];
 
     useEffect(() => {
@@ -474,7 +480,7 @@ const Experience = React.memo(() => {
 
     return (
         <>
-            {!isKnowledgeCardsGallery && (
+            {!isKnowledgeCardsGallery && !isReferenceBooks && (
                 <>
                     <Canvas
                         dpr={[1, 1.5]}

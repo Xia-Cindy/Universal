@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- refine(study): make `/knowledge` the canonical Knowledge bookshelf route;
+  keep `/study/knowledge` as a legacy alias while retaining the
+  `/api/study/knowledge/...` Planet API namespace.
 - fix(study): restore the Knowledge/Wordbook 3D bookshelf with a bundled
   clean-room fallback in the original full-screen floating-book visual
   direction. The shelf no longer becomes blank when the external visual
