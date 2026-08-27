@@ -8,6 +8,13 @@ Status: Local Docker Compose and provider lifecycle available; controlled TXT, M
 
 Scope: Run RAGFlow as the Knowledge infrastructure for Universe OS.
 
+> **Local deployment path (2026-08-27):** the runnable local RAGFlow Compose
+> project has been moved out of this repository to
+> `/Users/xiaxin/service/ragflow`. Run local `start.sh`, `stop.sh`, `.env` and
+> `universe.env` commands from that directory. The `docker/ragflow` paths shown
+> in older sections are historical references; they are not the active local
+> deployment location.
+
 ---
 
 # 1. Purpose

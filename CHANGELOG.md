@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- chore(ragflow): move the local RAGFlow Compose project to
+  `/Users/xiaxin/service/ragflow`, outside the Universal repository. Its
+  scripts now resolve paths relative to themselves, keeping RAGFlow data and
+  credentials isolated from the application checkout.
 - refine(study): make `/knowledge` the canonical Knowledge bookshelf route;
   keep `/study/knowledge` as a legacy alias while retaining the
   `/api/study/knowledge/...` Planet API namespace.

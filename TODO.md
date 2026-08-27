@@ -33,6 +33,8 @@
   validated deployment can propose a practice record without inventing one.
 - [ ] Provision `universe-ragflow` as shared Knowledge infrastructure, then
   record retrieval-only verification evidence; keep `ragflow-lab` isolated.
+- [x] Move the local RAGFlow Compose project and its private environment files
+  to `/Users/xiaxin/service/ragflow`, outside the Universal checkout.
 
 ## 2026-08-12 Optimization and Feature Plan
 
